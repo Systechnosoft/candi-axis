@@ -1,0 +1,1 @@
+-- 00043_modify_tasks_id_to_integer.sql (Obsolete - Consolidated directly into 00040_create_tasks_table.sql and 00015_create_audit_logs_table.sql)

@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F5F7FA;
+  --foreground: #111827;
+  --surface: #FFFFFF;
+  --sidebar: #F1F3F6;
+  --subtle: #F9FAFB;
+  --border: #E5E7EB;
+  --strong-border: #D1D5DB;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #F5F7FA;
+    --foreground: #111827;
+    --surface: #FFFFFF;
+    --sidebar: #F1F3F6;
+    --subtle: #F9FAFB;
+    --border: #E5E7EB;
+    --strong-border: #D1D5DB;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Date & Month Picker Empty States - hide browser placeholder dashes when empty and not focused */
+.date-input-empty::-webkit-datetime-edit {
+  color: transparent !important;
+}
+.date-input-empty:focus::-webkit-datetime-edit {
+  color: inherit !important;
+}
+
+/* Styling for Rich Text Content lists in viewer and editor */
+.prose ul, .react-quill-wrapper .ql-editor ul {
+  list-style-type: disc !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-left: 1.5rem !important;
+  list-style-position: outside !important;
+}
+
+.prose ol, .react-quill-wrapper .ql-editor ol {
+  list-style-type: decimal !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-left: 1.5rem !important;
+  list-style-position: outside !important;
+}
+
+.prose li, .react-quill-wrapper .ql-editor li {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  display: list-item !important;
+}
+
+

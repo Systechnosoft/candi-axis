@@ -1,0 +1,1 @@
+-- 00049_add_customer_id_to_all_tables.sql (Obsolete - org_id added directly during table creation)

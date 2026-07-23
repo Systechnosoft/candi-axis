@@ -1,0 +1,1 @@
+-- 002_seed_access_modules.sql (Obsolete - modules are seeded in 00050 migration)

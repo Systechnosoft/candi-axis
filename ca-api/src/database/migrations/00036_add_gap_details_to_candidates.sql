@@ -1,0 +1,1 @@
+-- 00036_add_gap_details_to_candidates.sql (Consolidated into 00019_create_candidates_table.sql)
