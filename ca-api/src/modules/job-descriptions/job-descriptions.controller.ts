@@ -28,7 +28,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 export class JobDescriptionsController {
   constructor(
     private readonly jobDescriptionsService: JobDescriptionsService,
-  ) { }
+  ) {}
 
   @Post()
   @RequireModule('job_descriptions', 'editor')
@@ -108,25 +108,19 @@ export class JobDescriptionsController {
   //route for matching existing jds
   @Get(':id/find-matches')
   @RequireModule('job_descriptions', 'viewer')
-  findMatches(
-    @Param('id', ParseUUIDPipe) id: string
-  ) {
+  findMatches(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobDescriptionsService.findMatchesForJob(id);
   }
 
   @Post(':id/rematch')
   @RequireModule('job_descriptions', 'editor')
-  rematch(
-    @Param('id', ParseUUIDPipe) id: string
-  ) {
+  rematch(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobDescriptionsService.rematchJob(id);
   }
 
   @Get(':id/stored-matches')
   @RequireModule('job_descriptions', 'viewer')
-  findStoredMatches(
-    @Param('id', ParseUUIDPipe) id: string
-  ) {
+  findStoredMatches(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobDescriptionsService.findStoredMatchesForJob(id);
   }
 }

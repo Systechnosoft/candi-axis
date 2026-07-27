@@ -1,5 +1,10 @@
 import { google } from 'googleapis';
-import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import * as crypto from 'crypto';
@@ -23,8 +28,8 @@ export class GoogleCalendarService {
     try {
       const dbRes = await this.pool.query(
         `SELECT config_json, encrypted_credentials_json 
-         FROM public.interview_provider_configurations 
-         WHERE provider = 'GOOGLE_MEET' AND is_active = true LIMIT 1`
+         FROM public.ca_interview_provider_configurations 
+         WHERE provider = 'GOOGLE_MEET' AND is_active = true LIMIT 1`,
       );
       if (dbRes.rows.length > 0) {
         const config = dbRes.rows[0].config_json || {};
@@ -34,11 +39,15 @@ export class GoogleCalendarService {
         redirectUri = config.redirect_uri || creds.redirect_uri;
       }
     } catch (dbErr) {
-      this.logger.error(`Failed to fetch GOOGLE_MEET config from DB: ${dbErr.message}`);
+      this.logger.error(
+        `Failed to fetch GOOGLE_MEET config from DB: ${dbErr.message}`,
+      );
     }
 
     if (!clientId || !clientSecret || !redirectUri) {
-      throw new BadRequestException('Google Calendar API integration is not configured. Please save and activate Google Meet configuration in Admin settings.');
+      throw new BadRequestException(
+        'Google Calendar API integration is not configured. Please save and activate Google Meet configuration in Admin settings.',
+      );
     }
 
     return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
@@ -47,7 +56,9 @@ export class GoogleCalendarService {
   // Generate OAuth Auth URL
   async getAuthUrl(atsUserId: string): Promise<string> {
     const oauth2Client = await this.getOAuthClient();
-    const scope = this.configService.get<string>('GOOGLE_CALENDAR_SCOPE') || 'https://www.googleapis.com/auth/calendar.events';
+    const scope =
+      this.configService.get<string>('GOOGLE_CALENDAR_SCOPE') ||
+      'https://www.googleapis.com/auth/calendar.events';
 
     return oauth2Client.generateAuthUrl({
       access_type: 'offline', // crucial to get refresh token
@@ -65,12 +76,14 @@ export class GoogleCalendarService {
 
     const oauth2Client = await this.getOAuthClient();
     const { tokens } = await oauth2Client.getToken(code);
-    
+
     if (!tokens.refresh_token) {
       // Check if we already have a refresh token for this user
       const existing = await this.getConnectionStatus(atsUserId);
       if (!existing.connected) {
-        throw new BadRequestException('Failed to retrieve refresh token. If you previously connected, please disconnect and try again.');
+        throw new BadRequestException(
+          'Failed to retrieve refresh token. If you previously connected, please disconnect and try again.',
+        );
       }
       // If we already have it, we might only get an access token, so we reuse the refresh token.
       // But since we pass `prompt: 'consent'`, Google should always provide a refresh token.
@@ -84,51 +97,65 @@ export class GoogleCalendarService {
       const userInfo = await oauth2.userinfo.get();
       email = userInfo.data.email || '';
     } catch (err) {
-      this.logger.warn(`Could not retrieve user email from Google API: ${err.message}`);
+      this.logger.warn(
+        `Could not retrieve user email from Google API: ${err.message}`,
+      );
     }
 
-    const encryptedRefreshToken = tokens.refresh_token ? this.encrypt(tokens.refresh_token) : null;
+    const encryptedRefreshToken = tokens.refresh_token
+      ? this.encrypt(tokens.refresh_token)
+      : null;
     const scopes = tokens.scope ? tokens.scope.split(' ') : null;
     const expiryDate = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
 
     // Fetch user's org_id for user_calendar_integrations table constraint
     const userRes = await this.pool.query(
       `SELECT org_id FROM public.users WHERE id = $1 LIMIT 1`,
-      [atsUserId]
+      [atsUserId],
     );
     let orgId = userRes.rows[0]?.org_id || null;
 
     if (!orgId) {
       const fallbackRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
       orgId = fallbackRes.rows[0]?.id || null;
     }
 
     if (encryptedRefreshToken) {
       await this.pool.query(
-        `INSERT INTO user_calendar_integrations (org_id, user_id, provider, email, access_token, refresh_token, expiry_date, scopes, is_active, updated_at)
+        `INSERT INTO ca_user_calendar_integrations (org_id, user_id, provider, email, access_token, refresh_token, expiry_date, scopes, is_active, updated_at)
          VALUES ($1, $2, 'GOOGLE', $3, $4, $5, $6, $7, true, now())
          ON CONFLICT (user_id, provider) 
          DO UPDATE SET email = $3, access_token = $4, refresh_token = $5, expiry_date = $6, scopes = $7, is_active = true, updated_at = now()`,
-        [orgId, atsUserId, email, tokens.access_token || null, encryptedRefreshToken, expiryDate, scopes]
+        [
+          orgId,
+          atsUserId,
+          email,
+          tokens.access_token || null,
+          encryptedRefreshToken,
+          expiryDate,
+          scopes,
+        ],
       );
     } else {
       // update access token only if refresh token wasn't returned
       await this.pool.query(
-        `UPDATE user_calendar_integrations 
+        `UPDATE ca_user_calendar_integrations 
          SET email = COALESCE(email, $2), access_token = $3, expiry_date = $4, scopes = COALESCE(scopes, $5), is_active = true, updated_at = now()
          WHERE user_id = $1 AND provider = 'GOOGLE'`,
-        [atsUserId, email, tokens.access_token || null, expiryDate, scopes]
+        [atsUserId, email, tokens.access_token || null, expiryDate, scopes],
       );
     }
   }
 
   // Get status
-  async getConnectionStatus(atsUserId: string): Promise<{ connected: boolean; email?: string }> {
+  async getConnectionStatus(
+    atsUserId: string,
+  ): Promise<{ connected: boolean; email?: string }> {
     const res = await this.pool.query(
-      `SELECT email, is_active FROM user_calendar_integrations WHERE user_id = $1 AND provider = 'GOOGLE'`,
-      [atsUserId]
+      `SELECT email, is_active FROM ca_user_calendar_integrations WHERE user_id = $1 AND provider = 'GOOGLE'`,
+      [atsUserId],
     );
 
     if (res.rows.length === 0 || !res.rows[0].is_active) {
@@ -141,26 +168,32 @@ export class GoogleCalendarService {
   // Disconnect
   async disconnect(atsUserId: string): Promise<void> {
     await this.pool.query(
-      `UPDATE user_calendar_integrations SET is_active = false, updated_at = now() WHERE user_id = $1 AND provider = 'GOOGLE'`,
-      [atsUserId]
+      `UPDATE ca_user_calendar_integrations SET is_active = false, updated_at = now() WHERE user_id = $1 AND provider = 'GOOGLE'`,
+      [atsUserId],
     );
   }
 
   // Pre-generate a Google Meet link
-  async preGenerateMeetLink(atsUserId: string): Promise<{ meetingLink: string; externalEventId: string }> {
+  async preGenerateMeetLink(
+    atsUserId: string,
+  ): Promise<{ meetingLink: string; externalEventId: string }> {
     const integrationRes = await this.pool.query(
-      `SELECT refresh_token FROM user_calendar_integrations WHERE provider = 'GOOGLE' AND is_active = true LIMIT 1`
+      `SELECT refresh_token FROM ca_user_calendar_integrations WHERE provider = 'GOOGLE' AND is_active = true LIMIT 1`,
     );
 
     if (integrationRes.rows.length === 0) {
-      throw new BadRequestException('Google Calendar integration not connected. Please connect Google Calendar first.');
+      throw new BadRequestException(
+        'Google Calendar integration not connected. Please connect Google Calendar first.',
+      );
     }
 
     const encryptedRefreshToken = integrationRes.rows[0].refresh_token;
     const refreshToken = this.decrypt(encryptedRefreshToken);
 
     if (!refreshToken) {
-      throw new BadRequestException('Invalid calendar session. Please reconnect Google Calendar.');
+      throw new BadRequestException(
+        'Invalid calendar session. Please reconnect Google Calendar.',
+      );
     }
 
     const oauth2Client = await this.getOAuthClient();
@@ -202,17 +235,21 @@ export class GoogleCalendarService {
 
     const eventData = response.data;
     const externalEventId = eventData.id || '';
-    
+
     let meetingLink = '';
     if (eventData.conferenceData && eventData.conferenceData.entryPoints) {
-      const meetEntryPoint = eventData.conferenceData.entryPoints.find((ep: any) => ep.entryPointType === 'video');
+      const meetEntryPoint = eventData.conferenceData.entryPoints.find(
+        (ep: any) => ep.entryPointType === 'video',
+      );
       if (meetEntryPoint) {
         meetingLink = meetEntryPoint.uri || '';
       }
     }
 
     if (!meetingLink) {
-      throw new BadRequestException('Google Calendar did not generate a Google Meet URL.');
+      throw new BadRequestException(
+        'Google Calendar did not generate a Google Meet URL.',
+      );
     }
 
     return {
@@ -222,17 +259,21 @@ export class GoogleCalendarService {
   }
 
   // Create Google Meet Invite
-  async createGoogleMeetInterviewInvite(interviewId: string, meetingCreatedByUserId: string, externalCalendarEventId?: string): Promise<any> {
+  async createGoogleMeetInterviewInvite(
+    interviewId: string,
+    meetingCreatedByUserId: string,
+    externalCalendarEventId?: string,
+  ): Promise<any> {
     // 1. Fetch interview details, candidate, and assigned interviewers
     const interviewRes = await this.pool.query(
       `SELECT i.*, a.candidate_id, c.email as candidate_email, c.first_name as candidate_first_name, c.last_name as candidate_last_name,
               j.title as job_title
-       FROM interviews i
+       FROM ca_interviews i
        JOIN applications a ON i.application_id = a.id
-       JOIN candidates c ON a.candidate_id = c.id
-       JOIN job_postings j ON a.job_id = j.id
+       JOIN ca_candidates c ON a.candidate_id = c.id
+       JOIN ca_job_postings j ON a.job_id = j.id
        WHERE i.id = $1`,
-      [interviewId]
+      [interviewId],
     );
 
     if (interviewRes.rows.length === 0) {
@@ -244,28 +285,32 @@ export class GoogleCalendarService {
     // 2. Fetch assigned interviewers emails
     const interviewersRes = await this.pool.query(
       `SELECT u.email, u.full_name as name 
-       FROM interview_assignments ia
+       FROM ca_interview_assignments ia
        JOIN users u ON ia.interviewer_user_id = u.id
        WHERE ia.interview_id = $1`,
-      [interviewId]
+      [interviewId],
     );
 
     const interviewers = interviewersRes.rows;
 
     // 3. Load active Google Calendar Integration
     const integrationRes = await this.pool.query(
-      `SELECT refresh_token FROM user_calendar_integrations WHERE provider = 'GOOGLE' AND is_active = true LIMIT 1`
+      `SELECT refresh_token FROM ca_user_calendar_integrations WHERE provider = 'GOOGLE' AND is_active = true LIMIT 1`,
     );
 
     if (integrationRes.rows.length === 0) {
-      throw new BadRequestException('Google Calendar integration not connected or active. Please connect Google Calendar in the database settings.');
+      throw new BadRequestException(
+        'Google Calendar integration not connected or active. Please connect Google Calendar in the database settings.',
+      );
     }
 
     const encryptedRefreshToken = integrationRes.rows[0].refresh_token;
     const refreshToken = this.decrypt(encryptedRefreshToken);
 
     if (!refreshToken) {
-      throw new BadRequestException('Invalid calendar session. Please reconnect Google Calendar.');
+      throw new BadRequestException(
+        'Invalid calendar session. Please reconnect Google Calendar.',
+      );
     }
 
     const oauth2Client = await this.getOAuthClient();
@@ -275,16 +320,24 @@ export class GoogleCalendarService {
 
     // Prepare attendees list
     const attendees = [
-      { email: interview.candidate_email, displayName: `${interview.candidate_first_name} ${interview.candidate_last_name}` }
+      {
+        email: interview.candidate_email,
+        displayName: `${interview.candidate_first_name} ${interview.candidate_last_name}`,
+      },
     ];
 
     interviewers.forEach((interviewer: any) => {
-      attendees.push({ email: interviewer.email, displayName: interviewer.name });
+      attendees.push({
+        email: interviewer.email,
+        displayName: interviewer.name,
+      });
     });
 
     const startDateTime = new Date(interview.scheduled_start_utc);
     const duration = interview.duration_mins || 60;
-    const endDateTime = new Date(startDateTime.getTime() + duration * 60 * 1000);
+    const endDateTime = new Date(
+      startDateTime.getTime() + duration * 60 * 1000,
+    );
 
     const event = {
       summary: `Interview: ${interview.candidate_first_name} ${interview.candidate_last_name} - ${interview.job_title}`,
@@ -311,8 +364,8 @@ export class GoogleCalendarService {
     try {
       // Update sync status to IN_PROGRESS
       await this.pool.query(
-        `UPDATE interviews SET calendar_sync_status = 'IN_PROGRESS', calendar_sync_error = NULL WHERE id = $1`,
-        [interviewId]
+        `UPDATE ca_interviews SET calendar_sync_status = 'IN_PROGRESS', calendar_sync_error = NULL WHERE id = $1`,
+        [interviewId],
       );
 
       // Update event if pre-generated, otherwise insert
@@ -340,11 +393,13 @@ export class GoogleCalendarService {
       const eventData = response.data;
       const externalEventId = eventData.id;
       const calendarEventLink = eventData.htmlLink;
-      
+
       // Get meeting/Meet link
       let meetingLink = '';
       if (eventData.conferenceData && eventData.conferenceData.entryPoints) {
-        const meetEntryPoint = eventData.conferenceData.entryPoints.find((ep: any) => ep.entryPointType === 'video');
+        const meetEntryPoint = eventData.conferenceData.entryPoints.find(
+          (ep: any) => ep.entryPointType === 'video',
+        );
         if (meetEntryPoint) {
           meetingLink = meetEntryPoint.uri || '';
         }
@@ -356,7 +411,7 @@ export class GoogleCalendarService {
 
       // Update interview record with Google Meet link and event ID
       await this.pool.query(
-        `UPDATE interviews 
+        `UPDATE ca_interviews 
          SET meeting_provider = 'GOOGLE_MEET',
              meeting_link = $2,
              external_calendar_event_id = $3,
@@ -367,7 +422,13 @@ export class GoogleCalendarService {
              meeting_created_by = $5,
              meeting_created_at = now()
          WHERE id = $1`,
-        [interviewId, meetingLink, externalEventId, calendarEventLink, meetingCreatedByUserId]
+        [
+          interviewId,
+          meetingLink,
+          externalEventId,
+          calendarEventLink,
+          meetingCreatedByUserId,
+        ],
       );
 
       return {
@@ -376,17 +437,18 @@ export class GoogleCalendarService {
         calendarEventLink,
         externalEventId,
       };
-
     } catch (error) {
-      this.logger.error(`Error creating Google Calendar Meet event: ${error.message}`);
-      
+      this.logger.error(
+        `Error creating Google Calendar Meet event: ${error.message}`,
+      );
+
       // Update interview status to SYNC_FAILED
       await this.pool.query(
-        `UPDATE interviews 
+        `UPDATE ca_interviews 
          SET calendar_sync_status = 'SYNC_FAILED', 
              calendar_sync_error = $2
          WHERE id = $1`,
-        [interviewId, error.message]
+        [interviewId, error.message],
       );
 
       throw error;
@@ -395,7 +457,9 @@ export class GoogleCalendarService {
 
   // Encryption helper methods matching admin settings pattern
   private getEncryptionKey(): Buffer {
-    const secret = this.configService.get<string>('SUPABASE_JWT_SECRET') || 'ats-default-encryption-secret-key-32-chars';
+    const secret =
+      this.configService.get<string>('SUPABASE_JWT_SECRET') ||
+      'ats-default-encryption-secret-key-32-chars';
     return crypto.createHash('sha256').update(secret).digest();
   }
 

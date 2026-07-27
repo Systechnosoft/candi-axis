@@ -12,7 +12,7 @@ if (!fs.existsSync(seedsDir)) {
 
 async function runSeeds() {
   console.log('--- Starting MVP Seeds ---');
-  
+
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
   });
@@ -21,15 +21,16 @@ async function runSeeds() {
     await client.connect();
     console.log('Connected to database.');
 
-    const files = fs.readdirSync(seedsDir)
+    const files = fs
+      .readdirSync(seedsDir)
       .filter((file) => file.endsWith('.sql'))
       .sort();
-      
+
     for (const file of files) {
       console.log(`Executing seed: ${file}...`);
       const filePath = path.join(seedsDir, file);
       const sql = fs.readFileSync(filePath, 'utf8');
-      
+
       try {
         await client.query('BEGIN');
         await client.query(sql);
@@ -41,7 +42,7 @@ async function runSeeds() {
         throw fileErr;
       }
     }
-    
+
     console.log('--- All Seeds Complete ---');
   } catch (err) {
     console.error('Seed running failed:', err);

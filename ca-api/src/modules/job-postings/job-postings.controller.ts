@@ -24,9 +24,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 @Controller('job-postings')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class JobPostingsController {
-  constructor(
-    private readonly jobPostingsService: JobPostingsService,
-  ) {}
+  constructor(private readonly jobPostingsService: JobPostingsService) {}
 
   @Post()
   @RequireModule('job_descriptions', 'editor')
@@ -35,18 +33,12 @@ export class JobPostingsController {
     @Body(new ValidationPipe({ whitelist: true }))
     createJobPostingDto: CreateJobPostingDto,
   ) {
-    return this.jobPostingsService.create(
-      user.atsUserId,
-      createJobPostingDto,
-    );
+    return this.jobPostingsService.create(user.atsUserId, createJobPostingDto);
   }
 
   @Get()
   @RequireModule('job_descriptions', 'viewer')
-  findAll(
-    @Query('search') search?: string,
-    @Query('jd_id') jd_id?: string,
-  ) {
+  findAll(@Query('search') search?: string, @Query('jd_id') jd_id?: string) {
     return this.jobPostingsService.findAll({ search, jd_id });
   }
 

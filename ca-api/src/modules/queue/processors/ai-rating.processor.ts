@@ -20,14 +20,16 @@ export class AiRatingProcessor extends WorkerHost {
 
   async process(job: Job<AiRatingJobPayload>) {
     const { applicationId, candidateId, jdId } = job.data;
-    this.logger.log(`Starting processing for job [${job.id}] in queue [${QUEUE_NAMES.AI_RATING}] for application [${applicationId}]`);
-    
+    this.logger.log(
+      `Starting processing for job [${job.id}] in queue [${QUEUE_NAMES.AI_RATING}] for application [${applicationId}]`,
+    );
+
     try {
       // 1. Fetch application details
       const appQuery = `
         SELECT a.*, u.email as creator_email
         FROM applications a
-        LEFT JOIN users u ON a.created_by = u.id
+        LEFT JOIN ca_users u ON a.created_by = u.id
         WHERE a.id = $1 AND a.is_deleted = false
       `;
       const appRes = await this.pool.query(appQuery, [applicationId]);
@@ -39,7 +41,7 @@ export class AiRatingProcessor extends WorkerHost {
 
       // 2. Fetch candidate details
       const candidateQuery = `
-        SELECT * FROM candidates WHERE id = $1 AND is_deleted = false
+        SELECT * FROM ca_candidates WHERE id = $1 AND is_deleted = false
       `;
       const candidateRes = await this.pool.query(candidateQuery, [candidateId]);
       if (candidateRes.rows.length === 0) {
@@ -48,14 +50,20 @@ export class AiRatingProcessor extends WorkerHost {
       const candidate = candidateRes.rows[0];
 
       // Fetch educations and employments for candidate
-      const educationsRes = await this.pool.query('SELECT * FROM candidate_educations WHERE candidate_id = $1 AND is_deleted = false', [candidateId]);
-      const employmentsRes = await this.pool.query('SELECT * FROM candidate_employments WHERE candidate_id = $1 AND is_deleted = false', [candidateId]);
+      const educationsRes = await this.pool.query(
+        'SELECT * FROM ca_candidate_educations WHERE candidate_id = $1 AND is_deleted = false',
+        [candidateId],
+      );
+      const employmentsRes = await this.pool.query(
+        'SELECT * FROM ca_candidate_employments WHERE candidate_id = $1 AND is_deleted = false',
+        [candidateId],
+      );
       candidate.educations = educationsRes.rows;
       candidate.employments = employmentsRes.rows;
 
       // 3. Fetch Job Description details
       const jdQuery = `
-        SELECT * FROM job_descriptions WHERE id = $1 AND is_deleted = false
+        SELECT * FROM ca_job_descriptions WHERE id = $1 AND is_deleted = false
       `;
       const jdRes = await this.pool.query(jdQuery, [jdId]);
       if (jdRes.rows.length === 0) {
@@ -66,41 +74,55 @@ export class AiRatingProcessor extends WorkerHost {
       // 4. Determine latest version and rating entry id
       const latestRatingRes = await this.pool.query(
         'SELECT id, version FROM ai_ratings WHERE application_id = $1 ORDER BY version DESC LIMIT 1',
-        [applicationId]
+        [applicationId],
       );
-      const version = latestRatingRes.rows[0] ? latestRatingRes.rows[0].version : 1;
+      const version = latestRatingRes.rows[0]
+        ? latestRatingRes.rows[0].version
+        : 1;
 
       // 5. Try calling AI Rating Service
       let ratingResult: any = null;
-      let status = 'completed';
-      let errorMessage: string | null = null;
+      const status = 'completed';
+      const errorMessage: string | null = null;
 
       try {
-        ratingResult = await this.aiRatingService.rateApplication(candidate, jd, email);
+        ratingResult = await this.aiRatingService.rateApplication(
+          candidate,
+          jd,
+          email,
+        );
       } catch (aiError: any) {
-        this.logger.warn(`AI rating failed for application ${applicationId}: ${aiError.message}. Falling back to common tags based calculation.`);
-        
+        this.logger.warn(
+          `AI rating failed for application ${applicationId}: ${aiError.message}. Falling back to common tags based calculation.`,
+        );
+
         // Tag-based fallback calculation
         const candTagsRes = await this.pool.query(
           `SELECT t.name 
-           FROM entity_tags et 
-           JOIN tags t ON et.tag_id = t.id 
+           FROM ca_entity_tags et 
+           JOIN ca_tags t ON et.tag_id = t.id 
            WHERE et.entity_type = 'candidate' AND et.entity_id = $1`,
-          [candidateId]
+          [candidateId],
         );
         const jdTagsRes = await this.pool.query(
           `SELECT t.name 
-           FROM entity_tags et 
-           JOIN tags t ON et.tag_id = t.id 
+           FROM ca_entity_tags et 
+           JOIN ca_tags t ON et.tag_id = t.id 
            WHERE et.entity_type = 'job_description' AND et.entity_id = $1`,
-          [jdId]
+          [jdId],
         );
 
-        const candidateTags = candTagsRes.rows.map((r: any) => r.name.toLowerCase());
+        const candidateTags = candTagsRes.rows.map((r: any) =>
+          r.name.toLowerCase(),
+        );
         const jdTags = jdTagsRes.rows.map((r: any) => r.name.toLowerCase());
 
-        const matchedTags = jdTags.filter((tag: string) => candidateTags.includes(tag));
-        const missingTags = jdTags.filter((tag: string) => !candidateTags.includes(tag));
+        const matchedTags = jdTags.filter((tag: string) =>
+          candidateTags.includes(tag),
+        );
+        const missingTags = jdTags.filter(
+          (tag: string) => !candidateTags.includes(tag),
+        );
 
         let overallScore = 0;
         let skillsAnalyzed: any[] = [];
@@ -110,10 +132,10 @@ export class AiRatingProcessor extends WorkerHost {
           skillsAnalyzed = jdTags.map((tag: string) => ({
             skill: tag,
             rating: candidateTags.includes(tag) ? 8.0 : 2.0,
-            evidence: candidateTags.includes(tag) 
-              ? `Found matching tag "${tag}" in candidate profile skills/tags.` 
+            evidence: candidateTags.includes(tag)
+              ? `Found matching tag "${tag}" in candidate profile skills/tags.`
               : `Skill "${tag}" is in Job Description but not matched in candidate tags.`,
-            confidence: 0.9
+            confidence: 0.9,
           }));
         } else if (candidateTags.length > 0) {
           overallScore = 7.5;
@@ -121,12 +143,18 @@ export class AiRatingProcessor extends WorkerHost {
             skill: tag,
             rating: 7.5,
             evidence: `Candidate has tag "${tag}". Job Description has no specific skills listed.`,
-            confidence: 0.85
+            confidence: 0.85,
           }));
         } else {
           overallScore = 5.0;
           skillsAnalyzed = [
-            { skill: 'General Fit', rating: 5.0, evidence: 'No specific matching tags found in Job Description or Candidate.', confidence: 0.7 }
+            {
+              skill: 'General Fit',
+              rating: 5.0,
+              evidence:
+                'No specific matching tags found in Job Description or Candidate.',
+              confidence: 0.7,
+            },
           ];
         }
 
@@ -134,13 +162,14 @@ export class AiRatingProcessor extends WorkerHost {
           overall_resume_score: overallScore,
           skills_analyzed: skillsAnalyzed,
           missing_critical_skills: missingTags,
-          notes: 'Computed using tag intersection due to AI engine fallback mode.',
+          notes:
+            'Computed using tag intersection due to AI engine fallback mode.',
         };
       }
 
       // 6. Save back to the database
       const dbScore = Math.round(ratingResult.overall_resume_score * 10);
-      
+
       const updateQuery = `
         UPDATE ai_ratings 
         SET score = $1, 
@@ -153,7 +182,7 @@ export class AiRatingProcessor extends WorkerHost {
             refreshed_at = now()
         WHERE application_id = $8 AND version = $9
       `;
-      
+
       const matchedKeywords = ratingResult.skills_analyzed
         .filter((s: any) => s.rating >= 6)
         .map((s: any) => s.skill);
@@ -167,24 +196,26 @@ export class AiRatingProcessor extends WorkerHost {
         status,
         errorMessage,
         applicationId,
-        version
+        version,
       ]);
 
-      this.logger.log(`Successfully completed AI rating for application ${applicationId}. Score: ${dbScore}%`);
+      this.logger.log(
+        `Successfully completed AI rating for application ${applicationId}. Score: ${dbScore}%`,
+      );
     } catch (error: any) {
       this.logger.error(`Error processing job [${job.id}]:`, error);
-      
+
       try {
         await this.pool.query(
           `UPDATE ai_ratings 
            SET status = 'failed', error_message = $1, refreshed_at = now() 
            WHERE application_id = $2`,
-          [error.message, applicationId]
+          [error.message, applicationId],
         );
       } catch (dbErr) {
         this.logger.error(`Failed to update job status to failed:`, dbErr);
       }
-      
+
       throw error;
     }
   }

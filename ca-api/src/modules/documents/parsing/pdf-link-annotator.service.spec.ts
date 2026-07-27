@@ -27,8 +27,14 @@ describe('PdfLinkAnnotatorService', () => {
       const result = service.normalizeAndDedupeLinks(rawLinks);
 
       expect(result).toEqual([
-        expect.objectContaining({ url: 'https://www.linkedin.com/in/test', type: 'linkedin' }),
-        expect.objectContaining({ url: 'https://github.com/user', type: 'github' }),
+        expect.objectContaining({
+          url: 'https://www.linkedin.com/in/test',
+          type: 'linkedin',
+        }),
+        expect.objectContaining({
+          url: 'https://github.com/user',
+          type: 'github',
+        }),
         expect.objectContaining({ url: 'http://example.com', type: 'other' }),
       ]);
     });
@@ -50,26 +56,42 @@ describe('PdfLinkAnnotatorService', () => {
 
   describe('Type Detection', () => {
     it('should detect linkedin correctly', () => {
-      expect(service.inferLinkType('https://linkedin.com/in/foo')).toBe('linkedin');
-      expect(service.inferLinkType('https://somethingelse.com', 'My LinkedIn')).toBe('linkedin');
+      expect(service.inferLinkType('https://linkedin.com/in/foo')).toBe(
+        'linkedin',
+      );
+      expect(
+        service.inferLinkType('https://somethingelse.com', 'My LinkedIn'),
+      ).toBe('linkedin');
     });
 
     it('should detect github correctly', () => {
       expect(service.inferLinkType('https://github.com/foo')).toBe('github');
-      expect(service.inferLinkType('https://myrepo.net', 'Github profile')).toBe('github');
+      expect(
+        service.inferLinkType('https://myrepo.net', 'Github profile'),
+      ).toBe('github');
     });
 
     it('should detect portfolio correctly', () => {
-      expect(service.inferLinkType('https://myportfolio.com')).toBe('portfolio');
-      expect(service.inferLinkType('https://behance.net/foo')).toBe('portfolio');
-      expect(service.inferLinkType('https://custom.com', 'Portfolio')).toBe('portfolio');
+      expect(service.inferLinkType('https://myportfolio.com')).toBe(
+        'portfolio',
+      );
+      expect(service.inferLinkType('https://behance.net/foo')).toBe(
+        'portfolio',
+      );
+      expect(service.inferLinkType('https://custom.com', 'Portfolio')).toBe(
+        'portfolio',
+      );
     });
 
     it('should detect website correctly', () => {
       expect(service.inferLinkType('https://johndoe.dev')).toBe('website');
       expect(service.inferLinkType('https://johndoe.me')).toBe('website');
-      expect(service.inferLinkType('https://custom.com', 'Personal Website')).toBe('website');
-      expect(service.inferLinkType('https://custom.com', 'My Blog')).toBe('website');
+      expect(
+        service.inferLinkType('https://custom.com', 'Personal Website'),
+      ).toBe('website');
+      expect(service.inferLinkType('https://custom.com', 'My Blog')).toBe(
+        'website',
+      );
     });
 
     it('should default to other', () => {

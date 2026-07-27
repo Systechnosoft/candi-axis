@@ -88,10 +88,7 @@ export class UsersController {
 
   @Delete(':id')
   @RequireModule('users', 'editor')
-  delete(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  delete(@Param('id') id: string, @CurrentUser() user: any) {
     return this.usersService.deleteUser(id, user.atsUserId);
   }
 }

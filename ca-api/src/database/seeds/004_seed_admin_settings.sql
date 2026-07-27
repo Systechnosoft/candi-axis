@@ -1,6 +1,6 @@
 -- 004_seed_admin_settings.sql
 
-INSERT INTO admin_settings (org_id, setting_key, setting_value, value_type, description)
+INSERT INTO ca_admin_settings (org_id, setting_key, setting_value, value_type, description)
 VALUES
   ('7af2ebf4-6888-4757-a585-bcd9115bb0da', 'duplicate_threshold_high', '0.90', 'number', 'Trigram similarity above this strictly blocks applicant intake.'),
   ('7af2ebf4-6888-4757-a585-bcd9115bb0da', 'duplicate_threshold_medium', '0.75', 'number', 'Trigram similarity above this triggers manual duplicate review override workflow.'),

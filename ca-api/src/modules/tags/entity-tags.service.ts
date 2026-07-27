@@ -32,8 +32,8 @@ export class EntityTagsService {
     const result = await this.pool.query(
       `SELECT et.id, et.entity_type, et.entity_id, et.tag_id, et.source, et.confidence, et.created_at, et.is_starred,
               t.name as tag_name, t.type as tag_type, t.normalized_name 
-       FROM entity_tags et
-       JOIN tags t ON t.id = et.tag_id
+       FROM ca_entity_tags et
+       JOIN ca_tags t ON t.id = et.tag_id
        WHERE et.entity_type = $1 AND et.entity_id = $2
        ORDER BY t.name ASC`,
       [entityType, entityId],
@@ -51,7 +51,7 @@ export class EntityTagsService {
     this.validateEntityType(entityType);
 
     const tagResult = await this.pool.query(
-      `SELECT id FROM tags WHERE id = $1 AND active = true AND is_deleted = false`,
+      `SELECT id FROM ca_tags WHERE id = $1 AND active = true AND is_deleted = false`,
       [assignDto.tagId],
     );
     if (tagResult.rows.length === 0) {
@@ -66,10 +66,18 @@ export class EntityTagsService {
 
     try {
       const result = await this.pool.query(
-        `INSERT INTO entity_tags (entity_type, entity_id, tag_id, source, confidence, created_by, is_starred) 
+        `INSERT INTO ca_entity_tags (entity_type, entity_id, tag_id, source, confidence, created_by, is_starred) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) 
          RETURNING *`,
-        [entityType, entityId, assignDto.tagId, source, confidence, userId, isStarred],
+        [
+          entityType,
+          entityId,
+          assignDto.tagId,
+          source,
+          confidence,
+          userId,
+          isStarred,
+        ],
       );
 
       const newAssignment = result.rows[0];
@@ -104,7 +112,7 @@ export class EntityTagsService {
     this.validateEntityType(entityType);
 
     const currentResult = await this.pool.query(
-      `SELECT * FROM entity_tags WHERE entity_type = $1 AND entity_id = $2 AND tag_id = $3`,
+      `SELECT * FROM ca_entity_tags WHERE entity_type = $1 AND entity_id = $2 AND tag_id = $3`,
       [entityType, entityId, tagId],
     );
 
@@ -116,7 +124,7 @@ export class EntityTagsService {
 
     const currentAssignment = currentResult.rows[0];
 
-    await this.pool.query(`DELETE FROM entity_tags WHERE id = $1`, [
+    await this.pool.query(`DELETE FROM ca_entity_tags WHERE id = $1`, [
       currentAssignment.id,
     ]);
 
@@ -147,13 +155,13 @@ export class EntityTagsService {
       await client.query('BEGIN');
 
       const currentResult = await client.query(
-        `SELECT * FROM entity_tags WHERE entity_type = $1 AND entity_id = $2`,
+        `SELECT * FROM ca_entity_tags WHERE entity_type = $1 AND entity_id = $2`,
         [entityType, entityId],
       );
       const currentTags = currentResult.rows;
 
       await client.query(
-        `DELETE FROM entity_tags WHERE entity_type = $1 AND entity_id = $2`,
+        `DELETE FROM ca_entity_tags WHERE entity_type = $1 AND entity_id = $2`,
         [entityType, entityId],
       );
 
@@ -164,11 +172,19 @@ export class EntityTagsService {
         const isStarred = tag.is_starred ?? false;
 
         const insertResult = await client.query(
-          `INSERT INTO entity_tags (entity_type, entity_id, tag_id, source, confidence, created_by, is_starred) 
+          `INSERT INTO ca_entity_tags (entity_type, entity_id, tag_id, source, confidence, created_by, is_starred) 
            VALUES ($1, $2, $3, $4, $5, $6, $7) 
            ON CONFLICT (entity_type, entity_id, tag_id, source) DO UPDATE SET is_starred = EXCLUDED.is_starred
            RETURNING *`,
-          [entityType, entityId, tag.tagId, source, confidence, userId, isStarred],
+          [
+            entityType,
+            entityId,
+            tag.tagId,
+            source,
+            confidence,
+            userId,
+            isStarred,
+          ],
         );
 
         if (insertResult.rows.length > 0) {

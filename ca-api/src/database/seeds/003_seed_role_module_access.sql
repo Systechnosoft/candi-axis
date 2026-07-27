@@ -6,7 +6,7 @@ DECLARE
   r RECORD;
 BEGIN
   FOR r IN
-    SELECT id, code FROM public.roles WHERE org_id IS NULL AND deleted_at IS NULL
+    SELECT id, code FROM public.ca_roles WHERE org_id IS NULL AND deleted_at IS NULL
   LOOP
     CALL public.seed_role_permissions(r.id, r.code);
   END LOOP;

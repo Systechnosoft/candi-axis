@@ -9,8 +9,10 @@ export class MaintenanceProcessor extends WorkerHost {
   private readonly logger = new Logger(MaintenanceProcessor.name);
 
   async process(job: Job<MaintenanceJobPayload>) {
-    this.logger.debug(`Starting processing for job [${job.id}] in queue [${QUEUE_NAMES.MAINTENANCE}]`);
-    
+    this.logger.debug(
+      `Starting processing for job [${job.id}] in queue [${QUEUE_NAMES.MAINTENANCE}]`,
+    );
+
     try {
       this.logger.log(`Mock Maintenance executing task [${job.data.taskName}]`);
     } catch (error) {

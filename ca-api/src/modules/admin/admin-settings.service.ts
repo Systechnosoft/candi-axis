@@ -1,4 +1,10 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { Pool } from 'pg';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
@@ -6,7 +12,6 @@ import { PG_POOL } from '../../infrastructure/database/database.module';
 import { AuditService } from '../audit/audit.service';
 import { UpdateAiConfigDto } from './dto/update-ai-config.dto';
 import { CandidatesService } from '../candidates/candidates.service';
-
 
 @Injectable()
 export class AdminSettingsService {
@@ -20,7 +25,9 @@ export class AdminSettingsService {
   ) {}
 
   private getEncryptionKey(): Buffer {
-    const secret = this.configService.get<string>('SUPABASE_JWT_SECRET') || 'ats-default-encryption-secret-key-32-chars';
+    const secret =
+      this.configService.get<string>('SUPABASE_JWT_SECRET') ||
+      'ats-default-encryption-secret-key-32-chars';
     // Ensure the key is exactly 32 bytes
     return crypto.createHash('sha256').update(secret).digest();
   }
@@ -93,7 +100,8 @@ export class AdminSettingsService {
   }
 
   private getProviderDefaultBaseUrl(provider: string): string {
-    if (provider === 'gemini') return 'https://generativelanguage.googleapis.com';
+    if (provider === 'gemini')
+      return 'https://generativelanguage.googleapis.com';
     if (provider === 'openai') return 'https://api.openai.com/v1';
     if (provider === 'anthropic') return 'https://api.anthropic.com';
     if (provider === 'groq') return 'https://api.groq.com/openai/v1';
@@ -135,18 +143,18 @@ export class AdminSettingsService {
     const orgPrefix = this.getOrgPrefix(email);
     const query = `
       SELECT setting_key, setting_value 
-      FROM admin_settings 
+      FROM ca_admin_settings 
       WHERE setting_key LIKE $1
     `;
     const res = await this.pool.query(query, [`${orgPrefix}%`]);
-    
+
     const config: any = {
       provider: 'gemini',
       providers: {},
     };
 
     const providersList = ['gemini', 'openai', 'anthropic', 'groq'];
-    providersList.forEach(p => {
+    providersList.forEach((p) => {
       config.providers[p] = {
         has_custom_key: false,
         base_url: this.getProviderDefaultBaseUrl(p),
@@ -155,7 +163,7 @@ export class AdminSettingsService {
       };
     });
 
-    res.rows.forEach(row => {
+    res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
       let val = row.setting_value;
@@ -172,9 +180,14 @@ export class AdminSettingsService {
         const prov = key.replace('ai_parsing_api_key_', '');
         if (config.providers[prov]) {
           const decrypted = this.decrypt(val || '');
-          const isConfigured = decrypted && !decrypted.includes('*') && decrypted.trim().length > 0;
+          const isConfigured =
+            decrypted &&
+            !decrypted.includes('*') &&
+            decrypted.trim().length > 0;
           config.providers[prov].has_custom_key = isConfigured;
-          config.providers[prov].maskedKey = isConfigured ? this.maskApiKey(decrypted) : null;
+          config.providers[prov].maskedKey = isConfigured
+            ? this.maskApiKey(decrypted)
+            : null;
         }
       } else if (key.startsWith('ai_parsing_base_url_')) {
         const prov = key.replace('ai_parsing_base_url_', '');
@@ -191,7 +204,8 @@ export class AdminSettingsService {
 
     // Populate active provider's fields at top level for backwards compatibility
     const activeProv = config.provider;
-    config.has_custom_key = config.providers[activeProv]?.has_custom_key || false;
+    config.has_custom_key =
+      config.providers[activeProv]?.has_custom_key || false;
     config.base_url = config.providers[activeProv]?.base_url || null;
     config.model = config.providers[activeProv]?.model || null;
     config.maskedKey = config.providers[activeProv]?.maskedKey || null;
@@ -202,19 +216,25 @@ export class AdminSettingsService {
   async updateAiConfig(userId: string, email: string, dto: UpdateAiConfigDto) {
     const orgPrefix = this.getOrgPrefix(email);
     const client = await this.pool.connect();
-    
-    this.logger.log(`Updating AI config for org [${orgPrefix}] - provider selected: ${dto.provider}`);
-    
+
+    this.logger.log(
+      `Updating AI config for org [${orgPrefix}] - provider selected: ${dto.provider}`,
+    );
+
     try {
       await client.query('BEGIN');
 
       const providerClean = dto.provider ? dto.provider.trim() : '';
 
       await client.query(
-        `INSERT INTO admin_settings (setting_key, setting_value, value_type, is_active) 
+        `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
          VALUES ($1, $2, 'string', true)
          ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = now(), updated_by = $3`,
-        [`${orgPrefix}ai_parsing_provider`, JSON.stringify(providerClean), userId]
+        [
+          `${orgPrefix}ai_parsing_provider`,
+          JSON.stringify(providerClean),
+          userId,
+        ],
       );
 
       // Update custom key if provided and not masked
@@ -225,28 +245,36 @@ export class AdminSettingsService {
           if (!isMasked) {
             const isKeyValid = this.validateApiKey(cleanKey, providerClean);
             if (!isKeyValid) {
-              throw new BadRequestException(this.getProviderErrorMessage(providerClean));
+              throw new BadRequestException(
+                this.getProviderErrorMessage(providerClean),
+              );
             }
 
             const encrypted = this.encrypt(cleanKey);
             const keyName = `${orgPrefix}ai_parsing_api_key_${providerClean}`;
             await client.query(
-              `INSERT INTO admin_settings (setting_key, setting_value, value_type, is_active) 
+              `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
                VALUES ($1, $2, 'string', true)
                ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = now(), updated_by = $3`,
-              [keyName, JSON.stringify(encrypted || null), userId]
+              [keyName, JSON.stringify(encrypted || null), userId],
             );
-            
-            this.logger.log(`API Key updated for provider ${providerClean}. Format valid: true`);
+
+            this.logger.log(
+              `API Key updated for provider ${providerClean}. Format valid: true`,
+            );
           } else {
-            this.logger.log(`API Key update skipped for ${providerClean} because submitted key was masked.`);
+            this.logger.log(
+              `API Key update skipped for ${providerClean} because submitted key was masked.`,
+            );
           }
         }
       } else {
         // If no new key is provided, verify an active valid key exists in the database for the selected provider
         const existingKey = await this.getActiveApiKey(email, providerClean);
         if (!existingKey) {
-          throw new BadRequestException(this.getProviderErrorMessage(providerClean));
+          throw new BadRequestException(
+            this.getProviderErrorMessage(providerClean),
+          );
         }
       }
 
@@ -254,10 +282,10 @@ export class AdminSettingsService {
         const urlName = `${orgPrefix}ai_parsing_base_url_${providerClean}`;
         const cleanUrl = dto.base_url.trim();
         await client.query(
-          `INSERT INTO admin_settings (setting_key, setting_value, value_type, is_active) 
+          `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
            VALUES ($1, $2, 'string', true)
            ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = now(), updated_by = $3`,
-          [urlName, JSON.stringify(cleanUrl || null), userId]
+          [urlName, JSON.stringify(cleanUrl || null), userId],
         );
       }
 
@@ -265,10 +293,10 @@ export class AdminSettingsService {
         const modelName = `${orgPrefix}ai_parsing_model_${providerClean}`;
         const cleanModel = dto.model.trim();
         await client.query(
-          `INSERT INTO admin_settings (setting_key, setting_value, value_type, is_active) 
+          `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
            VALUES ($1, $2, 'string', true)
            ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = now(), updated_by = $3`,
-          [modelName, JSON.stringify(cleanModel || null), userId]
+          [modelName, JSON.stringify(cleanModel || null), userId],
         );
       }
 
@@ -279,8 +307,12 @@ export class AdminSettingsService {
         entityId: '00000000-0000-0000-0000-000000000001',
         action: 'UPDATE_AI_CONFIG',
         changedBy: userId,
-        afterJson: { provider: dto.provider, model: dto.model, base_url: dto.base_url },
-        reasonContext: `AI parsing configuration updated for ${dto.provider}`
+        afterJson: {
+          provider: dto.provider,
+          model: dto.model,
+          base_url: dto.base_url,
+        },
+        reasonContext: `AI parsing configuration updated for ${dto.provider}`,
       });
 
       return { success: true };
@@ -295,16 +327,18 @@ export class AdminSettingsService {
   async clearApiKey(userId: string, email: string, provider: string) {
     const orgPrefix = this.getOrgPrefix(email);
     const client = await this.pool.connect();
-    
-    this.logger.log(`Revoking API Key for provider [${provider}] in org [${orgPrefix}]`);
-    
+
+    this.logger.log(
+      `Revoking API Key for provider [${provider}] in org [${orgPrefix}]`,
+    );
+
     try {
       await client.query('BEGIN');
 
       const keyName = `${orgPrefix}ai_parsing_api_key_${provider}`;
       await client.query(
-        `DELETE FROM admin_settings WHERE setting_key = $1`,
-        [keyName]
+        `DELETE FROM ca_admin_settings WHERE setting_key = $1`,
+        [keyName],
       );
 
       await client.query('COMMIT');
@@ -315,7 +349,7 @@ export class AdminSettingsService {
         action: 'CLEAR_AI_API_KEY',
         changedBy: userId,
         afterJson: { provider, action: 'cleared_key' },
-        reasonContext: `API key cleared/revoked for ${provider}`
+        reasonContext: `API key cleared/revoked for ${provider}`,
       });
 
       return { success: true };
@@ -327,21 +361,24 @@ export class AdminSettingsService {
     }
   }
 
-  async getActiveApiKey(email: string, provider: string): Promise<string | null> {
+  async getActiveApiKey(
+    email: string,
+    provider: string,
+  ): Promise<string | null> {
     const orgPrefix = this.getOrgPrefix(email);
     const keyName = `${orgPrefix}ai_parsing_api_key_${provider}`;
-    
+
     const res = await this.pool.query(
-      "SELECT setting_value FROM admin_settings WHERE setting_key = $1 AND is_active = true",
-      [keyName]
+      'SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 AND is_active = true',
+      [keyName],
     );
-    
+
     let val = res.rows[0]?.setting_value;
     if (!val) return null;
     if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
       val = val.slice(1, -1);
     }
-    
+
     const decrypted = this.decrypt(val);
     if (this.validateApiKey(decrypted, provider)) {
       return decrypted;
@@ -353,11 +390,11 @@ export class AdminSettingsService {
     const orgPrefix = this.getOrgPrefix(email);
     const query = `
       SELECT setting_key, setting_value 
-      FROM admin_settings 
+      FROM ca_admin_settings 
       WHERE setting_key LIKE $1
     `;
     const res = await this.pool.query(query, [`${orgPrefix}%`]);
-    
+
     const config: any = {
       provider: 'gemini',
       model: this.getProviderDefaultModel('gemini'),
@@ -365,7 +402,7 @@ export class AdminSettingsService {
       api_key: null,
     };
 
-    res.rows.forEach(row => {
+    res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
       let val = row.setting_value;
@@ -385,7 +422,7 @@ export class AdminSettingsService {
     config.model = this.getProviderDefaultModel(provider).trim();
     config.base_url = this.getProviderDefaultBaseUrl(provider).trim();
 
-    res.rows.forEach(row => {
+    res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
       let val = row.setting_value;
@@ -417,7 +454,9 @@ export class AdminSettingsService {
     const apiKey = config.api_key;
 
     const isConfigured = this.validateApiKey(apiKey || '', provider);
-    const validationError = isConfigured ? null : this.getProviderErrorMessage(provider);
+    const validationError = isConfigured
+      ? null
+      : this.getProviderErrorMessage(provider);
 
     return {
       provider: this.getProviderDisplayName(provider),
@@ -432,8 +471,8 @@ export class AdminSettingsService {
     const orgPrefix = this.getOrgPrefix(email);
     const keyName = `${orgPrefix}resume_scoring_weights`;
     const res = await this.pool.query(
-      "SELECT setting_value FROM admin_settings WHERE setting_key = $1 AND is_active = true",
-      [keyName]
+      'SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 AND is_active = true',
+      [keyName],
     );
     if (res.rows.length === 0) {
       return null;
@@ -444,29 +483,43 @@ export class AdminSettingsService {
   async updateScoringWeights(userId: string, email: string, weights: any) {
     const orgPrefix = this.getOrgPrefix(email);
     const keyName = `${orgPrefix}resume_scoring_weights`;
-    
+
     if (typeof weights !== 'object' || weights === null) {
       throw new BadRequestException('Weights must be a valid JSON object');
     }
-    
-    const validKeys = ['contact', 'summary', 'experience', 'skills', 'progression', 'achievements', 'readability', 'grammar', 'social'];
+
+    const validKeys = [
+      'contact',
+      'summary',
+      'experience',
+      'skills',
+      'progression',
+      'achievements',
+      'readability',
+      'grammar',
+      'social',
+    ];
     let totalWeight = 0;
     for (const key of Object.keys(weights)) {
       if (!validKeys.includes(key)) {
         throw new BadRequestException(`Invalid section key: ${key}`);
       }
       if (typeof weights[key] !== 'number' || weights[key] < 0) {
-        throw new BadRequestException(`Weight for ${key} must be a non-negative number`);
+        throw new BadRequestException(
+          `Weight for ${key} must be a non-negative number`,
+        );
       }
       totalWeight += weights[key];
     }
 
     if (totalWeight !== 100) {
-      throw new BadRequestException('The sum of all scoring weights must be exactly 100');
+      throw new BadRequestException(
+        'The sum of all scoring weights must be exactly 100',
+      );
     }
 
     const query = `
-      INSERT INTO admin_settings (setting_key, setting_value, value_type, is_active, updated_by, updated_at)
+      INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active, updated_by, updated_at)
       VALUES ($1, $2, 'json', true, $3, now())
       ON CONFLICT (setting_key) DO UPDATE 
       SET setting_value = $2, updated_by = $3, updated_at = now()
@@ -479,7 +532,7 @@ export class AdminSettingsService {
       action: 'UPDATE_SCORING_WEIGHTS',
       changedBy: userId,
       afterJson: weights,
-      reasonContext: 'Candidate resume scoring weights updated'
+      reasonContext: 'Candidate resume scoring weights updated',
     });
 
     const domain = email.split('@')[1]?.toLowerCase();
@@ -493,7 +546,7 @@ export class AdminSettingsService {
   async getOrgIdByEmail(email: string): Promise<string | null> {
     const res = await this.pool.query(
       `SELECT org_id FROM public.users WHERE email_normalized = $1 LIMIT 1`,
-      [email.trim().toLowerCase()]
+      [email.trim().toLowerCase()],
     );
     return res.rows[0]?.org_id || null;
   }
@@ -504,8 +557,8 @@ export class AdminSettingsService {
     const res = await this.pool.query(
       `SELECT id, provider, display_name, auth_mode, config_json, is_active, is_default, 
               last_test_status, last_test_message, last_tested_at 
-       FROM public.interview_provider_configurations
-       ORDER BY created_at ASC`
+       FROM public.ca_interview_provider_configurations
+       ORDER BY created_at ASC`,
     );
     return res.rows;
   }
@@ -517,40 +570,106 @@ export class AdminSettingsService {
         display_name: 'Google Meet',
         auth_mode: 'oauth2',
         fields: [
-          { key: 'client_id', label: 'Client ID', type: 'string', required: true, isSecret: false },
-          { key: 'client_secret', label: 'Client Secret', type: 'string', required: true, isSecret: true },
-          { key: 'redirect_uri', label: 'Redirect URI', type: 'string', required: true, isSecret: false }
-        ]
+          {
+            key: 'client_id',
+            label: 'Client ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+          {
+            key: 'client_secret',
+            label: 'Client Secret',
+            type: 'string',
+            required: true,
+            isSecret: true,
+          },
+          {
+            key: 'redirect_uri',
+            label: 'Redirect URI',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+        ],
       },
       {
         provider: 'MICROSOFT_TEAMS',
         display_name: 'Microsoft Teams',
         auth_mode: 'oauth2',
         fields: [
-          { key: 'client_id', label: 'Application (client) ID', type: 'string', required: true, isSecret: false },
-          { key: 'client_secret', label: 'Client Secret', type: 'string', required: true, isSecret: true },
-          { key: 'tenant_id', label: 'Directory (tenant) ID', type: 'string', required: true, isSecret: false }
-        ]
+          {
+            key: 'client_id',
+            label: 'Application (client) ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+          {
+            key: 'client_secret',
+            label: 'Client Secret',
+            type: 'string',
+            required: true,
+            isSecret: true,
+          },
+          {
+            key: 'tenant_id',
+            label: 'Directory (tenant) ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+        ],
       },
       {
         provider: 'ZOOM',
         display_name: 'Zoom Meeting',
         auth_mode: 'oauth2',
         fields: [
-          { key: 'client_id', label: 'Client ID', type: 'string', required: true, isSecret: false },
-          { key: 'client_secret', label: 'Client Secret', type: 'string', required: true, isSecret: true },
-          { key: 'account_id', label: 'Account ID', type: 'string', required: true, isSecret: false }
-        ]
+          {
+            key: 'client_id',
+            label: 'Client ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+          {
+            key: 'client_secret',
+            label: 'Client Secret',
+            type: 'string',
+            required: true,
+            isSecret: true,
+          },
+          {
+            key: 'account_id',
+            label: 'Account ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+        ],
       },
       {
         provider: 'CISCO_WEBEX',
         display_name: 'Cisco Webex',
         auth_mode: 'oauth2',
         fields: [
-          { key: 'client_id', label: 'Client ID', type: 'string', required: true, isSecret: false },
-          { key: 'client_secret', label: 'Client Secret', type: 'string', required: true, isSecret: true }
-        ]
-      }
+          {
+            key: 'client_id',
+            label: 'Client ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+          {
+            key: 'client_secret',
+            label: 'Client Secret',
+            type: 'string',
+            required: true,
+            isSecret: true,
+          },
+        ],
+      },
     ];
   }
 
@@ -575,21 +694,23 @@ export class AdminSettingsService {
     // Resolve org_id from user or fall back to the first organisation.
     const userRes = await this.pool.query(
       `SELECT org_id FROM public.users WHERE id = $1 LIMIT 1`,
-      [userId]
+      [userId],
     );
     let orgId: string | null = userRes.rows[0]?.org_id || null;
     if (!orgId) {
       const fallbackRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
       orgId = fallbackRes.rows[0]?.id || null;
     }
     if (!orgId) {
-      throw new BadRequestException('No organisation found. Please create an organisation first.');
+      throw new BadRequestException(
+        'No organisation found. Please create an organisation first.',
+      );
     }
 
     const res = await this.pool.query(
-      `INSERT INTO public.interview_provider_configurations 
+      `INSERT INTO public.ca_interview_provider_configurations 
          (org_id, provider, display_name, auth_mode, config_json, encrypted_credentials_json, is_active, is_default, created_by, updated_by)
        VALUES ($1, $2, $3, $4, $5, $6, true, false, $7, $7)
        ON CONFLICT (provider) DO UPDATE 
@@ -600,40 +721,48 @@ export class AdminSettingsService {
            updated_by = EXCLUDED.updated_by,
            updated_at = now()
        RETURNING id`,
-      [orgId, provider, display_name, auth_mode || 'oauth2', JSON.stringify(config_json || {}), JSON.stringify(credentials_json || {}), userId]
+      [
+        orgId,
+        provider,
+        display_name,
+        auth_mode || 'oauth2',
+        JSON.stringify(config_json || {}),
+        JSON.stringify(credentials_json || {}),
+        userId,
+      ],
     );
     return { success: true, id: res.rows[0].id };
   }
 
   async testProviderConfig(userId: string, id: string) {
     await this.pool.query(
-      `UPDATE public.interview_provider_configurations 
+      `UPDATE public.ca_interview_provider_configurations 
        SET last_test_status = 'success', 
            last_test_message = 'Credentials connection test succeeded.', 
            last_tested_at = now(),
            updated_by = $1
        WHERE id = $2`,
-      [userId, id]
+      [userId, id],
     );
     return { success: true };
   }
 
   async activateProviderConfig(userId: string, id: string) {
     await this.pool.query(
-      `UPDATE public.interview_provider_configurations 
+      `UPDATE public.ca_interview_provider_configurations 
        SET is_active = true, updated_by = $1
        WHERE id = $2`,
-      [userId, id]
+      [userId, id],
     );
     return { success: true };
   }
 
   async deactivateProviderConfig(userId: string, id: string) {
     await this.pool.query(
-      `UPDATE public.interview_provider_configurations 
+      `UPDATE public.ca_interview_provider_configurations 
        SET is_active = false, updated_by = $1
        WHERE id = $2`,
-      [userId, id]
+      [userId, id],
     );
     return { success: true };
   }
@@ -643,18 +772,18 @@ export class AdminSettingsService {
     try {
       await client.query('BEGIN');
       const orgRes = await client.query(
-        `SELECT org_id FROM public.interview_provider_configurations WHERE id = $1`,
-        [id]
+        `SELECT org_id FROM public.ca_interview_provider_configurations WHERE id = $1`,
+        [id],
       );
       if (orgRes.rows.length > 0) {
         const orgId = orgRes.rows[0].org_id;
         await client.query(
-          `UPDATE public.interview_provider_configurations SET is_default = false WHERE org_id = $1`,
-          [orgId]
+          `UPDATE public.ca_interview_provider_configurations SET is_default = false WHERE org_id = $1`,
+          [orgId],
         );
         await client.query(
-          `UPDATE public.interview_provider_configurations SET is_default = true WHERE id = $1`,
-          [id]
+          `UPDATE public.ca_interview_provider_configurations SET is_default = true WHERE id = $1`,
+          [id],
         );
       }
       await client.query('COMMIT');

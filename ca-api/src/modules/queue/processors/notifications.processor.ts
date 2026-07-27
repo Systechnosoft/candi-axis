@@ -9,10 +9,14 @@ export class NotificationsProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationsProcessor.name);
 
   async process(job: Job<NotificationJobPayload>) {
-    this.logger.debug(`Starting processing for job [${job.id}] in queue [${QUEUE_NAMES.NOTIFICATIONS}]`);
-    
+    this.logger.debug(
+      `Starting processing for job [${job.id}] in queue [${QUEUE_NAMES.NOTIFICATIONS}]`,
+    );
+
     try {
-      this.logger.log(`Mock Notification delivery to user [${job.data.recipientId}] template [${job.data.templateId}]`);
+      this.logger.log(
+        `Mock Notification delivery to user [${job.data.recipientId}] template [${job.data.templateId}]`,
+      );
     } catch (error) {
       this.logger.error(`Error processing job [${job.id}]:`, error);
       throw error;

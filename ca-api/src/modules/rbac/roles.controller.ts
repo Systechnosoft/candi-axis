@@ -28,8 +28,8 @@ export class RolesController {
   async getModules() {
     const res = await this.pool.query(
       `SELECT id, code, name, description, module_group, sort_order, is_platform_only 
-       FROM public.modules 
-       ORDER BY sort_order ASC`
+       FROM public.ca_modules 
+       ORDER BY sort_order ASC`,
     );
     return res.rows;
   }
@@ -40,8 +40,8 @@ export class RolesController {
     let query = `
       SELECT r.id, r.name, r.code, r.role_type, r.level, r.org_id, 
              r.is_system_role, r.is_editable, r.is_active,
-             (SELECT COUNT(*) FROM public.user_roles ur WHERE ur.role_id = r.id)::int as user_count
-      FROM public.roles r
+             (SELECT COUNT(*) FROM public.ca_user_roles ur WHERE ur.role_id = r.id)::int as user_count
+      FROM public.ca_roles r
       WHERE r.deleted_at IS NULL
     `;
     const params: any[] = [];
@@ -59,19 +59,20 @@ export class RolesController {
   async getRole(@Param('id') id: string) {
     const roleRes = await this.pool.query(
       `SELECT id, name, code, role_type, level, org_id, is_system_role, is_editable, is_active
-       FROM public.roles WHERE id = $1 AND deleted_at IS NULL`,
-      [id]
+       FROM public.ca_roles WHERE id = $1 AND deleted_at IS NULL`,
+      [id],
     );
-    if (roleRes.rows.length === 0) throw new NotFoundException('Role not found');
+    if (roleRes.rows.length === 0)
+      throw new NotFoundException('Role not found');
     const role = roleRes.rows[0];
 
     const permRes = await this.pool.query(
       `SELECT rp.module_id, m.code as module_code, m.name as module_name, 
               rp.can_read, rp.can_create, rp.can_update, rp.can_delete
-       FROM public.role_permissions rp
-       JOIN public.modules m ON m.id = rp.module_id
+       FROM public.ca_role_permissions rp
+       JOIN public.ca_modules m ON m.id = rp.module_id
        WHERE rp.role_id = $1`,
-      [id]
+      [id],
     );
     role.permissions = permRes.rows;
     return role;
@@ -84,24 +85,31 @@ export class RolesController {
     const code = data.name.toLowerCase().replace(/\s+/g, '_');
 
     const roleRes = await this.pool.query(
-      `INSERT INTO public.roles (name, code, role_type, level, org_id, is_system_role, is_editable, is_active)
+      `INSERT INTO public.ca_roles (name, code, role_type, level, org_id, is_system_role, is_editable, is_active)
        VALUES ($1, $2, $3, $4, $5, false, true, true)
        RETURNING id, name, code, role_type, level, org_id, is_system_role, is_editable, is_active`,
-      [data.name, code, data.role_type || 'CUSTOM', data.level || 10, orgId]
+      [data.name, code, data.role_type || 'CUSTOM', data.level || 10, orgId],
     );
     const newRole = roleRes.rows[0];
 
     if (data.permissions && Array.isArray(data.permissions)) {
       for (const p of data.permissions) {
         await this.pool.query(
-          `INSERT INTO public.role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
+          `INSERT INTO public.ca_role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
            VALUES ($1, $2, $3, $4, $5, $6)
            ON CONFLICT (role_id, module_id) DO UPDATE
            SET can_read = EXCLUDED.can_read,
                can_create = EXCLUDED.can_create,
                can_update = EXCLUDED.can_update,
                can_delete = EXCLUDED.can_delete`,
-          [newRole.id, p.module_id, !!p.can_read, !!p.can_create, !!p.can_update, !!p.can_delete]
+          [
+            newRole.id,
+            p.module_id,
+            !!p.can_read,
+            !!p.can_create,
+            !!p.can_update,
+            !!p.can_delete,
+          ],
         );
       }
     }
@@ -137,22 +145,29 @@ export class RolesController {
     if (updates.length > 0) {
       params.push(id);
       await this.pool.query(
-        `UPDATE public.roles SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-        params
+        `UPDATE public.ca_roles SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+        params,
       );
     }
 
     if (data.permissions && Array.isArray(data.permissions)) {
       for (const p of data.permissions) {
         await this.pool.query(
-          `INSERT INTO public.role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
+          `INSERT INTO public.ca_role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
            VALUES ($1, $2, $3, $4, $5, $6)
            ON CONFLICT (role_id, module_id) DO UPDATE
            SET can_read = EXCLUDED.can_read,
                can_create = EXCLUDED.can_create,
                can_update = EXCLUDED.can_update,
                can_delete = EXCLUDED.can_delete`,
-          [id, p.module_id, !!p.can_read, !!p.can_create, !!p.can_update, !!p.can_delete]
+          [
+            id,
+            p.module_id,
+            !!p.can_read,
+            !!p.can_create,
+            !!p.can_update,
+            !!p.can_delete,
+          ],
         );
       }
     }
@@ -164,8 +179,8 @@ export class RolesController {
   @RequireModule('roles', 'editor')
   async deleteRole(@Param('id') id: string) {
     await this.pool.query(
-      `UPDATE public.roles SET deleted_at = now() WHERE id = $1`,
-      [id]
+      `UPDATE public.ca_roles SET deleted_at = now() WHERE id = $1`,
+      [id],
     );
     return { success: true };
   }

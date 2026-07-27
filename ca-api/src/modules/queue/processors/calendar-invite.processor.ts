@@ -49,12 +49,20 @@ function foldIcsLine(line: string): string {
 
 function formatRoundType(roundType: string): string {
   switch (roundType) {
-    case 'tech1': return 'Technical Round 1';
-    case 'tech2': return 'Technical Round 2';
-    case 'screening': return 'Screening';
-    case 'manager': return 'Manager Round';
-    case 'hr': return 'HR Round';
-    default: return roundType ? roundType.charAt(0).toUpperCase() + roundType.slice(1) : 'Interview';
+    case 'tech1':
+      return 'Technical Round 1';
+    case 'tech2':
+      return 'Technical Round 2';
+    case 'screening':
+      return 'Screening';
+    case 'manager':
+      return 'Manager Round';
+    case 'hr':
+      return 'HR Round';
+    default:
+      return roundType
+        ? roundType.charAt(0).toUpperCase() + roundType.slice(1)
+        : 'Interview';
   }
 }
 
@@ -101,9 +109,10 @@ function buildDetailsBlock(
   location: string | null,
 ): string {
   const modeLabel = mode === 'online' ? 'Online' : 'Offline';
-  const locationLine = mode === 'offline' && location
-    ? `<li style="margin: 6px 0;"><strong>Location:</strong> ${location}</li>`
-    : '';
+  const locationLine =
+    mode === 'offline' && location
+      ? `<li style="margin: 6px 0;"><strong>Location:</strong> ${location}</li>`
+      : '';
   return `
     <ul style="padding-left: 20px; margin: 16px 0; font-size: 14px; color: #374151; font-family: Arial, sans-serif; line-height: 1.8;">
       <li style="margin: 6px 0;"><strong>Round Type:</strong> ${formatRoundType(roundType)}</li>
@@ -156,7 +165,17 @@ function buildCandidateEmailHtml(params: {
   note: string | undefined;
   orgName: string;
 }): string {
-  const { candidateName, jobTitle, roundType, durationMins, mode, location, meetingLink, note, orgName } = params;
+  const {
+    candidateName,
+    jobTitle,
+    roundType,
+    durationMins,
+    mode,
+    location,
+    meetingLink,
+    note,
+    orgName,
+  } = params;
   const details = buildDetailsBlock(roundType, durationMins, mode, location);
   const noteSection = buildNoteSection(note);
   const meetSection = buildMeetSection(mode, meetingLink);
@@ -192,7 +211,18 @@ function buildInterviewerEmailHtml(params: {
   note: string | undefined;
   orgName: string;
 }): string {
-  const { interviewerName, candidateName, jobTitle, roundType, durationMins, mode, location, meetingLink, note, orgName } = params;
+  const {
+    interviewerName,
+    candidateName,
+    jobTitle,
+    roundType,
+    durationMins,
+    mode,
+    location,
+    meetingLink,
+    note,
+    orgName,
+  } = params;
   const details = buildDetailsBlock(roundType, durationMins, mode, location);
   const noteSection = buildNoteSection(note);
   const meetSection = buildMeetSection(mode, meetingLink);
@@ -230,25 +260,37 @@ export class CalendarInviteProcessor extends WorkerHost {
   }
 
   async process(job: Job<SendCalendarInviteJobPayload>) {
-    this.logger.debug(`Starting processing calendar invite for job [${job.id}] in queue [${QUEUE_NAMES.CALENDAR_INVITES}]`);
-    
+    this.logger.debug(
+      `Starting processing calendar invite for job [${job.id}] in queue [${QUEUE_NAMES.CALENDAR_INVITES}]`,
+    );
+
     if (job.name === 'send-calendar-invite') {
       await this.handleSendCalendarInvite(job);
     } else {
-      this.logger.warn(`Unknown job name: ${job.name} in queue ${QUEUE_NAMES.CALENDAR_INVITES}`);
+      this.logger.warn(
+        `Unknown job name: ${job.name} in queue ${QUEUE_NAMES.CALENDAR_INVITES}`,
+      );
     }
   }
 
-  private async handleSendCalendarInvite(job: Job<SendCalendarInviteJobPayload>) {
-    const { interviewId, emailSubject, note, actorUserId, ccUserIds = [] } = job.data;
+  private async handleSendCalendarInvite(
+    job: Job<SendCalendarInviteJobPayload>,
+  ) {
+    const {
+      interviewId,
+      emailSubject,
+      note,
+      actorUserId,
+      ccUserIds = [],
+    } = job.data;
     const client = await this.pool.connect();
-    
+
     try {
       // 1. Fetch interview details (re-query to pick up any updated meeting_link from Google Meet)
       const interviewRes = await client.query(
         `SELECT id, application_id, round_no, round_type, scheduled_start_utc, duration_mins, mode, location, meeting_link, status 
-         FROM interviews WHERE id = $1 AND is_deleted = false`,
-        [interviewId]
+         FROM ca_interviews WHERE id = $1 AND is_deleted = false`,
+        [interviewId],
       );
       if (interviewRes.rows.length === 0) {
         throw new Error(`Interview not found or deleted: ${interviewId}`);
@@ -259,11 +301,11 @@ export class CalendarInviteProcessor extends WorkerHost {
       const appRes = await client.query(
         `SELECT cjs.candidate_id, cjs.job_posting_id, c.full_name as candidate_name, c.email as candidate_email,
                 jp.name as job_title, jp.jd_id
-         FROM candidate_job_stages cjs
-         JOIN candidates c ON cjs.candidate_id = c.id
-         JOIN job_postings jp ON cjs.job_posting_id = jp.id
+         FROM ca_candidate_job_stages cjs
+         JOIN ca_candidates c ON cjs.candidate_id = c.id
+         JOIN ca_job_postings jp ON cjs.job_posting_id = jp.id
          WHERE cjs.id = $1`,
-        [interview.application_id]
+        [interview.application_id],
       );
       if (appRes.rows.length === 0) {
         throw new Error(`Application not found for interview: ${interviewId}`);
@@ -273,17 +315,17 @@ export class CalendarInviteProcessor extends WorkerHost {
       // 3. Fetch interviewers
       const interviewersRes = await client.query(
         `SELECT u.id, u.full_name, u.email 
-         FROM users u
-         JOIN interview_assignments ia ON u.id = ia.interviewer_user_id
+         FROM ca_users u
+         JOIN ca_interview_assignments ia ON u.id = ia.interviewer_user_id
          WHERE ia.interview_id = $1 AND u.is_active = true AND u.is_deleted = false`,
-        [interviewId]
+        [interviewId],
       );
       const interviewers = interviewersRes.rows;
 
       // 4. Fetch recruiter/organizer (actor)
       const actorRes = await client.query(
-        `SELECT full_name, email, org_id FROM users WHERE id = $1 AND is_active = true AND is_deleted = false`,
-        [actorUserId]
+        `SELECT full_name, email, org_id FROM ca_users WHERE id = $1 AND is_active = true AND is_deleted = false`,
+        [actorUserId],
       );
       if (actorRes.rows.length === 0) {
         throw new Error(`Actor user not found: ${actorUserId}`);
@@ -294,8 +336,8 @@ export class CalendarInviteProcessor extends WorkerHost {
       let orgName = 'Recruitment Team';
       try {
         const orgRes = await client.query(
-          `SELECT name FROM organisations WHERE id = $1`,
-          [organizer.org_id]
+          `SELECT name FROM ca_organisations WHERE id = $1`,
+          [organizer.org_id],
         );
         if (orgRes.rows.length > 0 && orgRes.rows[0].name) {
           orgName = orgRes.rows[0].name;
@@ -308,36 +350,51 @@ export class CalendarInviteProcessor extends WorkerHost {
       let ccEmails: string[] = [];
       if (ccUserIds.length > 0) {
         const ccRes = await client.query(
-          `SELECT email FROM users WHERE id = ANY($1) AND is_active = true AND is_deleted = false`,
-          [ccUserIds]
+          `SELECT email FROM ca_users WHERE id = ANY($1) AND is_active = true AND is_deleted = false`,
+          [ccUserIds],
         );
-        ccEmails = ccRes.rows.map((r: { email: string }) => r.email).filter(Boolean);
+        ccEmails = ccRes.rows
+          .map((r: { email: string }) => r.email)
+          .filter(Boolean);
       }
 
       // 7. Fetch candidate resume from MinIO (for interviewer email attachment)
-      let resumeAttachment: { filename: string; content: Buffer; contentType: string } | null = null;
+      let resumeAttachment: {
+        filename: string;
+        content: Buffer;
+        contentType: string;
+      } | null = null;
       try {
         const resumeDoc = await client.query(
           `SELECT storage_bucket, storage_key, original_file_name, mime_type
-           FROM documents
+           FROM ca_documents
            WHERE entity_type = 'candidate' AND entity_id = $1 AND is_primary = true AND is_deleted = false
            ORDER BY created_at DESC LIMIT 1`,
-          [appData.candidate_id]
+          [appData.candidate_id],
         );
         if (resumeDoc.rows.length > 0) {
           const doc = resumeDoc.rows[0];
-          const fileBuffer = await this.storageService.downloadObject(doc.storage_bucket, doc.storage_key);
+          const fileBuffer = await this.storageService.downloadObject(
+            doc.storage_bucket,
+            doc.storage_key,
+          );
           resumeAttachment = {
             filename: doc.original_file_name || 'Candidate Resume.pdf',
             content: fileBuffer,
             contentType: doc.mime_type || 'application/pdf',
           };
-          this.logger.log(`Resume fetched for candidate ${appData.candidate_id}: ${doc.original_file_name}`);
+          this.logger.log(
+            `Resume fetched for candidate ${appData.candidate_id}: ${doc.original_file_name}`,
+          );
         } else {
-          this.logger.warn(`No primary resume found for candidate ${appData.candidate_id}. Interviewer email will be sent without attachment.`);
+          this.logger.warn(
+            `No primary resume found for candidate ${appData.candidate_id}. Interviewer email will be sent without attachment.`,
+          );
         }
       } catch (resumeErr: any) {
-        this.logger.warn(`Failed to fetch resume for candidate ${appData.candidate_id}: ${resumeErr.message}. Continuing without attachment.`);
+        this.logger.warn(
+          `Failed to fetch resume for candidate ${appData.candidate_id}: ${resumeErr.message}. Continuing without attachment.`,
+        );
       }
 
       // 8. Build email templates
@@ -363,11 +420,16 @@ export class CalendarInviteProcessor extends WorkerHost {
       const organizerEmail = gmailUser ? gmailUser.trim() : organizer.email;
       const organizerCN = organizer.full_name || 'Recruitment Team';
 
-      const locationText = interview.mode === 'online'
-        ? (interview.meeting_link || 'Google Meet')
-        : (interview.location || 'Office');
+      const locationText =
+        interview.mode === 'online'
+          ? interview.meeting_link || 'Google Meet'
+          : interview.location || 'Office';
 
-      const icsDescriptionText = stripHtml(candidateEmailHtml) + (interview.meeting_link ? `\n\nJoin Google Meet: ${interview.meeting_link}` : '');
+      const icsDescriptionText =
+        stripHtml(candidateEmailHtml) +
+        (interview.meeting_link
+          ? `\n\nJoin Google Meet: ${interview.meeting_link}`
+          : '');
 
       const icsLines = [
         'BEGIN:VCALENDAR',
@@ -391,14 +453,16 @@ export class CalendarInviteProcessor extends WorkerHost {
         icsLines.push(
           `URL;CHARSET=UTF-8:${escapeIcsText(interview.meeting_link)}`,
           'X-MICROSOFT-ONLINEMEETING:TRUE',
-          `X-MICROSOFT-CONFERENCELINK:${escapeIcsText(interview.meeting_link)}`
+          `X-MICROSOFT-CONFERENCELINK:${escapeIcsText(interview.meeting_link)}`,
         );
       }
 
       // Add interviewers as ICS attendees
       for (const int of interviewers) {
         if (int.email) {
-          icsLines.push(`ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN="${escapeIcsText(int.full_name)}":mailto:${int.email}`);
+          icsLines.push(
+            `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN="${escapeIcsText(int.full_name)}":mailto:${int.email}`,
+          );
         }
       }
 
@@ -407,7 +471,7 @@ export class CalendarInviteProcessor extends WorkerHost {
         'SEQUENCE:0',
         'TRANSP:OPAQUE',
         'END:VEVENT',
-        'END:VCALENDAR'
+        'END:VCALENDAR',
       );
 
       const icsContent = icsLines.map(foldIcsLine).join('\r\n');
@@ -426,12 +490,19 @@ export class CalendarInviteProcessor extends WorkerHost {
               content: icsContent,
             },
           });
-          this.logger.log(`Candidate email sent to: ${appData.candidate_email}`);
+          this.logger.log(
+            `Candidate email sent to: ${appData.candidate_email}`,
+          );
         } catch (candidateEmailErr: any) {
-          this.logger.error(`Failed to send candidate email: ${candidateEmailErr.message}`, candidateEmailErr.stack);
+          this.logger.error(
+            `Failed to send candidate email: ${candidateEmailErr.message}`,
+            candidateEmailErr.stack,
+          );
         }
       } else {
-        this.logger.warn(`No candidate email address found for application ${interview.application_id}. Skipping candidate email.`);
+        this.logger.warn(
+          `No candidate email address found for application ${interview.application_id}. Skipping candidate email.`,
+        );
       }
 
       // 10b. Send Interviewer email(s) — each interviewer gets a personalized email with resume attachment
@@ -451,7 +522,9 @@ export class CalendarInviteProcessor extends WorkerHost {
           orgName,
         });
 
-        const interviewerAttachments = resumeAttachment ? [resumeAttachment] : [];
+        const interviewerAttachments = resumeAttachment
+          ? [resumeAttachment]
+          : [];
 
         try {
           await this.emailService.sendEmail({
@@ -466,9 +539,14 @@ export class CalendarInviteProcessor extends WorkerHost {
             },
             attachments: interviewerAttachments,
           });
-          this.logger.log(`Interviewer email sent to: ${interviewer.email}${resumeAttachment ? ' (with resume)' : ' (no resume attached)'}`);
+          this.logger.log(
+            `Interviewer email sent to: ${interviewer.email}${resumeAttachment ? ' (with resume)' : ' (no resume attached)'}`,
+          );
         } catch (intEmailErr: any) {
-          this.logger.error(`Failed to send interviewer email to ${interviewer.email}: ${intEmailErr.message}`, intEmailErr.stack);
+          this.logger.error(
+            `Failed to send interviewer email to ${interviewer.email}: ${intEmailErr.message}`,
+            intEmailErr.stack,
+          );
         }
       }
 
@@ -489,18 +567,18 @@ export class CalendarInviteProcessor extends WorkerHost {
 
       // 11. Update sub_stage to interview_scheduled
       await client.query(
-        `UPDATE public.candidate_job_stages 
+        `UPDATE public.ca_candidate_job_stages 
          SET sub_stage = 'interview_scheduled', updated_at = now()
          WHERE id = $1`,
-        [interview.application_id]
+        [interview.application_id],
       );
 
       // Update interview outlook status
       await client.query(
-        `UPDATE interviews 
+        `UPDATE ca_interviews 
          SET outlook_event_id = $1, outlook_status = 'created', updated_at = now() 
          WHERE id = $2`,
-        [inviteUid, interviewId]
+        [inviteUid, interviewId],
       );
 
       // 12. Audit Log
@@ -520,19 +598,25 @@ export class CalendarInviteProcessor extends WorkerHost {
           meeting_link: interview.meeting_link,
           resume_attached: !!resumeAttachment,
         },
-        reasonContext: 'Interview scheduled. Candidate email (no attachment) and Interviewer email(s) (with resume) sent.',
+        reasonContext:
+          'Interview scheduled. Candidate email (no attachment) and Interviewer email(s) (with resume) sent.',
       });
 
-      this.logger.log(`Successfully processed calendar invite for interview: ${interviewId}`);
+      this.logger.log(
+        `Successfully processed calendar invite for interview: ${interviewId}`,
+      );
     } catch (err: any) {
-      this.logger.error(`Failed processing calendar invite for interview ${interviewId}: ${err.message}`, err.stack);
-      
+      this.logger.error(
+        `Failed processing calendar invite for interview ${interviewId}: ${err.message}`,
+        err.stack,
+      );
+
       try {
         await client.query(
-          `UPDATE interviews SET outlook_status = 'failed', updated_at = now() WHERE id = $1`,
-          [interviewId]
+          `UPDATE ca_interviews SET outlook_status = 'failed', updated_at = now() WHERE id = $1`,
+          [interviewId],
         );
-        
+
         await this.auditService.log({
           entityType: 'interview',
           entityId: interviewId,
@@ -543,10 +627,14 @@ export class CalendarInviteProcessor extends WorkerHost {
             outlook_status: 'failed',
             error: err.message,
           },
-          reasonContext: 'Failed to process and send interview calendar invite via dedicated calendar-invites BullMQ job.',
+          reasonContext:
+            'Failed to process and send interview calendar invite via dedicated calendar-invites BullMQ job.',
         });
       } catch (dbErr: any) {
-        this.logger.error(`Failed to record scheduling failure in DB: ${dbErr.message}`, dbErr.stack);
+        this.logger.error(
+          `Failed to record scheduling failure in DB: ${dbErr.message}`,
+          dbErr.stack,
+        );
       }
 
       throw err;

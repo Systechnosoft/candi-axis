@@ -9,4 +9,3 @@ import { RolesController } from './roles.controller';
   exports: [RbacService, RbacGuard],
 })
 export class RbacModule {}
-

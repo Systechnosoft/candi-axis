@@ -10,17 +10,35 @@ export const DEFAULT_WEIGHTS: Record<string, number> = {
   social: 5,
 };
 
-const commonActionVerbs = ['lead', 'manage', 'develop', 'design', 'build', 'conduct', 'create', 'improve', 'drive', 'increase'];
-const commonFillerWords = ['very', 'really', 'actually', 'basically', 'just', 'etc'];
+const commonActionVerbs = [
+  'lead',
+  'manage',
+  'develop',
+  'design',
+  'build',
+  'conduct',
+  'create',
+  'improve',
+  'drive',
+  'increase',
+];
+const commonFillerWords = [
+  'very',
+  'really',
+  'actually',
+  'basically',
+  'just',
+  'etc',
+];
 
 function countActionVerbs(text: string): number {
   const tokens = text.toLowerCase().split(/\W+/);
-  return tokens.filter(tok => commonActionVerbs.includes(tok)).length;
+  return tokens.filter((tok) => commonActionVerbs.includes(tok)).length;
 }
 
 function countFillerWords(text: string): number {
   const tokens = text.toLowerCase().split(/\W+/);
-  return tokens.filter(tok => commonFillerWords.includes(tok)).length;
+  return tokens.filter((tok) => commonFillerWords.includes(tok)).length;
 }
 
 function computeFleschReadingEase(text: string): number {
@@ -47,15 +65,15 @@ export function calculateProfileScore(
   socialLinks: any[],
   projects: any[],
   tags: any[],
-  customWeights?: Record<string, number>
+  customWeights?: Record<string, number>,
 ): number {
   const activeWeights = customWeights || DEFAULT_WEIGHTS;
 
   // 1. Text extraction
   const summaryText = candidate.profile_summary || '';
   const fullText = [summaryText]
-    .concat(employments?.map(e => e.responsibilities_summary || '') || [])
-    .concat(projects?.map(p => p.description || '') || [])
+    .concat(employments?.map((e) => e.responsibilities_summary || '') || [])
+    .concat(projects?.map((p) => p.description || '') || [])
     .join('\n');
 
   const readabilityScore = computeFleschReadingEase(fullText);
@@ -63,11 +81,17 @@ export function calculateProfileScore(
   const fillerWordsCount = countFillerWords(fullText);
   const actionVerbCount = countActionVerbs(fullText);
 
-  const hasLinkedIn = socialLinks?.some(link => link.url && link.url.includes('linkedin.com')) || false;
-  const hasGitHub = socialLinks?.some(link => link.url && link.url.includes('github.com')) || false;
+  const hasLinkedIn =
+    socialLinks?.some(
+      (link) => link.url && link.url.includes('linkedin.com'),
+    ) || false;
+  const hasGitHub =
+    socialLinks?.some((link) => link.url && link.url.includes('github.com')) ||
+    false;
 
   const promotionsCount = (() => {
-    const titles = employments?.map(e => e.job_title?.toLowerCase() || '') || [];
+    const titles =
+      employments?.map((e) => e.job_title?.toLowerCase() || '') || [];
     let count = 0;
     for (let i = 1; i < titles.length; i++) {
       if (titles[i] !== titles[i - 1]) count++;
@@ -76,10 +100,11 @@ export function calculateProfileScore(
   })();
 
   // 2. Score calculations for each component:
-  
+
   // Contact details score
   let contactScore = 0;
-  if (isPresent(candidate.first_name) && isPresent(candidate.last_name)) contactScore += 0.4;
+  if (isPresent(candidate.first_name) && isPresent(candidate.last_name))
+    contactScore += 0.4;
   if (isPresent(candidate.email)) contactScore += 0.2;
   if (isPresent(candidate.phone)) contactScore += 0.2;
   if (isPresent(candidate.location)) contactScore += 0.2;
@@ -101,14 +126,21 @@ export function calculateProfileScore(
   if (employments) {
     const roles = employments.length;
     expScore += Math.min(0.4, roles * 0.1);
-    const senior = employments.some(e => {
+    const senior = employments.some((e) => {
       const t = e.job_title?.toLowerCase() || '';
-      return t.includes('senior') || t.includes('manager') || t.includes('lead') || t.includes('director');
+      return (
+        t.includes('senior') ||
+        t.includes('manager') ||
+        t.includes('lead') ||
+        t.includes('director')
+      );
     });
     if (senior) expScore += 0.1;
   }
   // Penalize based on gap details if present
-  const gapCount = candidate.gap_details ? candidate.gap_details.split('; ').length : 0;
+  const gapCount = candidate.gap_details
+    ? candidate.gap_details.split('; ').length
+    : 0;
   if (gapCount > 0) {
     expScore -= 0.1 * gapCount;
   }
@@ -140,9 +172,12 @@ export function calculateProfileScore(
   let achScore = 0;
   let numMetrics = 0;
   let totalBullets = 0;
-  employments?.forEach(e => {
+  employments?.forEach((e) => {
     if (!e.responsibilities_summary) return;
-    const bullets = e.responsibilities_summary.split(/[\r\n]+/).map((s: string) => s.trim()).filter(Boolean);
+    const bullets = e.responsibilities_summary
+      .split(/[\r\n]+/)
+      .map((s: string) => s.trim())
+      .filter(Boolean);
     bullets.forEach((b: string) => {
       totalBullets++;
       if (/\d+%|\d+\s*percent|\$\d+/i.test(b)) numMetrics++;
@@ -159,7 +194,8 @@ export function calculateProfileScore(
   const grammarScore = Math.max(0, 1 - grammarErrorsCount / 10);
   const readabilityBonus = Math.min(1, readabilityScore / 100);
   const fillerPenalty = Math.max(0, 1 - fillerWordsCount * 0.05);
-  const qualityScore = grammarScore * 0.4 + readabilityBonus * 0.4 + fillerPenalty * 0.2;
+  const qualityScore =
+    grammarScore * 0.4 + readabilityBonus * 0.4 + fillerPenalty * 0.2;
 
   // Social score
   let socialScore = 0;

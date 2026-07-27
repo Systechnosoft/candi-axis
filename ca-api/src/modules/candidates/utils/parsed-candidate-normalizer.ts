@@ -2,7 +2,10 @@ import { Logger } from '@nestjs/common';
 
 const logger = new Logger('ParsedCandidateNormalizer');
 
-export function normalizeResumeDateToPgDate(value: string | null | undefined, isEndDate = false): string | null {
+export function normalizeResumeDateToPgDate(
+  value: string | null | undefined,
+  isEndDate = false,
+): string | null {
   if (!value) return null;
 
   const trimmed = value.trim();
@@ -16,18 +19,29 @@ export function normalizeResumeDateToPgDate(value: string | null | undefined, is
 
   // Common month names
   const months: Record<string, string> = {
-    jan: '01', january: '01',
-    feb: '02', february: '02',
-    mar: '03', march: '03',
-    apr: '04', april: '04',
+    jan: '01',
+    january: '01',
+    feb: '02',
+    february: '02',
+    mar: '03',
+    march: '03',
+    apr: '04',
+    april: '04',
     may: '05',
-    jun: '06', june: '06',
-    jul: '07', july: '07',
-    aug: '08', august: '08',
-    sep: '09', september: '09',
-    oct: '10', october: '10',
-    nov: '11', november: '11',
-    dec: '12', december: '12',
+    jun: '06',
+    june: '06',
+    jul: '07',
+    july: '07',
+    aug: '08',
+    august: '08',
+    sep: '09',
+    september: '09',
+    oct: '10',
+    october: '10',
+    nov: '11',
+    november: '11',
+    dec: '12',
+    december: '12',
   };
 
   try {
@@ -86,29 +100,32 @@ export function normalizeResumeDateToPgDate(value: string | null | undefined, is
 
 export function normalizeYear(value: any): string | number | null {
   if (value === null || value === undefined) return null;
-  
+
   if (typeof value === 'number') return value;
-  
+
   const str = String(value).trim();
   if (!str) return null;
 
   return str;
 }
 
-export function splitDegreeAndField(degree: string | null): { degree: string | null; field_of_study: string | null } {
+export function splitDegreeAndField(degree: string | null): {
+  degree: string | null;
+  field_of_study: string | null;
+} {
   if (!degree) return { degree: null, field_of_study: null };
 
   const trimmed = degree.trim();
-  
+
   // Common separators: "in", " - ", ": ", " | ", ","
   const separators = [' in ', ' - ', ': ', ' | ', ', '];
-  
+
   for (const sep of separators) {
     if (trimmed.includes(sep)) {
       const parts = trimmed.split(sep);
       const d = parts[0].trim();
       const f = parts.slice(1).join(sep).trim();
-      
+
       if (d && f) {
         return { degree: d, field_of_study: f };
       }
@@ -139,7 +156,13 @@ export function normalizeCandidateChildData(data: any) {
       const normalizedEnd = normalizeResumeDateToPgDate(endDate, true);
 
       // If end date is a current keyword, normalizedEnd is null and isCurrent is true
-      if (!normalizedEnd && endDate && ['present', 'current', 'till date', 'ongoing', 'now'].includes(endDate.trim().toLowerCase())) {
+      if (
+        !normalizedEnd &&
+        endDate &&
+        ['present', 'current', 'till date', 'ongoing', 'now'].includes(
+          endDate.trim().toLowerCase(),
+        )
+      ) {
         isCurrent = true;
       }
 
@@ -199,27 +222,32 @@ export function normalizeCandidateChildData(data: any) {
       return {
         ...cert,
         issued_on: normalizeResumeDateToPgDate(cert.issued_on),
-        expiry_on: cert.does_not_expire ? null : normalizeResumeDateToPgDate(cert.expiry_on, true),
+        expiry_on: cert.does_not_expire
+          ? null
+          : normalizeResumeDateToPgDate(cert.expiry_on, true),
       };
     });
   }
 
   if (result.projects) {
-    result.projects = result.projects.map((proj: any) => {
-      let tech = proj.technologies;
-      if (Array.isArray(tech)) {
-        tech = tech.join(', ');
-      }
-      return {
-        ...proj,
-        title: proj.title || proj.name || '',
-        description: proj.description || null,
-        technologies: tech || null,
-        duration: proj.duration || null,
-        role: proj.role || null,
-        project_url: proj.project_url || proj.project_link || proj.url || null,
-      };
-    }).filter((proj: any) => proj.title && proj.title.trim() !== '');
+    result.projects = result.projects
+      .map((proj: any) => {
+        let tech = proj.technologies;
+        if (Array.isArray(tech)) {
+          tech = tech.join(', ');
+        }
+        return {
+          ...proj,
+          title: proj.title || proj.name || '',
+          description: proj.description || null,
+          technologies: tech || null,
+          duration: proj.duration || null,
+          role: proj.role || null,
+          project_url:
+            proj.project_url || proj.project_link || proj.url || null,
+        };
+      })
+      .filter((proj: any) => proj.title && proj.title.trim() !== '');
   }
 
   return result;

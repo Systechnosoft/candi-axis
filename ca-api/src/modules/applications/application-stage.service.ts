@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../../infrastructure/database/database.module';
 import { AuditService } from '../audit/audit.service';
@@ -35,7 +30,7 @@ export class ApplicationStageService {
 
       // Fetch current stage and org_id
       const currentRes = await client.query(
-        'SELECT stage, candidate_id, job_posting_id, org_id FROM public.candidate_job_stages WHERE id = $1 AND deleted_at IS NULL',
+        'SELECT stage, candidate_id, job_posting_id, org_id FROM public.ca_candidate_job_stages WHERE id = $1 AND deleted_at IS NULL',
         [applicationId],
       );
       if (currentRes.rows.length === 0) {
@@ -44,10 +39,11 @@ export class ApplicationStageService {
       const application = currentRes.rows[0];
       const fromStage = application.stage as ApplicationStage;
 
-      const toSubStage = toStage === 'interviewing' ? 'interview_to_be_scheduled' : null;
-      // Update candidate_job_stages
+      const toSubStage =
+        toStage === 'interviewing' ? 'interview_to_be_scheduled' : null;
+      // Update ca_candidate_job_stages
       const updateQuery = `
-        UPDATE public.candidate_job_stages
+        UPDATE public.ca_candidate_job_stages
         SET stage = $1, 
             stage_reason = $2, 
             sub_stage = $3,
@@ -55,7 +51,12 @@ export class ApplicationStageService {
         WHERE id = $4
         RETURNING *
       `;
-      const updateRes = await client.query(updateQuery, [toStage, reason || null, toSubStage, applicationId]);
+      const updateRes = await client.query(updateQuery, [
+        toStage,
+        reason || null,
+        toSubStage,
+        applicationId,
+      ]);
       const updatedApp = updateRes.rows[0];
 
       // Audit log
@@ -79,21 +80,21 @@ export class ApplicationStageService {
       if (toStage === 'screening') {
         const jpRes = await client.query(
           'SELECT id, jd_id, name, interviewer_ids FROM public.job_postings WHERE id = $1',
-          [application.job_posting_id]
+          [application.job_posting_id],
         );
         const jp = jpRes.rows[0];
 
         if (jp) {
           jpName = jp.name;
           const candRes = await client.query(
-            'SELECT full_name FROM public.candidates WHERE id = $1',
-            [application.candidate_id]
+            'SELECT full_name FROM public.ca_candidates WHERE id = $1',
+            [application.candidate_id],
           );
           candidateName = candRes.rows[0]?.full_name || 'Candidate';
 
           const jdRes = await client.query(
             'SELECT title FROM public.job_descriptions WHERE id = $1',
-            [jp.jd_id]
+            [jp.jd_id],
           );
           jobTitle = jdRes.rows[0]?.title || 'Job Description';
 
@@ -102,24 +103,24 @@ export class ApplicationStageService {
             // Get all active interviewers in this organization
             const interviewerRes = await client.query(
               `SELECT DISTINCT u.id
-               FROM users u
-               JOIN user_roles ur ON u.id = ur.user_id
-               JOIN roles r ON r.id = ur.role_id
+               FROM ca_users u
+               JOIN ca_user_roles ur ON u.id = ur.user_id
+               JOIN ca_roles r ON r.id = ur.role_id
                WHERE u.is_active = true 
                  AND u.is_deleted = false
                  AND u.status = 'active'
                  AND r.code = 'interviewer'
                  AND u.org_id = $1`,
-              [application.org_id]
+              [application.org_id],
             );
-            assigneeIds = interviewerRes.rows.map(r => r.id);
+            assigneeIds = interviewerRes.rows.map((r) => r.id);
           }
 
           if (assigneeIds.length > 0) {
             // Insert task
             const taskCode = `TSK-${Math.floor(100000 + Math.random() * 900000)}`;
             const taskInsertRes = await client.query(
-              `INSERT INTO public.tasks (
+              `INSERT INTO public.ca_tasks (
                 org_id, name, assignee, jd_id, candidate_id, application_id, jobposting_id, status, is_active, task_code
               ) VALUES ($1, $2, $3::uuid[], $4, $5, $6, $7, 'new', true, $8)
                RETURNING task_id`,
@@ -132,14 +133,14 @@ export class ApplicationStageService {
                 applicationId,
                 application.job_posting_id,
                 taskCode,
-              ]
+              ],
             );
             newTaskId = taskInsertRes.rows[0]?.task_id;
 
             // Fetch assignee details for notification emails
             const usersRes = await client.query(
-              `SELECT email, full_name FROM public.users WHERE id = ANY($1::uuid[])`,
-              [assigneeIds]
+              `SELECT email, full_name FROM public.ca_users WHERE id = ANY($1::uuid[])`,
+              [assigneeIds],
             );
             assigneeEmails = usersRes.rows;
           }
@@ -181,13 +182,17 @@ export class ApplicationStageService {
             </div>
           `;
 
-          this.emailService.sendEmail({
-            to: interviewer.email,
-            subject: `Action Required: Screening Review for ${candidateName}`,
-            html: emailHtml,
-          }).catch(err => {
-            this.logger.error(`Failed to send screening email to ${interviewer.email}: ${err.message}`);
-          });
+          this.emailService
+            .sendEmail({
+              to: interviewer.email,
+              subject: `Action Required: Screening Review for ${candidateName}`,
+              html: emailHtml,
+            })
+            .catch((err) => {
+              this.logger.error(
+                `Failed to send screening email to ${interviewer.email}: ${err.message}`,
+              );
+            });
         }
       }
 
@@ -199,7 +204,10 @@ export class ApplicationStageService {
       };
     } catch (err) {
       await client.query('ROLLBACK');
-      this.logger.error(`Failed to update application stage: ${err.message}`, err.stack);
+      this.logger.error(
+        `Failed to update application stage: ${err.message}`,
+        err.stack,
+      );
       throw err;
     } finally {
       client.release();

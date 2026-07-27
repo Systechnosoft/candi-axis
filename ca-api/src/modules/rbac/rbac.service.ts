@@ -15,7 +15,9 @@ const LEVEL_RANK: Record<AccessLevel, number> = {
 export class RbacService {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
-  async getUserModuleAccess(userId: string): Promise<Record<string, AccessLevel>> {
+  async getUserModuleAccess(
+    userId: string,
+  ): Promise<Record<string, AccessLevel>> {
     const result = await this.pool.query(
       `SELECT m.code,
          CASE 
@@ -24,9 +26,9 @@ export class RbacService {
            WHEN BOOL_OR(rp.can_read) THEN 'viewer'
            ELSE 'deny'
          END as access_level
-       FROM user_roles ur
-       JOIN role_permissions rp ON rp.role_id = ur.role_id
-       JOIN modules m ON m.id = rp.module_id
+       FROM ca_user_roles ur
+       JOIN ca_role_permissions rp ON rp.role_id = ur.role_id
+       JOIN ca_modules m ON m.id = rp.module_id
        WHERE ur.user_id = $1
        GROUP BY m.code`,
       [userId],

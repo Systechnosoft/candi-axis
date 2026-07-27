@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
 
-export type LinkType = 'linkedin' | 'github' | 'portfolio' | 'website' | 'other';
+export type LinkType =
+  | 'linkedin'
+  | 'github'
+  | 'portfolio'
+  | 'website'
+  | 'other';
 
 export interface ExtractedLink {
   type: LinkType;
@@ -28,17 +33,24 @@ export class PdfLinkAnnotatorService {
           try {
             // Extract annotations from the page
             const annotations = await pageData.getAnnotations();
-            
+
             // Look for link annotations
             for (const annotation of annotations) {
               let url = annotation.url || annotation.unsafeUrl;
-              
+
               if (!url && annotation.uri) {
                 url = annotation.uri;
               }
-              
-              if (!url && annotation.dest && typeof annotation.dest === 'string') {
-                if (annotation.dest.toLowerCase().startsWith('http') || annotation.dest.toLowerCase().startsWith('www.')) {
+
+              if (
+                !url &&
+                annotation.dest &&
+                typeof annotation.dest === 'string'
+              ) {
+                if (
+                  annotation.dest.toLowerCase().startsWith('http') ||
+                  annotation.dest.toLowerCase().startsWith('www.')
+                ) {
                   url = annotation.dest;
                 }
               }
@@ -46,7 +58,11 @@ export class PdfLinkAnnotatorService {
               if (!url) {
                 for (const key of Object.keys(annotation)) {
                   const val = annotation[key];
-                  if (typeof val === 'string' && (val.toLowerCase().startsWith('http://') || val.toLowerCase().startsWith('https://'))) {
+                  if (
+                    typeof val === 'string' &&
+                    (val.toLowerCase().startsWith('http://') ||
+                      val.toLowerCase().startsWith('https://'))
+                  ) {
                     url = val;
                     break;
                   }
@@ -61,7 +77,7 @@ export class PdfLinkAnnotatorService {
               }
             }
           } catch (e) {
-             // Ignoring single page annotation errors
+            // Ignoring single page annotation errors
           }
 
           // Return standard text content extraction to not break pdf-parse
@@ -70,8 +86,11 @@ export class PdfLinkAnnotatorService {
             disableCombineTextItems: false,
           };
 
-          return pageData.getTextContent(render_options).then(function (textContent: any) {
-            let lastY, text = '';
+          return pageData.getTextContent(render_options).then(function (
+            textContent: any,
+          ) {
+            let lastY,
+              text = '';
             for (const item of textContent.items) {
               if (lastY == item.transform[5] || !lastY) {
                 text += item.str;
@@ -86,15 +105,19 @@ export class PdfLinkAnnotatorService {
       };
 
       await pdfParse(pdfBuffer, options);
-      
+
       return this.normalizeAndDedupeLinks(rawLinks);
     } catch (error) {
-      this.logger.warn(`Failed to extract PDF annotations: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn(
+        `Failed to extract PDF annotations: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return []; // Return empty array on failure instead of failing the job
     }
   }
 
-  public normalizeAndDedupeLinks(rawLinks: Array<{ url: string; label?: string }>): ExtractedLink[] {
+  public normalizeAndDedupeLinks(
+    rawLinks: Array<{ url: string; label?: string }>,
+  ): ExtractedLink[] {
     const uniqueMap = new Map<string, ExtractedLink>();
 
     for (const raw of rawLinks) {
@@ -108,7 +131,10 @@ export class PdfLinkAnnotatorService {
 
       if (url.toLowerCase().startsWith('www.')) {
         url = 'https://' + url;
-      } else if (!url.toLowerCase().startsWith('http://') && !url.toLowerCase().startsWith('https://')) {
+      } else if (
+        !url.toLowerCase().startsWith('http://') &&
+        !url.toLowerCase().startsWith('https://')
+      ) {
         // Assume https for bare domains if they look like a valid domain, though PDF annotations typically include proto.
         url = 'https://' + url;
       }
@@ -140,12 +166,12 @@ export class PdfLinkAnnotatorService {
     if (lowerUrl.includes('github.com') || lowerLabel.includes('github')) {
       return 'github';
     }
-    
+
     // Check for common portfolio terms
     if (
-      lowerUrl.includes('portfolio') || 
-      lowerLabel.includes('portfolio') || 
-      lowerUrl.includes('behance.net') || 
+      lowerUrl.includes('portfolio') ||
+      lowerLabel.includes('portfolio') ||
+      lowerUrl.includes('behance.net') ||
       lowerUrl.includes('dribbble.com')
     ) {
       return 'portfolio';
@@ -153,9 +179,9 @@ export class PdfLinkAnnotatorService {
 
     // Heuristics for personal websites vs "other"
     if (
-      lowerLabel.includes('website') || 
+      lowerLabel.includes('website') ||
       lowerLabel.includes('blog') ||
-      lowerUrl.endsWith('.dev') || 
+      lowerUrl.endsWith('.dev') ||
       lowerUrl.endsWith('.me')
     ) {
       return 'website';

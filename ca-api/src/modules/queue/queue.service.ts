@@ -9,12 +9,16 @@ export class QueueService {
   private readonly logger = new Logger(QueueService.name);
 
   constructor(
-    @InjectQueue(QUEUE_NAMES.RESUME_PARSING) private readonly resumeParsingQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.RESUME_PARSING)
+    private readonly resumeParsingQueue: Queue,
     @InjectQueue(QUEUE_NAMES.AI_RATING) private readonly aiRatingQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.NOTIFICATIONS) private readonly notificationsQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.NOTIFICATIONS)
+    private readonly notificationsQueue: Queue,
     @InjectQueue(QUEUE_NAMES.REMINDERS) private readonly remindersQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.MAINTENANCE) private readonly maintenanceQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.CALENDAR_INVITES) private readonly calendarInvitesQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.MAINTENANCE)
+    private readonly maintenanceQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.CALENDAR_INVITES)
+    private readonly calendarInvitesQueue: Queue,
   ) {}
 
   /**
@@ -22,13 +26,20 @@ export class QueueService {
    */
   private getQueue(queueName: QueueName): Queue {
     switch (queueName) {
-      case QUEUE_NAMES.RESUME_PARSING: return this.resumeParsingQueue;
-      case QUEUE_NAMES.AI_RATING: return this.aiRatingQueue;
-      case QUEUE_NAMES.NOTIFICATIONS: return this.notificationsQueue;
-      case QUEUE_NAMES.REMINDERS: return this.remindersQueue;
-      case QUEUE_NAMES.MAINTENANCE: return this.maintenanceQueue;
-      case QUEUE_NAMES.CALENDAR_INVITES: return this.calendarInvitesQueue;
-      default: throw new Error(`Queue ${queueName} is not registered.`);
+      case QUEUE_NAMES.RESUME_PARSING:
+        return this.resumeParsingQueue;
+      case QUEUE_NAMES.AI_RATING:
+        return this.aiRatingQueue;
+      case QUEUE_NAMES.NOTIFICATIONS:
+        return this.notificationsQueue;
+      case QUEUE_NAMES.REMINDERS:
+        return this.remindersQueue;
+      case QUEUE_NAMES.MAINTENANCE:
+        return this.maintenanceQueue;
+      case QUEUE_NAMES.CALENDAR_INVITES:
+        return this.calendarInvitesQueue;
+      default:
+        throw new Error(`Queue ${queueName} is not registered.`);
     }
   }
 
@@ -39,10 +50,10 @@ export class QueueService {
     queueName: QueueName,
     jobName: string,
     payload: T,
-    options?: JobsOptions
+    options?: JobsOptions,
   ) {
     const queue = this.getQueue(queueName);
-    
+
     // Merge provided options over default MVP options.
     const jobOptions: JobsOptions = {
       ...DEFAULT_JOB_OPTIONS,
@@ -52,10 +63,15 @@ export class QueueService {
     try {
       this.logger.debug(`Enqueueing job [${jobName}] to queue [${queueName}]`);
       const job = await queue.add(jobName, payload, jobOptions);
-      this.logger.log(`Successfully enqueued job [${job.id}] to [${queueName}]`);
+      this.logger.log(
+        `Successfully enqueued job [${job.id}] to [${queueName}]`,
+      );
       return job;
     } catch (error) {
-      this.logger.error(`Failed to enqueue job [${jobName}] to [${queueName}]:`, error);
+      this.logger.error(
+        `Failed to enqueue job [${jobName}] to [${queueName}]:`,
+        error,
+      );
       throw error;
     }
   }

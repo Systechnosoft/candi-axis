@@ -32,39 +32,44 @@ export class JobPostingsService {
       cleanedCode = this.cleanText(createDto.code);
       if (cleanedCode) {
         const existingCode = await this.pool.query(
-          `SELECT id FROM job_postings WHERE code = $1`,
-          [cleanedCode]
+          `SELECT id FROM ca_job_postings WHERE code = $1`,
+          [cleanedCode],
         );
         if (existingCode.rows.length > 0) {
-          throw new BadRequestException(`A Job Posting with ID/code "${cleanedCode}" already exists.`);
+          throw new BadRequestException(
+            `A Job Posting with ID/code "${cleanedCode}" already exists.`,
+          );
         }
       }
     }
 
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      `SELECT org_id FROM public.ca_users WHERE id = $1`,
+      [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
       const defaultOrgRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
-      orgId = defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
+      orgId =
+        defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
     }
 
     try {
       // Check if jd_id exists and isn't already linked (since jd_id is UNIQUE in job_postings schema)
       const existingJd = await this.pool.query(
-        `SELECT id FROM job_postings WHERE jd_id = $1`,
-        [createDto.jd_id]
+        `SELECT id FROM ca_job_postings WHERE jd_id = $1`,
+        [createDto.jd_id],
       );
       if (existingJd.rows.length > 0) {
-        throw new BadRequestException('A Job Posting already exists for this Job Description.');
+        throw new BadRequestException(
+          'A Job Posting already exists for this Job Description.',
+        );
       }
 
       const result = await this.pool.query(
-        `INSERT INTO job_postings (
+        `INSERT INTO ca_job_postings (
           org_id, code, name, description, jd_id, is_active, created_by, updated_by, hr_ids, interviewer_ids
         ) VALUES ($1, COALESCE($2, 'JP-' || lpad(nextval('job_posting_code_seq')::text, 3, '0')), $3, $4, $5, $6, $7, $7, $8, $9) 
          RETURNING *`,
@@ -96,7 +101,9 @@ export class JobPostingsService {
     } catch (error: any) {
       if (error.status) throw error;
       if (error.code === '23503') {
-        throw new BadRequestException('Invalid reference provided for Job Description.');
+        throw new BadRequestException(
+          'Invalid reference provided for Job Description.',
+        );
       }
       throw error;
     }
@@ -108,7 +115,9 @@ export class JobPostingsService {
     let counter = 1;
 
     if (query?.search) {
-      conditions.push(`(jp.name ILIKE $${counter} OR jd.title ILIKE $${counter})`);
+      conditions.push(
+        `(jp.name ILIKE $${counter} OR jd.title ILIKE $${counter})`,
+      );
       values.push(`%${query.search}%`);
       counter++;
     }
@@ -119,14 +128,15 @@ export class JobPostingsService {
       counter++;
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const result = await this.pool.query(
       `SELECT jp.id, jp.code, jp.name, jp.description, jp.jd_id, jp.is_active, jp.created_at, jp.updated_at,
               jp.hr_ids, jp.interviewer_ids,
               jd.title as jd_title, jd.code as jd_code
-       FROM job_postings jp
-       LEFT JOIN job_descriptions jd ON jp.jd_id = jd.id
+       FROM ca_job_postings jp
+       LEFT JOIN ca_job_descriptions jd ON jp.jd_id = jd.id
        ${whereClause}
        ORDER BY jp.created_at DESC`,
       values,
@@ -138,8 +148,8 @@ export class JobPostingsService {
   async findOne(id: string) {
     const result = await this.pool.query(
       `SELECT jp.*, jd.title as jd_title, jd.code as jd_code
-       FROM job_postings jp
-       LEFT JOIN job_descriptions jd ON jp.jd_id = jd.id
+       FROM ca_job_postings jp
+       LEFT JOIN ca_job_descriptions jd ON jp.jd_id = jd.id
        WHERE jp.id = $1`,
       [id],
     );
@@ -153,7 +163,7 @@ export class JobPostingsService {
 
   async update(id: string, userId: string, updateDto: UpdateJobPostingDto) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM job_postings WHERE id = $1`,
+      `SELECT * FROM ca_job_postings WHERE id = $1`,
       [id],
     );
 
@@ -199,7 +209,7 @@ export class JobPostingsService {
     updateFields.push(`updated_at = now()`);
 
     values.push(id);
-    const queryStr = `UPDATE job_postings 
+    const queryStr = `UPDATE ca_job_postings 
                       SET ${updateFields.join(', ')} 
                       WHERE id = $${counter} 
                       RETURNING *`;
@@ -221,7 +231,9 @@ export class JobPostingsService {
       return updatedPosting;
     } catch (error: any) {
       if (error.code === '23503') {
-        throw new BadRequestException('Invalid reference provided for Job Description.');
+        throw new BadRequestException(
+          'Invalid reference provided for Job Description.',
+        );
       }
       throw error;
     }
@@ -229,7 +241,7 @@ export class JobPostingsService {
 
   async remove(id: string, userId: string) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM job_postings WHERE id = $1`,
+      `SELECT * FROM ca_job_postings WHERE id = $1`,
       [id],
     );
 
@@ -238,7 +250,7 @@ export class JobPostingsService {
     }
     const currentPosting = currentResult.rows[0];
 
-    await this.pool.query(`DELETE FROM job_postings WHERE id = $1`, [id]);
+    await this.pool.query(`DELETE FROM ca_job_postings WHERE id = $1`, [id]);
 
     await this.auditService.log({
       entityType: 'job_postings',

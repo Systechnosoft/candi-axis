@@ -1,6 +1,7 @@
 import {
   Injectable,
-  Inject, forwardRef,
+  Inject,
+  forwardRef,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -26,18 +27,19 @@ export class DocumentsService {
   async registerUnattachedResume(userId: string, dto: RegisterDocumentDto) {
     const userRes = await this.pool.query(
       `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
       const defaultOrgRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
-      orgId = defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
+      orgId =
+        defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
     }
 
     const query = `
-      INSERT INTO documents (
+      INSERT INTO ca_documents (
         org_id,
         entity_type, 
         entity_id, 
@@ -116,7 +118,7 @@ export class DocumentsService {
     }
 
     const currentRes = await this.pool.query(
-      `SELECT * FROM documents WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_documents WHERE id = $1 AND is_deleted = false`,
       [id],
     );
     if (currentRes.rows.length === 0) {
@@ -125,7 +127,7 @@ export class DocumentsService {
     const currentDoc = currentRes.rows[0];
 
     const query = `
-      UPDATE documents
+      UPDATE ca_documents
       SET parse_status = $1::varchar,
           parsed_json = COALESCE($2::jsonb, parsed_json),
           parsed_text = COALESCE($3, parsed_text),
@@ -171,7 +173,7 @@ export class DocumentsService {
     const dbClient = client || this.pool;
 
     const query = `
-      UPDATE documents 
+      UPDATE ca_documents 
       SET entity_type = 'candidate',
           entity_id = $1,
           is_primary = true,
@@ -196,7 +198,7 @@ export class DocumentsService {
 
   async findOne(id: string) {
     const res = await this.pool.query(
-      `SELECT * FROM documents WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_documents WHERE id = $1 AND is_deleted = false`,
       [id],
     );
     if (res.rows.length === 0) {
@@ -208,9 +210,9 @@ export class DocumentsService {
   async findPrimaryResumeForCandidate(candidateId: string) {
     const res = await this.pool.query(
       `SELECT id, original_file_name, mime_type, storage_bucket, storage_key 
-       FROM documents 
+       FROM ca_documents 
        WHERE entity_type = 'candidate' AND entity_id = $1 AND is_primary = true AND is_deleted = false`,
-      [candidateId]
+      [candidateId],
     );
     if (res.rows.length === 0) {
       return null;
@@ -222,10 +224,7 @@ export class DocumentsService {
     return this.storageService.downloadObject(bucket, key);
   }
 
- async uploadResume(
-    userId: string,
-    file: Express.Multer.File,
-  ) {
+  async uploadResume(userId: string, file: Express.Multer.File) {
     const upload = await this.storageService.uploadResume(file);
 
     const document = await this.registerUnattachedResume(userId, {

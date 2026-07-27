@@ -54,7 +54,7 @@ export class CandidateDuplicateService {
     const query = `
       SELECT id, email_normalized, phone_normalized, full_name,
              ${fullName ? `similarity(full_name, $${values.length}) AS name_sim` : '0 AS name_sim'}
-      FROM candidates
+      FROM ca_candidates
       WHERE is_deleted = false AND (${conditions.join(' OR ')})
       LIMIT 10
     `;
@@ -105,7 +105,7 @@ export class CandidateDuplicateService {
   ) {
     const dbClient = client || this.pool;
     const query = `
-      INSERT INTO duplicate_matches (
+      INSERT INTO ca_duplicate_matches (
         incoming_candidate_id,
         matched_candidate_id,
         candidate_submission_ref,

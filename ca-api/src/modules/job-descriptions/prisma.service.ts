@@ -17,7 +17,7 @@ export class PrismaService {
     return {
       findUnique: async (args: { where: { id: string } }) => {
         const res = await this.pool.query(
-          `SELECT id, title FROM job_descriptions WHERE id = $1 AND is_deleted = false`,
+          `SELECT id, title FROM ca_job_descriptions WHERE id = $1 AND is_deleted = false`,
           [args.where.id],
         );
         if (res.rows.length === 0) return null;
@@ -36,8 +36,8 @@ export class PrismaService {
           `SELECT a.candidate_id as "candidateId", a.jd_id as "jobDescriptionId", a.stage as "currentStage", a.created_at as "createdAt",
                   c.full_name as "candidateName", jd.title as "jobDescriptionTitle"
            FROM applications a
-           JOIN candidates c ON a.candidate_id = c.id
-           JOIN job_descriptions jd ON a.jd_id = jd.id
+           JOIN ca_candidates c ON a.candidate_id = c.id
+           JOIN ca_job_descriptions jd ON a.jd_id = jd.id
            WHERE a.is_deleted = false AND c.is_deleted = false AND jd.is_deleted = false`,
         );
         return res.rows.map((row) => ({
@@ -75,14 +75,16 @@ export class PrismaService {
 
   get jobCandidateMatch() {
     return {
-      findMany: async (args: { where: { jobId: string; isActive?: boolean } }) => {
+      findMany: async (args: {
+        where: { jobId: string; isActive?: boolean };
+      }) => {
         const res = await this.pool.query(
           `SELECT id, job_id as "jobId", candidate_id as "candidateId", rating, created_at as "createdAt"
-           FROM job_candidate_matches
+           FROM ca_job_candidate_matches
            WHERE job_id = $1 AND is_active = $2 AND deleted_at IS NULL`,
           [args.where.jobId, args.where.isActive ?? true],
         );
-        return res.rows.map(row => ({
+        return res.rows.map((row) => ({
           id: row.id,
           jobId: row.jobId,
           candidateId: row.candidateId,
@@ -90,7 +92,9 @@ export class PrismaService {
           createdAt: row.createdAt,
         }));
       },
-      createMany: async (args: { data: Array<{ jobId: string; candidateId: string; rating: number }> }) => {
+      createMany: async (args: {
+        data: Array<{ jobId: string; candidateId: string; rating: number }>;
+      }) => {
         if (args.data.length === 0) return;
         const values: any[] = [];
         const placeholders: string[] = [];
@@ -100,13 +104,13 @@ export class PrismaService {
           values.push(match.jobId, match.candidateId, match.rating);
         }
         const query = `
-          INSERT INTO job_candidate_matches (job_id, candidate_id, rating)
+          INSERT INTO ca_job_candidate_matches (job_id, candidate_id, rating)
           VALUES ${placeholders.join(', ')}
           ON CONFLICT (job_id, candidate_id)
           DO UPDATE SET rating = EXCLUDED.rating, updated_at = now()
         `;
         await this.pool.query(query, values);
-      }
+      },
     };
   }
 }

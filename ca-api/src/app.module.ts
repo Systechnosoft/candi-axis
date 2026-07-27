@@ -29,7 +29,6 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { GoogleCalendarModule } from './modules/integrations/google-calendar/google-calendar.module';
 import { OrganisationsModule } from './modules/organisations/organisations.module';
 
-
 @Module({
   imports: [
     OrganisationsModule,
@@ -67,5 +66,3 @@ export class AppModule implements NestModule {
     consumer.apply(RequestLoggerMiddleware).forRoutes('*');
   }
 }
-
-

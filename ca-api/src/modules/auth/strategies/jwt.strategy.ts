@@ -11,7 +11,10 @@ import { AuthService, SupabaseJwtPayload } from '../auth.service';
  * contains { atsUserId, email } — the ATS internal user identity.
  */
 @Injectable()
-export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jwt') {
+export class SupabaseJwtStrategy extends PassportStrategy(
+  Strategy,
+  'supabase-jwt',
+) {
   private readonly logger = new Logger(SupabaseJwtStrategy.name);
 
   constructor(
@@ -19,7 +22,7 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
     private readonly authService: AuthService,
   ) {
     const supabaseUrl = config.get<string>('SUPABASE_URL');
-    
+
     if (!supabaseUrl) {
       throw new Error('SUPABASE_URL is not defined in environment');
     }
@@ -35,12 +38,18 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
       }),
       algorithms: ['RS256', 'ES256', 'HS256'],
     });
-    
-    this.logger.debug(`SupabaseJwtStrategy initialized with JWKS URI: ${supabaseUrl}/auth/v1/.well-known/jwks.json`);
+
+    this.logger.debug(
+      `SupabaseJwtStrategy initialized with JWKS URI: ${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+    );
   }
 
-  async validate(payload: SupabaseJwtPayload): Promise<{ atsUserId: string; email: string }> {
-    this.logger.debug(`SupabaseJwtStrategy.validate() called for: ${payload.email}`);
+  async validate(
+    payload: SupabaseJwtPayload,
+  ): Promise<{ atsUserId: string; email: string }> {
+    this.logger.debug(
+      `SupabaseJwtStrategy.validate() called for: ${payload.email}`,
+    );
     if (!payload.sub || !payload.email) {
       this.logger.warn(`Invalid payload: ${JSON.stringify(payload)}`);
       throw new UnauthorizedException('Invalid token payload');

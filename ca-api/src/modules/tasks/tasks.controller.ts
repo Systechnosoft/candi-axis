@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,7 +22,9 @@ export class TasksController {
 
   @Get()
   @RequireModule('feedback', 'viewer')
-  @ApiOperation({ summary: 'List all tasks assigned to the current interviewer' })
+  @ApiOperation({
+    summary: 'List all tasks assigned to the current interviewer',
+  })
   async findAll(@Request() req: any) {
     return this.tasksService.findAll(req.user.atsUserId);
   }
@@ -28,13 +38,20 @@ export class TasksController {
 
   @Post(':id/feedback')
   @RequireModule('feedback', 'editor')
-  @ApiOperation({ summary: 'Submit approve or reject feedback for a screening task' })
+  @ApiOperation({
+    summary: 'Submit approve or reject feedback for a screening task',
+  })
   async submitFeedback(
     @Request() req: any,
     @Param('id') id: string,
     @Body('action') action: 'approve' | 'reject',
     @Body('reason') reason: string,
   ) {
-    return this.tasksService.submitFeedback(id, req.user.atsUserId, action, reason);
+    return this.tasksService.submitFeedback(
+      id,
+      req.user.atsUserId,
+      action,
+      reason,
+    );
   }
 }

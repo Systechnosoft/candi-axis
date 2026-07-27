@@ -1,8 +1,8 @@
-import { 
-  normalizeResumeDateToPgDate, 
-  normalizeYear, 
+import {
+  normalizeResumeDateToPgDate,
+  normalizeYear,
   splitDegreeAndField,
-  normalizeCandidateChildData 
+  normalizeCandidateChildData,
 } from './parsed-candidate-normalizer';
 
 describe('ParsedCandidateNormalizer', () => {
@@ -54,7 +54,9 @@ describe('ParsedCandidateNormalizer', () => {
     });
 
     it('should split "Bachelor of Technology - Information Technology"', () => {
-      const res = splitDegreeAndField('Bachelor of Technology - Information Technology');
+      const res = splitDegreeAndField(
+        'Bachelor of Technology - Information Technology',
+      );
       expect(res.degree).toBe('Bachelor of Technology');
       expect(res.field_of_study).toBe('Information Technology');
     });
@@ -70,8 +72,8 @@ describe('ParsedCandidateNormalizer', () => {
     it('should normalize employment date ranges', () => {
       const data = {
         employments: [
-          { company_name: 'Tech Corp', start_date: 'Jan 2020 - Present' }
-        ]
+          { company_name: 'Tech Corp', start_date: 'Jan 2020 - Present' },
+        ],
       };
       const res = normalizeCandidateChildData(data);
       expect(res.employments[0].start_date).toBe('2020-01-01');
@@ -81,9 +83,7 @@ describe('ParsedCandidateNormalizer', () => {
 
     it('should normalize education years and split degree', () => {
       const data = {
-        educations: [
-          { degree: 'B.Tech in CS', start_year: '2016 - 2020' }
-        ]
+        educations: [{ degree: 'B.Tech in CS', start_year: '2016 - 2020' }],
       };
       const res = normalizeCandidateChildData(data);
       expect(res.educations[0].degree).toBe('B.Tech');

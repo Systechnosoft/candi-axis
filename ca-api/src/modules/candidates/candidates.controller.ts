@@ -72,4 +72,3 @@ export class CandidatesController {
     return this.candidatesService.update(id, user.atsUserId, user.email, dto);
   }
 }
-

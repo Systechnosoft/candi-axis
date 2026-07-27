@@ -17,4 +17,3 @@ export const PG_POOL = Symbol('PG_POOL');
   exports: [PG_POOL],
 })
 export class DatabaseModule {}
-

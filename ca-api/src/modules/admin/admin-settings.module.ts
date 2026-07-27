@@ -8,10 +8,15 @@ import { RbacModule } from '../rbac/rbac.module';
 import { CandidatesModule } from '../candidates/candidates.module';
 
 @Module({
-  imports: [DatabaseModule, AuditModule, RbacModule, ConfigModule, CandidatesModule],
+  imports: [
+    DatabaseModule,
+    AuditModule,
+    RbacModule,
+    ConfigModule,
+    CandidatesModule,
+  ],
   controllers: [AdminSettingsController],
   providers: [AdminSettingsService],
   exports: [AdminSettingsService],
 })
 export class AdminSettingsModule {}
-

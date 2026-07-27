@@ -15,10 +15,10 @@ export class OrganisationsService {
     const search = params.search ? `%${params.search.trim()}%` : null;
 
     let baseQuery = `
-      FROM organisations o
-      LEFT JOIN contacts c_email ON o.primary_email_contact_id = c_email.id
-      LEFT JOIN contacts c_phone ON o.primary_phone_contact_id = c_phone.id
-      LEFT JOIN addresses a ON o.primary_address_id = a.id
+      FROM ca_organisations o
+      LEFT JOIN ca_contacts c_email ON o.primary_email_contact_id = c_email.id
+      LEFT JOIN ca_contacts c_phone ON o.primary_phone_contact_id = c_phone.id
+      LEFT JOIN ca_addresses a ON o.primary_address_id = a.id
       WHERE o.deleted_at IS NULL
     `;
 
@@ -75,10 +75,10 @@ export class OrganisationsService {
              a.state AS state,
              a.country AS country,
              a.postal_code AS postal_code
-      FROM organisations o
-      LEFT JOIN contacts c_email ON o.primary_email_contact_id = c_email.id
-      LEFT JOIN contacts c_phone ON o.primary_phone_contact_id = c_phone.id
-      LEFT JOIN addresses a ON o.primary_address_id = a.id
+      FROM ca_organisations o
+      LEFT JOIN ca_contacts c_email ON o.primary_email_contact_id = c_email.id
+      LEFT JOIN ca_contacts c_phone ON o.primary_phone_contact_id = c_phone.id
+      LEFT JOIN ca_addresses a ON o.primary_address_id = a.id
       WHERE o.id = $1 AND o.deleted_at IS NULL
     `;
     const res = await this.pool.query(query, [id]);
@@ -95,7 +95,7 @@ export class OrganisationsService {
 
       // Insert organisation
       const orgQuery = `
-        INSERT INTO organisations (name, legal_name, primary_contact_name, website_url, industry, company_size, allowed_email_domains, status)
+        INSERT INTO ca_organisations (name, legal_name, primary_contact_name, website_url, industry, company_size, allowed_email_domains, status)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `;
@@ -119,29 +119,35 @@ export class OrganisationsService {
       // Insert email contact
       if (dto.primary_contact_email) {
         const contactQuery = `
-          INSERT INTO contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
+          INSERT INTO ca_contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
           VALUES ($1, 'organisation', $1, 'email', $2, true)
           RETURNING id
         `;
-        const contactRes = await client.query(contactQuery, [org.id, dto.primary_contact_email]);
+        const contactRes = await client.query(contactQuery, [
+          org.id,
+          dto.primary_contact_email,
+        ]);
         emailId = contactRes.rows[0].id;
       }
 
       // Insert phone contact
       if (dto.primary_contact_phone) {
         const contactQuery = `
-          INSERT INTO contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
+          INSERT INTO ca_contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
           VALUES ($1, 'organisation', $1, 'phone', $2, true)
           RETURNING id
         `;
-        const contactRes = await client.query(contactQuery, [org.id, dto.primary_contact_phone]);
+        const contactRes = await client.query(contactQuery, [
+          org.id,
+          dto.primary_contact_phone,
+        ]);
         phoneId = contactRes.rows[0].id;
       }
 
       // Insert address
       if (dto.address_line1) {
         const addrQuery = `
-          INSERT INTO addresses (org_id, entity_type, entity_id, address_type, line1, line2, city, state, country, postal_code, is_primary)
+          INSERT INTO ca_addresses (org_id, entity_type, entity_id, address_type, line1, line2, city, state, country, postal_code, is_primary)
           VALUES ($1, 'organisation', $1, 'primary', $2, $3, $4, $5, $6, $7, true)
           RETURNING id
         `;
@@ -160,12 +166,12 @@ export class OrganisationsService {
       // Update organization with contact and address IDs
       if (emailId || phoneId || addressId) {
         await client.query(
-          `UPDATE organisations
+          `UPDATE ca_organisations
            SET primary_email_contact_id = $1,
                primary_phone_contact_id = $2,
                primary_address_id = $3
            WHERE id = $4`,
-          [emailId, phoneId, addressId, org.id]
+          [emailId, phoneId, addressId, org.id],
         );
       }
 
@@ -187,7 +193,7 @@ export class OrganisationsService {
 
       // Update organisation
       const orgQuery = `
-        UPDATE organisations
+        UPDATE ca_organisations
         SET name = $1,
             legal_name = $2,
             primary_contact_name = $3,
@@ -202,11 +208,15 @@ export class OrganisationsService {
       const orgParams = [
         dto.name !== undefined ? dto.name : org.name,
         dto.legal_name !== undefined ? dto.legal_name : org.legal_name,
-        dto.primary_contact_name !== undefined ? dto.primary_contact_name : org.primary_contact_name,
+        dto.primary_contact_name !== undefined
+          ? dto.primary_contact_name
+          : org.primary_contact_name,
         dto.website_url !== undefined ? dto.website_url : org.website_url,
         dto.industry !== undefined ? dto.industry : org.industry,
         dto.company_size !== undefined ? dto.company_size : org.company_size,
-        dto.allowed_email_domains !== undefined ? dto.allowed_email_domains : org.allowed_email_domains,
+        dto.allowed_email_domains !== undefined
+          ? dto.allowed_email_domains
+          : org.allowed_email_domains,
         dto.status !== undefined ? dto.status : org.status,
         id,
       ];
@@ -216,19 +226,19 @@ export class OrganisationsService {
       if (dto.primary_contact_email !== undefined) {
         if (org.primary_email_contact_id) {
           await client.query(
-            `UPDATE contacts SET contact_value = $1, updated_at = now() WHERE id = $2`,
-            [dto.primary_contact_email, org.primary_email_contact_id]
+            `UPDATE ca_contacts SET contact_value = $1, updated_at = now() WHERE id = $2`,
+            [dto.primary_contact_email, org.primary_email_contact_id],
           );
         } else if (dto.primary_contact_email) {
           const res = await client.query(
-            `INSERT INTO contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
+            `INSERT INTO ca_contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
              VALUES ($1, 'organisation', $1, 'email', $2, true)
              RETURNING id`,
-            [id, dto.primary_contact_email]
+            [id, dto.primary_contact_email],
           );
           await client.query(
-            `UPDATE organisations SET primary_email_contact_id = $1 WHERE id = $2`,
-            [res.rows[0].id, id]
+            `UPDATE ca_organisations SET primary_email_contact_id = $1 WHERE id = $2`,
+            [res.rows[0].id, id],
           );
         }
       }
@@ -237,19 +247,19 @@ export class OrganisationsService {
       if (dto.primary_contact_phone !== undefined) {
         if (org.primary_phone_contact_id) {
           await client.query(
-            `UPDATE contacts SET contact_value = $1, updated_at = now() WHERE id = $2`,
-            [dto.primary_contact_phone, org.primary_phone_contact_id]
+            `UPDATE ca_contacts SET contact_value = $1, updated_at = now() WHERE id = $2`,
+            [dto.primary_contact_phone, org.primary_phone_contact_id],
           );
         } else if (dto.primary_contact_phone) {
           const res = await client.query(
-            `INSERT INTO contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
+            `INSERT INTO ca_contacts (org_id, entity_type, entity_id, contact_type, contact_value, is_primary)
              VALUES ($1, 'organisation', $1, 'phone', $2, true)
              RETURNING id`,
-            [id, dto.primary_contact_phone]
+            [id, dto.primary_contact_phone],
           );
           await client.query(
-            `UPDATE organisations SET primary_phone_contact_id = $1 WHERE id = $2`,
-            [res.rows[0].id, id]
+            `UPDATE ca_organisations SET primary_phone_contact_id = $1 WHERE id = $2`,
+            [res.rows[0].id, id],
           );
         }
       }
@@ -265,7 +275,7 @@ export class OrganisationsService {
       ) {
         if (org.primary_address_id) {
           await client.query(
-            `UPDATE addresses
+            `UPDATE ca_addresses
              SET line1 = COALESCE($1, line1),
                  line2 = COALESCE($2, line2),
                  city = COALESCE($3, city),
@@ -282,11 +292,11 @@ export class OrganisationsService {
               dto.country !== undefined ? dto.country : null,
               dto.postal_code !== undefined ? dto.postal_code : null,
               org.primary_address_id,
-            ]
+            ],
           );
         } else if (dto.address_line1) {
           const res = await client.query(
-            `INSERT INTO addresses (org_id, entity_type, entity_id, address_type, line1, line2, city, state, country, postal_code, is_primary)
+            `INSERT INTO ca_addresses (org_id, entity_type, entity_id, address_type, line1, line2, city, state, country, postal_code, is_primary)
              VALUES ($1, 'organisation', $1, 'primary', $2, $3, $4, $5, $6, $7, true)
              RETURNING id`,
             [
@@ -297,11 +307,11 @@ export class OrganisationsService {
               dto.state || null,
               dto.country || 'India',
               dto.postal_code || null,
-            ]
+            ],
           );
           await client.query(
-            `UPDATE organisations SET primary_address_id = $1 WHERE id = $2`,
-            [res.rows[0].id, id]
+            `UPDATE ca_organisations SET primary_address_id = $1 WHERE id = $2`,
+            [res.rows[0].id, id],
           );
         }
       }
@@ -318,10 +328,10 @@ export class OrganisationsService {
 
   async remove(id: string) {
     const res = await this.pool.query(
-      `UPDATE organisations
+      `UPDATE ca_organisations
        SET deleted_at = now(), status = 'DELETED'
        WHERE id = $1 AND deleted_at IS NULL`,
-      [id]
+      [id],
     );
     if (res.rowCount === 0) {
       throw new NotFoundException(`Organisation not found`);

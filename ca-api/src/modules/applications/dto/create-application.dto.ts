@@ -12,7 +12,10 @@ export class CreateApplicationDto {
   @IsUUID()
   jd_id: string;
 
-  @ApiPropertyOptional({ description: 'Source of the application', default: 'manual' })
+  @ApiPropertyOptional({
+    description: 'Source of the application',
+    default: 'manual',
+  })
   @IsOptional()
   @IsString()
   source?: string;

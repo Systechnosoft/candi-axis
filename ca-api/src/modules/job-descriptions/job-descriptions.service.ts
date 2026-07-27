@@ -70,20 +70,21 @@ export class JobDescriptionsService {
     const status = createDto.status || 'draft';
 
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      `SELECT org_id FROM public.ca_users WHERE id = $1`,
+      [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
       const defaultOrgRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
-      orgId = defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
+      orgId =
+        defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
     }
 
     try {
       const result = await this.pool.query(
-        `INSERT INTO job_descriptions (
+        `INSERT INTO ca_job_descriptions (
           org_id, requisition_id, title, code, location, work_mode, employment_type,
           exp_min_months, exp_max_months, must_have_text, nice_to_have_text,
           job_summary, responsibilities_text, status, owner_user_id,
@@ -165,8 +166,8 @@ export class JobDescriptionsService {
               jd.job_summary, jd.responsibilities_text, jd.must_have_text, jd.nice_to_have_text,
               jd.status, jd.owner_user_id, jd.created_at, jd.updated_at,
               req.title as requisition_title, req.code as requisition_code
-       FROM job_descriptions jd
-       LEFT JOIN job_requisitions req ON jd.requisition_id = req.id
+       FROM ca_job_descriptions jd
+       LEFT JOIN ca_job_requisitions req ON jd.requisition_id = req.id
        ${whereClause}
        ORDER BY jd.created_at DESC`,
       values,
@@ -179,8 +180,8 @@ export class JobDescriptionsService {
     // Return discrete JD with req joins
     const result = await this.pool.query(
       `SELECT jd.*, req.title as requisition_title, req.code as requisition_code
-       FROM job_descriptions jd
-       LEFT JOIN job_requisitions req ON jd.requisition_id = req.id
+       FROM ca_job_descriptions jd
+       LEFT JOIN ca_job_requisitions req ON jd.requisition_id = req.id
        WHERE jd.id = $1 AND jd.is_deleted = false`,
       [id],
     );
@@ -194,7 +195,7 @@ export class JobDescriptionsService {
 
   async update(id: string, userId: string, updateDto: UpdateJobDescriptionDto) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM job_descriptions WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_job_descriptions WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -289,7 +290,7 @@ export class JobDescriptionsService {
     updateFields.push(`updated_at = now()`);
 
     values.push(id);
-    const queryStr = `UPDATE job_descriptions 
+    const queryStr = `UPDATE ca_job_descriptions 
                       SET ${updateFields.join(', ')} 
                       WHERE id = $${counter} AND is_deleted = false 
                       RETURNING *`;
@@ -323,7 +324,7 @@ export class JobDescriptionsService {
 
   async remove(id: string, userId: string) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM job_descriptions WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_job_descriptions WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -333,7 +334,7 @@ export class JobDescriptionsService {
     const currentJd = currentResult.rows[0];
 
     const result = await this.pool.query(
-      `UPDATE job_descriptions 
+      `UPDATE ca_job_descriptions 
        SET is_deleted = true, deleted_at = now(), updated_by = $2,
            status = CASE WHEN status != 'closed' THEN 'closed' ELSE status END
        WHERE id = $1 
@@ -358,7 +359,7 @@ export class JobDescriptionsService {
   async getRequisitionOptions() {
     const result = await this.pool.query(
       `SELECT id, code, title
-       FROM job_requisitions
+       FROM ca_job_requisitions
        WHERE is_deleted = false
        ORDER BY title ASC`,
     );
@@ -374,19 +375,21 @@ export class JobDescriptionsService {
   async findStoredMatchesForJob(jobId: string): Promise<any> {
     // Verify Job Description exists
     const jdCheck = await this.pool.query(
-      `SELECT id FROM job_descriptions WHERE id = $1 AND is_deleted = false`,
-      [jobId]
+      `SELECT id FROM ca_job_descriptions WHERE id = $1 AND is_deleted = false`,
+      [jobId],
     );
     if (jdCheck.rows.length === 0) {
       throw new NotFoundException(`Job description ${jobId} not found`);
     }
 
     const storedMatches = await this.matchingService.getStoredMatches(jobId);
-    const matches = storedMatches.map(m => ({
-      candidateId: m.candidateId,
-      rating: m.rating,
-      createdAt: m.createdAt,
-    })).sort((a, b) => b.rating - a.rating);
+    const matches = storedMatches
+      .map((m) => ({
+        candidateId: m.candidateId,
+        rating: m.rating,
+        createdAt: m.createdAt,
+      }))
+      .sort((a, b) => b.rating - a.rating);
 
     return this.getDetailedMatches(jobId, matches);
   }
@@ -394,14 +397,17 @@ export class JobDescriptionsService {
   async rematchJob(jobId: string): Promise<any> {
     // Clear all existing matches for this JD
     await this.pool.query(
-      `DELETE FROM job_candidate_matches WHERE job_id = $1`,
-      [jobId]
+      `DELETE FROM ca_job_candidate_matches WHERE job_id = $1`,
+      [jobId],
     );
     // Run find matches to recalculate all active candidates
     return this.findMatchesForJob(jobId);
   }
 
-  private async getDetailedMatches(jobId: string, matches: any[]): Promise<any> {
+  private async getDetailedMatches(
+    jobId: string,
+    matches: any[],
+  ): Promise<any> {
     if (matches.length === 0) {
       return {
         jd_id: jobId,
@@ -415,7 +421,7 @@ export class JobDescriptionsService {
     // Fetch full candidate details for these matches using the existing tag overlap logic, but scoped to these candidates!
     const query = `
       WITH jd_skills AS (
-        SELECT tag_id, is_starred FROM entity_tags WHERE entity_type = 'job_description' AND entity_id = $1
+        SELECT tag_id, is_starred FROM ca_entity_tags WHERE entity_type = 'job_description' AND entity_id = $1
       ),
       jd_skill_count AS (
         SELECT COUNT(*)::float as total_count FROM jd_skills
@@ -433,17 +439,17 @@ export class JobDescriptionsService {
           c.notice_period_days,
           COUNT(DISTINCT et.tag_id)::float as overlap_count,
           COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.type = 'skill' AND t.is_deleted = false AND t.active = true), '{}') as skills
-        FROM candidates c
-        JOIN entity_tags et ON et.entity_type = 'candidate' AND et.entity_id = c.id
+        FROM ca_candidates c
+        JOIN ca_entity_tags et ON et.entity_type = 'candidate' AND et.entity_id = c.id
         JOIN jd_skills js ON js.tag_id = et.tag_id
 
-        LEFT JOIN entity_tags et_all ON et_all.entity_type = 'candidate' AND et_all.entity_id = c.id
-        LEFT JOIN tags t ON t.id = et_all.tag_id
+        LEFT JOIN ca_entity_tags et_all ON et_all.entity_type = 'candidate' AND et_all.entity_id = c.id
+        LEFT JOIN ca_tags t ON t.id = et_all.tag_id
         WHERE c.status = 'active'
           AND c.id = ANY($2::uuid[])
           AND NOT EXISTS (
             SELECT 1 FROM public.candidate_job_stages cjs
-            JOIN public.job_postings jp ON cjs.job_posting_id = jp.id
+            JOIN public.ca_job_postings jp ON cjs.job_posting_id = jp.id
             WHERE cjs.candidate_id = c.id 
               AND jp.jd_id = $1 
               AND cjs.stage != 'rejected'
@@ -477,11 +483,15 @@ export class JobDescriptionsService {
 
     // Map candidate details and assign the ratings
     const detailedMatches = res.rows.map((row) => {
-      const matchData = matches.find((m: any) => m.candidateId === row.candidate_id);
-      const rating = matchData ? matchData.rating : Math.round(parseFloat(row.similarity_score));
-      
+      const matchData = matches.find(
+        (m: any) => m.candidateId === row.candidate_id,
+      );
+      const rating = matchData
+        ? matchData.rating
+        : Math.round(parseFloat(row.similarity_score));
+
       const overallMatchScore = Math.round((rating / 10.0) * 10) / 10; // 0-10 scale
-      
+
       let confidence: 'high' | 'medium' | 'low' = 'low';
       if (overallMatchScore >= 7) {
         confidence = 'high';
@@ -496,8 +506,13 @@ export class JobDescriptionsService {
         similarity_score: rating,
         confidence,
         current_ctc: row.current_ctc ? parseFloat(row.current_ctc) : undefined,
-        expected_ctc: row.expected_ctc ? parseFloat(row.expected_ctc) : undefined,
-        notice_period_days: row.notice_period_days != null ? parseInt(row.notice_period_days) : undefined,
+        expected_ctc: row.expected_ctc
+          ? parseFloat(row.expected_ctc)
+          : undefined,
+        notice_period_days:
+          row.notice_period_days != null
+            ? parseInt(row.notice_period_days)
+            : undefined,
         skills: row.skills,
         overall_match_score: overallMatchScore,
       };
@@ -515,14 +530,14 @@ export class JobDescriptionsService {
 
   async isCandidateActiveInThisJD(candidateId: string, jobId: string) {
     const res = await this.pool.query(
-      `SELECT 1 FROM public.candidate_job_stages cjs
-       JOIN public.job_postings jp ON cjs.job_posting_id = jp.id
+      `SELECT 1 FROM public.ca_candidate_job_stages cjs
+       JOIN public.ca_job_postings jp ON cjs.job_posting_id = jp.id
        WHERE cjs.candidate_id = $1 
          AND jp.jd_id = $2 
          AND cjs.stage != 'rejected'
          AND cjs.deleted_at IS NULL
        LIMIT 1`,
-      [candidateId, jobId]
+      [candidateId, jobId],
     );
     return res.rows.length > 0;
   }

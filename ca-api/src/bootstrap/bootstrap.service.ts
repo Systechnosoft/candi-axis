@@ -49,7 +49,7 @@ export class BootstrapService {
 
   private async ensureSuperAdminRole() {
     const existing = await this.pool.query(
-      `SELECT id FROM roles WHERE code = 'super_admin' LIMIT 1`,
+      `SELECT id FROM ca_roles WHERE code = 'super_admin' LIMIT 1`,
     );
     if (existing.rows[0]) {
       this.logger.debug('super_admin role already exists.');
@@ -57,7 +57,7 @@ export class BootstrapService {
     }
 
     const result = await this.pool.query(
-      `INSERT INTO roles (code, name, description, is_system, is_active)
+      `INSERT INTO ca_roles (code, name, description, is_system, is_active)
        VALUES ('super_admin', 'Super Admin', 'System-level privileged role', true, true)
        RETURNING id`,
     );
@@ -68,7 +68,7 @@ export class BootstrapService {
   private async ensureAccessModules() {
     for (const mod of ATS_MODULES) {
       await this.pool.query(
-        `INSERT INTO modules (code, name, is_system, is_active, sort_order)
+        `INSERT INTO ca_modules (code, name, is_system, is_active, sort_order)
          VALUES ($1, $2, true, true, $3)
          ON CONFLICT (code) DO NOTHING`,
         [mod.code, mod.name, mod.sort],
@@ -78,10 +78,10 @@ export class BootstrapService {
   }
 
   private async ensureSuperAdminModuleAccess(roleId: string) {
-    const modules = await this.pool.query(`SELECT id FROM modules`);
+    const modules = await this.pool.query(`SELECT id FROM ca_modules`);
     for (const mod of modules.rows) {
       await this.pool.query(
-        `INSERT INTO role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
+        `INSERT INTO ca_role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
          VALUES ($1, $2, true, true, true, true)
          ON CONFLICT (role_id, module_id) DO NOTHING`,
         [roleId, mod.id],
@@ -93,31 +93,43 @@ export class BootstrapService {
   private async ensureBootstrapUser(superAdminRoleId: string) {
     const email = this.config.get<string>('BOOTSTRAP_ADMIN_EMAIL');
     if (!email) {
-      this.logger.debug('BOOTSTRAP_ADMIN_EMAIL not set — skipping bootstrap user creation.');
+      this.logger.debug(
+        'BOOTSTRAP_ADMIN_EMAIL not set — skipping bootstrap user creation.',
+      );
       return;
     }
 
     const supabaseUrl = this.config.get<string>('SUPABASE_URL');
     const serviceRoleKey = this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY');
     if (!supabaseUrl || !serviceRoleKey) {
-      this.logger.warn('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — skipping bootstrap user creation.');
+      this.logger.warn(
+        'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — skipping bootstrap user creation.',
+      );
       return;
     }
 
-    const supabaseAdmin: SupabaseClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const supabaseAdmin: SupabaseClient = createClient(
+      supabaseUrl,
+      serviceRoleKey,
+      {
+        auth: { autoRefreshToken: false, persistSession: false },
+      },
+    );
 
     const normalized = email.trim().toLowerCase();
-    const name = this.config.get<string>('BOOTSTRAP_ADMIN_NAME') || 'System Admin';
+    const name =
+      this.config.get<string>('BOOTSTRAP_ADMIN_NAME') || 'System Admin';
 
     // 1. Ensure or create Supabase Auth user
     let supabaseAuthUserId: string;
 
     // Check if already in Supabase Auth
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: listData, error: listError } =
+      await supabaseAdmin.auth.admin.listUsers();
     if (listError) {
-      this.logger.warn(`Could not list Supabase Auth users: ${listError.message}`);
+      this.logger.warn(
+        `Could not list Supabase Auth users: ${listError.message}`,
+      );
       return;
     }
 
@@ -129,15 +141,18 @@ export class BootstrapService {
       supabaseAuthUserId = existingAuthUser.id;
       this.logger.debug(`Supabase Auth user already exists: ${email}`);
     } else {
-      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: normalized,
-        email_confirm: true, // pre-confirm for internal user
-        password: 'Password123!',
-        user_metadata: { full_name: name },
-      });
+      const { data: created, error: createError } =
+        await supabaseAdmin.auth.admin.createUser({
+          email: normalized,
+          email_confirm: true, // pre-confirm for internal user
+          password: 'Password123!',
+          user_metadata: { full_name: name },
+        });
 
       if (createError) {
-        this.logger.warn(`Failed to create Supabase Auth user: ${createError.message}`);
+        this.logger.warn(
+          `Failed to create Supabase Auth user: ${createError.message}`,
+        );
         return;
       }
 
@@ -147,7 +162,7 @@ export class BootstrapService {
 
     // 2. Ensure ATS user record
     const existing = await this.pool.query(
-      `SELECT id FROM users WHERE email_normalized = $1 LIMIT 1`,
+      `SELECT id FROM ca_users WHERE email_normalized = $1 LIMIT 1`,
       [normalized],
     );
 
@@ -157,12 +172,12 @@ export class BootstrapService {
       this.logger.debug(`ATS user already exists (${email}).`);
       // Ensure supabase_auth_user_id is linked
       await this.pool.query(
-        `UPDATE users SET supabase_auth_user_id = $1 WHERE id = $2 AND supabase_auth_user_id IS NULL`,
+        `UPDATE ca_users SET supabase_auth_user_id = $1 WHERE id = $2 AND supabase_auth_user_id IS NULL`,
         [supabaseAuthUserId, userId],
       );
     } else {
       const result = await this.pool.query(
-        `INSERT INTO users (email, email_normalized, full_name, status, is_active, supabase_auth_user_id, org_id)
+        `INSERT INTO ca_users (email, email_normalized, full_name, status, is_active, supabase_auth_user_id, org_id)
          VALUES ($1, $2, $3, 'active', true, $4, NULL)
          RETURNING id`,
         [normalized, normalized, name, supabaseAuthUserId],
@@ -180,7 +195,7 @@ export class BootstrapService {
 
     // 3. Ensure super_admin role assignment
     await this.pool.query(
-      `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO ca_user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [userId, superAdminRoleId],
     );
     this.logger.debug('super_admin role assigned to bootstrap user.');

@@ -26,25 +26,33 @@ export class ApplicationsService {
 
       // Check for duplicate application
       const dupCheck = await client.query(
-        `SELECT cjs.id FROM public.candidate_job_stages cjs
+        `SELECT cjs.id FROM public.ca_candidate_job_stages cjs
          JOIN public.job_postings jp ON cjs.job_posting_id = jp.id
          WHERE cjs.candidate_id = $1 AND jp.jd_id = $2 AND cjs.deleted_at IS NULL`,
         [dto.candidate_id, dto.jd_id],
       );
 
       if (dupCheck.rows.length > 0) {
-        throw new ConflictException('Application already exists for this candidate and JD');
+        throw new ConflictException(
+          'Application already exists for this candidate and JD',
+        );
       }
 
       // Verify candidate exists
-      const candCheck = await client.query('SELECT id, org_id FROM candidates WHERE id = $1 AND is_deleted = false', [dto.candidate_id]);
+      const candCheck = await client.query(
+        'SELECT id, org_id FROM ca_candidates WHERE id = $1 AND is_deleted = false',
+        [dto.candidate_id],
+      );
       if (candCheck.rows.length === 0) {
         throw new NotFoundException('Candidate not found');
       }
       const candidateOrgId = candCheck.rows[0].org_id;
 
       // Verify JD exists
-      const jdCheck = await client.query('SELECT id, org_id FROM job_descriptions WHERE id = $1 AND is_deleted = false', [dto.jd_id]);
+      const jdCheck = await client.query(
+        'SELECT id, org_id FROM job_descriptions WHERE id = $1 AND is_deleted = false',
+        [dto.jd_id],
+      );
       if (jdCheck.rows.length === 0) {
         throw new NotFoundException('Job Description not found');
       }
@@ -53,23 +61,30 @@ export class ApplicationsService {
       const orgId = candidateOrgId || jdOrgId;
 
       // Verify or create Job Posting
-      const jpCheck = await client.query('SELECT id FROM public.job_postings WHERE jd_id = $1 LIMIT 1', [dto.jd_id]);
+      const jpCheck = await client.query(
+        'SELECT id FROM public.job_postings WHERE jd_id = $1 LIMIT 1',
+        [dto.jd_id],
+      );
       let jobPostingId = jpCheck.rows[0]?.id;
       if (!jobPostingId) {
         const jpInsert = await client.query(
           `INSERT INTO public.job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
-          [orgId, dto.jd_id, 'Posting for JD']
+          [orgId, dto.jd_id, 'Posting for JD'],
         );
         jobPostingId = jpInsert.rows[0].id;
       }
 
       // Create application (stage mapping)
       const appQuery = `
-        INSERT INTO public.candidate_job_stages (org_id, candidate_id, job_posting_id, stage, sub_stage)
+        INSERT INTO public.ca_candidate_job_stages (org_id, candidate_id, job_posting_id, stage, sub_stage)
         VALUES ($1, $2, $3, 'new', NULL)
         RETURNING *
       `;
-      const appRes = await client.query(appQuery, [orgId, dto.candidate_id, jobPostingId]);
+      const appRes = await client.query(appQuery, [
+        orgId,
+        dto.candidate_id,
+        jobPostingId,
+      ]);
       const application = appRes.rows[0];
 
       // Audit log
@@ -95,7 +110,10 @@ export class ApplicationsService {
       };
     } catch (err) {
       await client.query('ROLLBACK');
-      this.logger.error(`Failed to create application: ${err.message}`, err.stack);
+      this.logger.error(
+        `Failed to create application: ${err.message}`,
+        err.stack,
+      );
       throw err;
     } finally {
       client.release();
@@ -111,11 +129,11 @@ export class ApplicationsService {
              NULL as stage_updated_by_name,
              NULL as created_by_name,
              COALESCE(
-               (SELECT rating FROM job_candidate_matches WHERE candidate_id = a.candidate_id AND job_id = jp.jd_id AND is_active = true AND deleted_at IS NULL LIMIT 1),
+               (SELECT rating FROM ca_job_candidate_matches WHERE candidate_id = a.candidate_id AND job_id = jp.jd_id AND is_active = true AND deleted_at IS NULL LIMIT 1),
                0.0
              ) as ai_score
-      FROM public.candidate_job_stages a
-      JOIN public.candidates c ON a.candidate_id = c.id
+      FROM public.ca_candidate_job_stages a
+      JOIN public.ca_candidates c ON a.candidate_id = c.id
       JOIN public.job_postings jp ON a.job_posting_id = jp.id
       JOIN public.job_descriptions jd ON jp.jd_id = jd.id
       WHERE a.id = $1 AND a.deleted_at IS NULL
@@ -148,12 +166,21 @@ export class ApplicationsService {
     search?: string;
     posting_id?: string;
   }) {
-    const { page = 1, limit = 20, stage, jd_id, candidate_id, recruiter_id, search, posting_id } = params;
+    const {
+      page = 1,
+      limit = 20,
+      stage,
+      jd_id,
+      candidate_id,
+      recruiter_id,
+      search,
+      posting_id,
+    } = params;
     const offset = (page - 1) * limit;
 
     let baseQuery = `
-      FROM public.candidate_job_stages a
-      JOIN public.candidates c ON a.candidate_id = c.id
+      FROM public.ca_candidate_job_stages a
+      JOIN public.ca_candidates c ON a.candidate_id = c.id
       JOIN public.job_postings jp ON a.job_posting_id = jp.id
       JOIN public.job_descriptions jd ON jp.jd_id = jd.id
       WHERE a.deleted_at IS NULL
@@ -183,7 +210,10 @@ export class ApplicationsService {
       paramIdx++;
     }
 
-    const countRes = await this.pool.query(`SELECT COUNT(*) as total ${baseQuery}`, queryParams);
+    const countRes = await this.pool.query(
+      `SELECT COUNT(*) as total ${baseQuery}`,
+      queryParams,
+    );
     const total = parseInt(countRes.rows[0].total, 10);
 
     const dataQuery = `
@@ -198,7 +228,7 @@ export class ApplicationsService {
              jd.title as jd_title,
              NULL as recruiter_name,
              COALESCE(
-               (SELECT rating FROM job_candidate_matches WHERE candidate_id = a.candidate_id AND job_id = jp.jd_id AND is_active = true AND deleted_at IS NULL LIMIT 1),
+               (SELECT rating FROM ca_job_candidate_matches WHERE candidate_id = a.candidate_id AND job_id = jp.jd_id AND is_active = true AND deleted_at IS NULL LIMIT 1),
                0.0
              ) as ai_score
       ${baseQuery}

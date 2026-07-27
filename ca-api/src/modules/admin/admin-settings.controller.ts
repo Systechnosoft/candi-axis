@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminSettingsService } from './admin-settings.service';
 import { UpdateAiConfigDto } from './dto/update-ai-config.dto';
@@ -24,14 +34,22 @@ export class AdminSettingsController {
   @RequireModule('admin', 'editor')
   @ApiOperation({ summary: 'Update AI parsing configuration' })
   async updateAiConfig(@Request() req: any, @Body() dto: UpdateAiConfigDto) {
-    return this.adminService.updateAiConfig(req.user.atsUserId, req.user.email, dto);
+    return this.adminService.updateAiConfig(
+      req.user.atsUserId,
+      req.user.email,
+      dto,
+    );
   }
 
   @Delete('ai/key/:provider')
   @RequireModule('admin', 'editor')
   @ApiOperation({ summary: 'Clear API key for a specific provider' })
   async clearApiKey(@Request() req: any, @Param('provider') provider: string) {
-    return this.adminService.clearApiKey(req.user.atsUserId, req.user.email, provider);
+    return this.adminService.clearApiKey(
+      req.user.atsUserId,
+      req.user.email,
+      provider,
+    );
   }
 
   @Get('ai/active')
@@ -52,7 +70,11 @@ export class AdminSettingsController {
   @RequireModule('admin', 'editor')
   @ApiOperation({ summary: 'Update candidate resume scoring weights' })
   async updateScoringWeights(@Request() req: any, @Body() weights: any) {
-    return this.adminService.updateScoringWeights(req.user.atsUserId, req.user.email, weights);
+    return this.adminService.updateScoringWeights(
+      req.user.atsUserId,
+      req.user.email,
+      weights,
+    );
   }
 
   @Get('configurations')
@@ -64,7 +86,9 @@ export class AdminSettingsController {
 
   @Get('providers')
   @RequireModule('admin', 'viewer')
-  @ApiOperation({ summary: 'Get available interview meeting providers and schemas' })
+  @ApiOperation({
+    summary: 'Get available interview meeting providers and schemas',
+  })
   async getProviders() {
     return this.adminService.getProviders();
   }
@@ -73,7 +97,11 @@ export class AdminSettingsController {
   @RequireModule('admin', 'editor')
   @ApiOperation({ summary: 'Save interview meeting provider configuration' })
   async saveProviderConfig(@Request() req: any, @Body() body: any) {
-    return this.adminService.saveProviderConfig(req.user.atsUserId, req.user.email, body);
+    return this.adminService.saveProviderConfig(
+      req.user.atsUserId,
+      req.user.email,
+      body,
+    );
   }
 
   @Post('configurations/:id/test')
@@ -85,21 +113,27 @@ export class AdminSettingsController {
 
   @Post('configurations/:id/activate')
   @RequireModule('admin', 'editor')
-  @ApiOperation({ summary: 'Activate interview meeting provider configuration' })
+  @ApiOperation({
+    summary: 'Activate interview meeting provider configuration',
+  })
   async activateProviderConfig(@Request() req: any, @Param('id') id: string) {
     return this.adminService.activateProviderConfig(req.user.atsUserId, id);
   }
 
   @Post('configurations/:id/deactivate')
   @RequireModule('admin', 'editor')
-  @ApiOperation({ summary: 'Deactivate interview meeting provider configuration' })
+  @ApiOperation({
+    summary: 'Deactivate interview meeting provider configuration',
+  })
   async deactivateProviderConfig(@Request() req: any, @Param('id') id: string) {
     return this.adminService.deactivateProviderConfig(req.user.atsUserId, id);
   }
 
   @Post('configurations/:id/default')
   @RequireModule('admin', 'editor')
-  @ApiOperation({ summary: 'Set default interview meeting provider configuration' })
+  @ApiOperation({
+    summary: 'Set default interview meeting provider configuration',
+  })
   async setDefaultProviderConfig(@Request() req: any, @Param('id') id: string) {
     return this.adminService.setDefaultProviderConfig(req.user.atsUserId, id);
   }

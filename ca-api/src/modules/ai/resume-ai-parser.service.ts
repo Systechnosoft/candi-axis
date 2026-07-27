@@ -56,9 +56,7 @@ Do not wrap the JSON in Markdown formatting. Return the raw JSON object only.
 export class ResumeAiParserService {
   private readonly logger = new Logger(ResumeAiParserService.name);
 
-  constructor(
-    private readonly adminService: AdminSettingsService,
-  ) {}
+  constructor(private readonly adminService: AdminSettingsService) {}
 
   async parseResumeText(text: string, email: string): Promise<ParsedResume> {
     const config = await this.adminService.getAiConfigForOrg(email);
@@ -67,11 +65,13 @@ export class ResumeAiParserService {
     const model = config.model;
     const baseUrl = config.base_url;
 
-    this.logger.log(`Resume parsing request - Org email domain: ${email.split('@')[1]}, provider: ${provider}, model: ${model}`);
+    this.logger.log(
+      `Resume parsing request - Org email domain: ${email.split('@')[1]}, provider: ${provider}, model: ${model}`,
+    );
 
     if (!apiKey) {
       throw new Error(
-        `Provider "${provider}" is selected but no valid API key was found in Site Configuration for organization.`
+        `Provider "${provider}" is selected but no valid API key was found in Site Configuration for organization.`,
       );
     }
 
@@ -79,22 +79,33 @@ export class ResumeAiParserService {
       return this.callGemini(text, apiKey, model);
     } else {
       if (!baseUrl) {
-        throw new Error(`Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`);
+        throw new Error(
+          `Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`,
+        );
       }
       return this.callOpenAiCompat(text, apiKey, baseUrl, model);
     }
   }
 
-  private async callGemini(text: string, apiKey: string, model: string): Promise<ParsedResume> {
+  private async callGemini(
+    text: string,
+    apiKey: string,
+    model: string,
+  ): Promise<ParsedResume> {
     this.logger.log(`Calling Gemini API for resume parsing - model: ${model}`);
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const geminiModel = genAI.getGenerativeModel({
         model,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+        },
       });
 
-      const result = await geminiModel.generateContent(`${RESUME_PARSE_PROMPT}\n\nResume Text:\n${text}`);
+      const result = await geminiModel.generateContent(
+        `${RESUME_PARSE_PROMPT}\n\nResume Text:\n${text}`,
+      );
       const raw = result.response.text();
       if (!raw) throw new Error('Gemini returned empty content.');
       return this.parseJson(raw);
@@ -110,23 +121,30 @@ export class ResumeAiParserService {
     baseUrl: string,
     model: string,
   ): Promise<ParsedResume> {
-    this.logger.log(`Calling OpenAI-compatible API for resume parsing - baseUrl: ${baseUrl}, model: ${model}`);
+    this.logger.log(
+      `Calling OpenAI-compatible API for resume parsing - baseUrl: ${baseUrl}, model: ${model}`,
+    );
     try {
       const client = new OpenAI({ apiKey, baseURL: baseUrl });
       const completion = await client.chat.completions.create({
         model,
         messages: [
           { role: 'system', content: RESUME_PARSE_PROMPT },
-          { role: 'user',   content: text },
+          { role: 'user', content: text },
         ],
         temperature: 0.1,
       });
 
       const raw = completion.choices[0]?.message?.content;
-      if (!raw) throw new Error(`OpenAI-compatible provider at ${baseUrl} returned an empty response.`);
+      if (!raw)
+        throw new Error(
+          `OpenAI-compatible provider at ${baseUrl} returned an empty response.`,
+        );
       return this.parseJson(raw);
     } catch (error) {
-      this.logger.error(`OpenAI-compatible API request failed: ${error.message}`);
+      this.logger.error(
+        `OpenAI-compatible API request failed: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -134,7 +152,10 @@ export class ResumeAiParserService {
   private parseJson(raw: string): ParsedResume {
     let cleaned = raw.trim();
     if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+      cleaned = cleaned
+        .replace(/^```[a-z]*\n?/i, '')
+        .replace(/```\s*$/i, '')
+        .trim();
     }
     try {
       return JSON.parse(cleaned);

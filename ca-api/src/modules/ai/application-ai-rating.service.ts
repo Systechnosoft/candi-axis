@@ -21,12 +21,16 @@ export interface AiRatingResult {
 export class ApplicationAiRatingService {
   private readonly logger = new Logger(ApplicationAiRatingService.name);
 
-  constructor(
-    private readonly adminService: AdminSettingsService,
-  ) {}
+  constructor(private readonly adminService: AdminSettingsService) {}
 
-  async rateApplication(candidate: any, jd: any, email: string): Promise<AiRatingResult> {
-    this.logger.log(`Starting AI rating for candidate [${candidate.id}] against JD [${jd.id}] for org [${email.split('@')[1]}]`);
+  async rateApplication(
+    candidate: any,
+    jd: any,
+    email: string,
+  ): Promise<AiRatingResult> {
+    this.logger.log(
+      `Starting AI rating for candidate [${candidate.id}] against JD [${jd.id}] for org [${email.split('@')[1]}]`,
+    );
 
     const systemPrompt = `
 You are the AI Resume Rating Engine inside an Applicant Tracking System (ATS).
@@ -83,7 +87,7 @@ ADDITIONAL RULES:
         must_have: jd.must_have_text,
         nice_to_have: jd.nice_to_have_text,
         summary: jd.job_summary,
-      }
+      },
     };
 
     const config = await this.adminService.getAiConfigForOrg(email);
@@ -93,7 +97,9 @@ ADDITIONAL RULES:
     const baseUrl = config.base_url;
 
     if (!apiKey) {
-      throw new Error(`API Key for provider ${provider} is not configured for organization.`);
+      throw new Error(
+        `API Key for provider ${provider} is not configured for organization.`,
+      );
     }
 
     const prompt = `${systemPrompt}\n\nData for Evaluation:\n${JSON.stringify(inputData, null, 2)}`;
@@ -102,30 +108,34 @@ ADDITIONAL RULES:
       let content = '';
 
       if (provider === 'gemini') {
-        this.logger.log(`Calling Gemini API for application rating - model: ${modelName}`);
+        this.logger.log(
+          `Calling Gemini API for application rating - model: ${modelName}`,
+        );
         const genAI = new GoogleGenerativeAI(apiKey);
         const geminiModel = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: {
-            responseMimeType: "application/json",
+            responseMimeType: 'application/json',
             temperature: 0.1,
-          }
+          },
         });
         const result = await geminiModel.generateContent(prompt);
         content = result.response.text() || '';
       } else {
         if (!baseUrl) {
-          throw new Error(`Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`);
+          throw new Error(
+            `Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`,
+          );
         }
-        this.logger.log(`Calling OpenAI-compatible API for application rating - baseUrl: ${baseUrl}, model: ${modelName}`);
+        this.logger.log(
+          `Calling OpenAI-compatible API for application rating - baseUrl: ${baseUrl}, model: ${modelName}`,
+        );
         const client = new OpenAI({ apiKey, baseURL: baseUrl });
         const completion = await client.chat.completions.create({
           model: modelName,
-          messages: [
-            { role: 'user', content: prompt }
-          ],
+          messages: [{ role: 'user', content: prompt }],
           temperature: 0.1,
-          response_format: { type: 'json_object' }
+          response_format: { type: 'json_object' },
         });
         content = completion.choices[0]?.message?.content || '';
       }
@@ -136,13 +146,19 @@ ADDITIONAL RULES:
 
       let jsonString = content.trim();
       if (jsonString.startsWith('```')) {
-        jsonString = jsonString.replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+        jsonString = jsonString
+          .replace(/^```[a-z]*\n?/i, '')
+          .replace(/```\s*$/i, '')
+          .trim();
       }
 
       const rating = JSON.parse(jsonString) as AiRatingResult;
       return rating;
     } catch (error) {
-      this.logger.error(`Failed to generate AI rating using ${provider}:`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        `Failed to generate AI rating using ${provider}:`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }

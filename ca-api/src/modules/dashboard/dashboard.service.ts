@@ -8,24 +8,28 @@ export class DashboardService {
 
   async getStats() {
     const queries = {
-      openRequisitions: "SELECT COUNT(*) FROM job_requisitions WHERE status = 'open' AND is_deleted = false",
-      totalCandidates: "SELECT COUNT(*) FROM candidates WHERE is_deleted = false",
-      draftOffers: "SELECT COUNT(*) FROM public.candidate_job_stages WHERE stage = 'offered' AND deleted_at IS NULL",
-      interviewing: "SELECT COUNT(*) FROM public.candidate_job_stages WHERE stage = 'interviewing' AND deleted_at IS NULL"
+      openRequisitions:
+        "SELECT COUNT(*) FROM job_requisitions WHERE status = 'open' AND is_deleted = false",
+      totalCandidates:
+        'SELECT COUNT(*) FROM ca_candidates WHERE is_deleted = false',
+      draftOffers:
+        "SELECT COUNT(*) FROM public.ca_candidate_job_stages WHERE stage = 'offered' AND deleted_at IS NULL",
+      interviewing:
+        "SELECT COUNT(*) FROM public.ca_candidate_job_stages WHERE stage = 'interviewing' AND deleted_at IS NULL",
     };
 
     const results = await Promise.all([
       this.pool.query(queries.openRequisitions),
       this.pool.query(queries.totalCandidates),
       this.pool.query(queries.draftOffers),
-      this.pool.query(queries.interviewing)
+      this.pool.query(queries.interviewing),
     ]);
 
     return {
       openRequisitions: parseInt(results[0].rows[0].count, 10),
       totalCandidates: parseInt(results[1].rows[0].count, 10),
       draftOffers: parseInt(results[2].rows[0].count, 10),
-      interviewing: parseInt(results[3].rows[0].count, 10)
+      interviewing: parseInt(results[3].rows[0].count, 10),
     };
   }
 
@@ -40,7 +44,7 @@ export class DashboardService {
         sh.changed_at,
         sh.reason,
         u.full_name as user_name
-      FROM status_history sh
+      FROM ca_status_history sh
       LEFT JOIN users u ON sh.changed_by = u.id
       ORDER BY sh.changed_at DESC
       LIMIT 10

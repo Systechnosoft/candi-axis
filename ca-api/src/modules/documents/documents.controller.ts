@@ -59,7 +59,8 @@ export class DocumentsController {
   @Get('candidate/:candidateId')
   @UseGuards(JwtAuthGuard)
   async getCandidatePrimaryDocument(@Param('candidateId') candidateId: string) {
-    const doc = await this.documentsService.findPrimaryResumeForCandidate(candidateId);
+    const doc =
+      await this.documentsService.findPrimaryResumeForCandidate(candidateId);
     if (!doc) {
       throw new NotFoundException('No primary resume found for candidate');
     }
@@ -75,9 +76,15 @@ export class DocumentsController {
   @Get(':id/download')
   async downloadDocument(@Param('id') id: string, @Res() res: Response) {
     const doc = await this.documentsService.findOne(id);
-    const buffer = await this.documentsService.downloadFile(doc.storage_bucket, doc.storage_key);
+    const buffer = await this.documentsService.downloadFile(
+      doc.storage_bucket,
+      doc.storage_key,
+    );
     res.setHeader('Content-Type', doc.mime_type || 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${doc.original_file_name}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${doc.original_file_name}"`,
+    );
     res.send(buffer);
   }
 }

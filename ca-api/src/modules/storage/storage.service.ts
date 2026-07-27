@@ -2,7 +2,6 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client } from 'minio';
 
-
 @Injectable()
 export class StorageService implements OnModuleInit {
   private client: Client;
@@ -52,19 +51,19 @@ export class StorageService implements OnModuleInit {
     const stream = await this.client.getObject(bucket, objectName);
 
     return new Promise((resolve, reject) => {
-        const chunks: Buffer[] = [];
+      const chunks: Buffer[] = [];
 
-        stream.on('data', (chunk) => {
+      stream.on('data', (chunk) => {
         chunks.push(chunk);
-        });
+      });
 
-        stream.on('end', () => {
+      stream.on('end', () => {
         resolve(Buffer.concat(chunks));
-        });
+      });
 
-        stream.on('error', (err) => {
+      stream.on('error', (err) => {
         reject(err);
-        });
+      });
     });
-    }
+  }
 }

@@ -12,7 +12,7 @@ if (!fs.existsSync(migrationsDir)) {
 
 async function runMigrations() {
   console.log('--- Starting MVP Migrations ---');
-  
+
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
   });
@@ -29,13 +29,18 @@ async function runMigrations() {
       )
     `);
 
-    const appliedResult = await client.query(`SELECT filename FROM _migrations`);
-    const applied = new Set<string>(appliedResult.rows.map((r: { filename: string }) => r.filename));
+    const appliedResult = await client.query(
+      `SELECT filename FROM _migrations`,
+    );
+    const applied = new Set<string>(
+      appliedResult.rows.map((r: { filename: string }) => r.filename),
+    );
 
-    const files = fs.readdirSync(migrationsDir)
+    const files = fs
+      .readdirSync(migrationsDir)
       .filter((file) => file.endsWith('.sql'))
       .sort();
-      
+
     let count = 0;
     for (const file of files) {
       if (applied.has(file)) {
@@ -46,11 +51,13 @@ async function runMigrations() {
       console.log(`Executing migration: ${file}...`);
       const filePath = path.join(migrationsDir, file);
       const sql = fs.readFileSync(filePath, 'utf8');
-      
+
       try {
         await client.query('BEGIN');
         await client.query(sql);
-        await client.query(`INSERT INTO _migrations (filename) VALUES ($1)`, [file]);
+        await client.query(`INSERT INTO _migrations (filename) VALUES ($1)`, [
+          file,
+        ]);
         await client.query('COMMIT');
         console.log(`  -> Success: ${file}`);
         count++;

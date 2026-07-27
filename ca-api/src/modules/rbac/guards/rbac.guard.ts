@@ -19,10 +19,9 @@ export class RbacGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const meta = this.reflector.getAllAndOverride<RequireModuleMeta | undefined>(
-      REQUIRE_MODULE_KEY,
-      [ctx.getHandler(), ctx.getClass()],
-    );
+    const meta = this.reflector.getAllAndOverride<
+      RequireModuleMeta | undefined
+    >(REQUIRE_MODULE_KEY, [ctx.getHandler(), ctx.getClass()]);
 
     if (!meta) return true; // No module restriction — JWT guard alone covers auth
 
@@ -31,7 +30,11 @@ export class RbacGuard implements CanActivate {
     if (!user) throw new ForbiddenException('Not authenticated');
 
     const access = await this.rbacService.getUserModuleAccess(user.atsUserId);
-    const allowed = this.rbacService.hasAccess(access, meta.moduleCode, meta.minLevel);
+    const allowed = this.rbacService.hasAccess(
+      access,
+      meta.moduleCode,
+      meta.minLevel,
+    );
 
     if (!allowed) {
       throw new ForbiddenException(

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OffersService } from './offers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,7 +31,9 @@ export class OffersController {
 
   @Get('pending-applications')
   @RequireModule('offers', 'viewer')
-  @ApiOperation({ summary: 'Get applications in offered stage without an existing offer' })
+  @ApiOperation({
+    summary: 'Get applications in offered stage without an existing offer',
+  })
   async getPending() {
     return this.offersService.getPendingApplications();
   }

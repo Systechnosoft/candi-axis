@@ -1,4 +1,13 @@
-import { Controller, Get, Post, UseGuards, Query, Body, Request, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Query,
+  Body,
+  Request,
+  Param,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InterviewsService } from './interviews.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,7 +24,9 @@ export class InterviewsController {
 
   @Get()
   @RequireModule('interviews', 'viewer')
-  @ApiOperation({ summary: 'List all interviews and candidates in interviewing stage' })
+  @ApiOperation({
+    summary: 'List all interviews and candidates in interviewing stage',
+  })
   async findAll(
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -25,7 +36,10 @@ export class InterviewsController {
 
   @Post()
   @RequireModule('interviews', 'editor')
-  @ApiOperation({ summary: 'Schedule an interview, assign interviewers, update sub-stage, and send emails' })
+  @ApiOperation({
+    summary:
+      'Schedule an interview, assign interviewers, update sub-stage, and send emails',
+  })
   async scheduleInterview(
     @Request() req: any,
     @Body() dto: ScheduleInterviewDto,
@@ -35,11 +49,13 @@ export class InterviewsController {
 
   @Post(':id/create-google-meet-invite')
   @RequireModule('interviews', 'editor')
-  @ApiOperation({ summary: 'Create Google Meet invite for interview via Google Calendar API' })
-  async createGoogleMeetInvite(
-    @Request() req: any,
-    @Param('id') id: string,
-  ) {
-    return this.interviewsService.createGoogleMeetInvite(id, req.user.atsUserId);
+  @ApiOperation({
+    summary: 'Create Google Meet invite for interview via Google Calendar API',
+  })
+  async createGoogleMeetInvite(@Request() req: any, @Param('id') id: string) {
+    return this.interviewsService.createGoogleMeetInvite(
+      id,
+      req.user.atsUserId,
+    );
   }
 }

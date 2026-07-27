@@ -1,6 +1,6 @@
 -- 001_seed_roles.sql
 
-INSERT INTO roles (code, name, description, is_system, sort_order)
+INSERT INTO ca_roles (code, name, description, is_system, sort_order)
 VALUES
   ('super_admin', 'Super Admin', 'Unrestricted system access (Bootstrap only)', true, 5),
   ('admin', 'Admin', 'Platform administrator', true, 10),

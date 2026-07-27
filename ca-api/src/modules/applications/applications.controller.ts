@@ -88,7 +88,10 @@ export class ApplicationsController {
   @Post(':id/refresh-ai-rating')
   @RequireModule('candidates', 'editor')
   @ApiOperation({ summary: 'Refresh AI Rating for application' })
-  async refreshAiRating(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+  async refreshAiRating(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.applicationsService.refreshAiRating(req.user.atsUserId, id);
   }
 }

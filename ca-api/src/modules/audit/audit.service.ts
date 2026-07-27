@@ -18,14 +18,22 @@ export class AuditService {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
   async log(params: AuditLogParams): Promise<void> {
-    const { orgId, entityType, entityId, action, changedBy, beforeJson, afterJson, reasonContext } =
-      params;
-    
+    const {
+      orgId,
+      entityType,
+      entityId,
+      action,
+      changedBy,
+      beforeJson,
+      afterJson,
+      reasonContext,
+    } = params;
+
     // Default to the main bootstrap organisation ID if none is provided
     const finalOrgId = orgId || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
 
     await this.pool.query(
-      `INSERT INTO audit_logs
+      `INSERT INTO ca_audit_logs
          (org_id, entity_type, entity_id, action, before_json, after_json, changed_by, reason_context)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [

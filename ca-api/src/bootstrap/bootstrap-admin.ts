@@ -42,7 +42,9 @@ const ATS_MODULES = [
 async function run() {
   const email = (process.env.BOOTSTRAP_ADMIN_EMAIL || '').trim();
   if (!email) {
-    console.log('[bootstrap] BOOTSTRAP_ADMIN_EMAIL not set — skipping bootstrap admin. Continuing...');
+    console.log(
+      '[bootstrap] BOOTSTRAP_ADMIN_EMAIL not set — skipping bootstrap admin. Continuing...',
+    );
     process.exit(0);
   }
 
@@ -51,7 +53,9 @@ async function run() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('[bootstrap] ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for bootstrap.');
+    console.error(
+      '[bootstrap] ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for bootstrap.',
+    );
     process.exit(1);
   }
   if (!databaseUrl) {
@@ -75,13 +79,15 @@ async function run() {
   try {
     // 1. ensure super_admin role
     let roleId: string;
-    const roleResult = await client.query(`SELECT id FROM roles WHERE code = 'super_admin' LIMIT 1`);
+    const roleResult = await client.query(
+      `SELECT id FROM ca_roles WHERE code = 'super_admin' LIMIT 1`,
+    );
     if (roleResult.rows[0]) {
       roleId = roleResult.rows[0].id;
       console.log('[bootstrap] super_admin role already exists.');
     } else {
       const ins = await client.query(
-        `INSERT INTO roles (code, name, description, is_system, is_active)
+        `INSERT INTO ca_roles (code, name, description, is_system, is_active)
          VALUES ('super_admin', 'Super Admin', 'System-level privileged role', true, true)
          RETURNING id`,
       );
@@ -92,7 +98,7 @@ async function run() {
     // 2. ensure access modules
     for (const mod of ATS_MODULES) {
       await client.query(
-        `INSERT INTO modules (code, name, is_system, is_active, sort_order)
+        `INSERT INTO ca_modules (code, name, is_system, is_active, sort_order)
          VALUES ($1, $2, true, true, $3)
          ON CONFLICT (code) DO NOTHING`,
         [mod.code, mod.name, mod.sort],
@@ -101,10 +107,10 @@ async function run() {
     console.log('[bootstrap] Access modules ensured.');
 
     // 3. ensure super_admin module access
-    const modules = await client.query(`SELECT id FROM modules`);
+    const modules = await client.query(`SELECT id FROM ca_modules`);
     for (const mod of modules.rows) {
       await client.query(
-        `INSERT INTO role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
+        `INSERT INTO ca_role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
          VALUES ($1, $2, true, true, true, true)
          ON CONFLICT (role_id, module_id) DO NOTHING`,
         [roleId, mod.id],
@@ -114,34 +120,46 @@ async function run() {
 
     // 4. Ensure Supabase Auth user
     let supabaseAuthUserId: string;
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: listData, error: listError } =
+      await supabaseAdmin.auth.admin.listUsers();
     if (listError) {
-      console.error('[bootstrap] Could not list Supabase Auth users:', listError.message);
+      console.error(
+        '[bootstrap] Could not list Supabase Auth users:',
+        listError.message,
+      );
       process.exit(1);
     }
 
-    const existingAuthUser = listData.users.find((u) => u.email?.toLowerCase() === normalized);
+    const existingAuthUser = listData.users.find(
+      (u) => u.email?.toLowerCase() === normalized,
+    );
     if (existingAuthUser) {
       supabaseAuthUserId = existingAuthUser.id;
       console.log(`[bootstrap] Supabase Auth user already exists: ${email}`);
     } else {
-      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: normalized,
-        email_confirm: true,
-        password: 'Password123!',
-        user_metadata: { full_name: name },
-      });
+      const { data: created, error: createError } =
+        await supabaseAdmin.auth.admin.createUser({
+          email: normalized,
+          email_confirm: true,
+          password: 'Password123!',
+          user_metadata: { full_name: name },
+        });
       if (createError) {
-        console.error('[bootstrap] Failed to create Supabase Auth user:', createError.message);
+        console.error(
+          '[bootstrap] Failed to create Supabase Auth user:',
+          createError.message,
+        );
         process.exit(1);
       }
       supabaseAuthUserId = created.user.id;
-      console.log(`[bootstrap] Supabase Auth user created: ${email} (id: ${supabaseAuthUserId})`);
+      console.log(
+        `[bootstrap] Supabase Auth user created: ${email} (id: ${supabaseAuthUserId})`,
+      );
     }
 
     // 5. Ensure ATS user
     const existingAts = await client.query(
-      `SELECT id FROM users WHERE email_normalized = $1 LIMIT 1`,
+      `SELECT id FROM ca_users WHERE email_normalized = $1 LIMIT 1`,
       [normalized],
     );
 
@@ -150,12 +168,12 @@ async function run() {
       userId = existingAts.rows[0].id;
       console.log(`[bootstrap] ATS user already exists (${email}).`);
       await client.query(
-        `UPDATE users SET supabase_auth_user_id = $1 WHERE id = $2 AND supabase_auth_user_id IS NULL`,
+        `UPDATE ca_users SET supabase_auth_user_id = $1 WHERE id = $2 AND supabase_auth_user_id IS NULL`,
         [supabaseAuthUserId, userId],
       );
     } else {
       const ins = await client.query(
-        `INSERT INTO users (email, email_normalized, full_name, status, is_active, supabase_auth_user_id, org_id)
+        `INSERT INTO ca_users (email, email_normalized, full_name, status, is_active, supabase_auth_user_id, org_id)
          VALUES ($1, $2, $3, 'active', true, $4, NULL)
          RETURNING id`,
         [normalized, normalized, name, supabaseAuthUserId],
@@ -166,7 +184,7 @@ async function run() {
 
     // 6. Ensure super_admin role assignment
     await client.query(
-      `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO ca_user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [userId, roleId],
     );
     console.log('[bootstrap] super_admin role assignment ensured.');

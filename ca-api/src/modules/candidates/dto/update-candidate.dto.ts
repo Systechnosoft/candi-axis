@@ -1,9 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsArray,
-  ValidateNested,
-} from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   CandidateEducationDto,
@@ -141,4 +136,3 @@ export class UpdateCandidateDto {
   @IsOptional()
   gap_details?: string;
 }
-

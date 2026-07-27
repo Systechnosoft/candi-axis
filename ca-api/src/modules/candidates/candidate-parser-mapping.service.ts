@@ -102,7 +102,10 @@ export class CandidateParserMappingService {
 
     const certifications: ChildRowCertification[] = (json?.certifications || [])
       .map((cert: any) => ({
-        certification_name: typeof cert === 'string' ? cert : cert.name || cert.certification_name,
+        certification_name:
+          typeof cert === 'string'
+            ? cert
+            : cert.name || cert.certification_name,
         issuer: cert.issuer,
         issued_on: cert.issued_on,
         expiry_on: cert.expiry_on,
@@ -117,34 +120,37 @@ export class CandidateParserMappingService {
     if (json?.linkedin)
       links.push({ link_type: 'linkedin', url: json.linkedin });
     if (json?.github) links.push({ link_type: 'github', url: json.github });
-    
+
     if (json?.social_links && Array.isArray(json.social_links)) {
       json.social_links.forEach((link: any) => {
         // Prevent duplicates if already added by other fields
-        if (!links.some(l => l.url === link.url)) {
-          links.push({ 
-            link_type: this.inferLinkType(link.url, link.type), 
+        if (!links.some((l) => l.url === link.url)) {
+          links.push({
+            link_type: this.inferLinkType(link.url, link.type),
             url: link.url,
-            display_label: link.label || undefined
+            display_label: link.label || undefined,
           });
         }
       });
     }
 
-    const projects: ChildRowProject[] = (json?.projects || []).map((proj: any) => {
-      let tech = proj.technologies;
-      if (Array.isArray(tech)) {
-        tech = tech.join(', ');
-      }
-      return {
-        title: proj.title || proj.name || 'Unknown Project',
-        description: proj.description || undefined,
-        technologies: tech || undefined,
-        duration: proj.duration || undefined,
-        role: proj.role || undefined,
-        project_url: proj.project_url || proj.project_link || proj.url || undefined,
-      };
-    }).filter((proj: any) => proj.title);
+    const projects: ChildRowProject[] = (json?.projects || [])
+      .map((proj: any) => {
+        let tech = proj.technologies;
+        if (Array.isArray(tech)) {
+          tech = tech.join(', ');
+        }
+        return {
+          title: proj.title || proj.name || 'Unknown Project',
+          description: proj.description || undefined,
+          technologies: tech || undefined,
+          duration: proj.duration || undefined,
+          role: proj.role || undefined,
+          project_url:
+            proj.project_url || proj.project_link || proj.url || undefined,
+        };
+      })
+      .filter((proj: any) => proj.title);
 
     return {
       candidate: cand,

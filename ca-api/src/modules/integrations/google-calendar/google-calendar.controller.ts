@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Query, Request, UseGuards, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { GoogleCalendarService } from './google-calendar.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -30,7 +38,7 @@ export class GoogleCalendarController {
   ) {
     try {
       await this.googleCalendarService.handleCallback(code, state);
-      
+
       // Return a popup message script and close the window
       res.setHeader('Content-Type', 'text/html');
       return res.send(`
@@ -149,7 +157,9 @@ export class GoogleCalendarController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @RequireModule('interviews', 'viewer')
   @Get('status')
-  @ApiOperation({ summary: 'Check Google Calendar integration connection status' })
+  @ApiOperation({
+    summary: 'Check Google Calendar integration connection status',
+  })
   getConnectionStatus(@Request() req: any) {
     return this.googleCalendarService.getConnectionStatus(req.user.atsUserId);
   }
@@ -158,7 +168,9 @@ export class GoogleCalendarController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @RequireModule('interviews', 'editor')
   @Post('disconnect')
-  @ApiOperation({ summary: 'Disconnect/deactivate Google Calendar integration' })
+  @ApiOperation({
+    summary: 'Disconnect/deactivate Google Calendar integration',
+  })
   async disconnect(@Request() req: any) {
     await this.googleCalendarService.disconnect(req.user.atsUserId);
     return { success: true };
@@ -168,7 +180,9 @@ export class GoogleCalendarController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @RequireModule('interviews', 'editor')
   @Post('generate-meet-link')
-  @ApiOperation({ summary: 'Pre-generate a Google Meet link and temporary calendar event' })
+  @ApiOperation({
+    summary: 'Pre-generate a Google Meet link and temporary calendar event',
+  })
   async generateMeetLink(@Request() req: any) {
     return this.googleCalendarService.preGenerateMeetLink(req.user.atsUserId);
   }

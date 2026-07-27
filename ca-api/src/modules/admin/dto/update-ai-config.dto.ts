@@ -2,7 +2,17 @@ import { IsString, IsOptional, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateAiConfigDto {
-  @ApiProperty({ enum: ['gemini', 'openai', 'anthropic', 'openrouter', 'groq', 'xai', 'grok'] })
+  @ApiProperty({
+    enum: [
+      'gemini',
+      'openai',
+      'anthropic',
+      'openrouter',
+      'groq',
+      'xai',
+      'grok',
+    ],
+  })
   @IsString()
   @IsIn(['gemini', 'openai', 'anthropic', 'openrouter', 'groq', 'xai', 'grok'])
   provider!: string;
@@ -22,4 +32,3 @@ export class UpdateAiConfigDto {
   @IsString()
   model?: string;
 }
-

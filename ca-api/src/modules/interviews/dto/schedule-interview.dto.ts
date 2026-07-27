@@ -1,4 +1,12 @@
-import { IsUUID, IsString, IsNotEmpty, IsOptional, IsArray, IsInt, IsDateString } from 'class-validator';
+import {
+  IsUUID,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  IsInt,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ScheduleInterviewDto {
@@ -7,7 +15,9 @@ export class ScheduleInterviewDto {
   @IsNotEmpty()
   applicationId: string;
 
-  @ApiProperty({ description: 'Round type (screening, tech1, tech2, manager, hr, other)' })
+  @ApiProperty({
+    description: 'Round type (screening, tech1, tech2, manager, hr, other)',
+  })
   @IsString()
   @IsNotEmpty()
   roundType: string;
@@ -54,7 +64,9 @@ export class ScheduleInterviewDto {
   @IsNotEmpty()
   emailSubject: string;
 
-  @ApiProperty({ description: 'Optional HR note rendered in both emails (Rich Text / HTML)' })
+  @ApiProperty({
+    description: 'Optional HR note rendered in both emails (Rich Text / HTML)',
+  })
   @IsString()
   @IsOptional()
   note?: string;

@@ -8,5 +8,11 @@ export interface RequireModuleMeta {
   minLevel: AccessLevel;
 }
 
-export const RequireModule = (moduleCode: string, minLevel: AccessLevel = 'viewer') =>
-  SetMetadata(REQUIRE_MODULE_KEY, { moduleCode, minLevel } as RequireModuleMeta);
+export const RequireModule = (
+  moduleCode: string,
+  minLevel: AccessLevel = 'viewer',
+) =>
+  SetMetadata(REQUIRE_MODULE_KEY, {
+    moduleCode,
+    minLevel,
+  } as RequireModuleMeta);

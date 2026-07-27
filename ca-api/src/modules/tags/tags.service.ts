@@ -37,20 +37,21 @@ export class TagsService {
     const normalizedName = this.cleanText(createDto.name).toLowerCase();
 
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      `SELECT org_id FROM public.ca_users WHERE id = $1`,
+      [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
       const defaultOrgRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
-      orgId = defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
+      orgId =
+        defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
     }
 
     try {
       const result = await this.pool.query(
-        `INSERT INTO tags (org_id, name, normalized_name, type, description, created_by, updated_by) 
+        `INSERT INTO ca_tags (org_id, name, normalized_name, type, description, created_by, updated_by) 
          VALUES ($1, $2, $3, $4, $5, $6, $6) 
          RETURNING *`,
         [
@@ -87,10 +88,13 @@ export class TagsService {
     }
   }
 
-  async getTags(userId: string, query: { search?: string; type?: string; active?: string }) {
+  async getTags(
+    userId: string,
+    query: { search?: string; type?: string; active?: string },
+  ) {
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      `SELECT org_id FROM public.ca_users WHERE id = $1`,
+      [userId],
     );
     const orgId = userRes.rows[0]?.org_id;
 
@@ -124,7 +128,7 @@ export class TagsService {
 
     const result = await this.pool.query(
       `SELECT id, name, type, description, active, created_at, updated_at 
-       FROM tags 
+       FROM ca_tags 
        ${whereClause} 
        ORDER BY name ASC`,
       values,
@@ -135,8 +139,8 @@ export class TagsService {
 
   async getSuggestions(userId: string, type?: string, search?: string) {
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      `SELECT org_id FROM public.ca_users WHERE id = $1`,
+      [userId],
     );
     const orgId = userRes.rows[0]?.org_id;
 
@@ -163,7 +167,7 @@ export class TagsService {
 
     const result = await this.pool.query(
       `SELECT id, name, type 
-       FROM tags 
+       FROM ca_tags 
        ${whereClause} 
        ORDER BY name ASC 
        LIMIT 50`,
@@ -176,7 +180,7 @@ export class TagsService {
   async getTagById(id: string) {
     const result = await this.pool.query(
       `SELECT id, name, type, description, active, created_at, updated_at 
-       FROM tags 
+       FROM ca_tags 
        WHERE id = $1 AND is_deleted = false`,
       [id],
     );
@@ -190,7 +194,7 @@ export class TagsService {
 
   async updateTag(id: string, userId: string, updateDto: UpdateTagDto) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM tags WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_tags WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -241,7 +245,7 @@ export class TagsService {
 
     values.push(id); // For the WHERE clause id
 
-    const queryStr = `UPDATE tags 
+    const queryStr = `UPDATE ca_tags 
                       SET ${updateFields.join(', ')} 
                       WHERE id = $${counter} AND is_deleted = false 
                       RETURNING *`;
@@ -274,7 +278,7 @@ export class TagsService {
 
   async deleteTag(id: string, userId: string) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM tags WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_tags WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -285,7 +289,7 @@ export class TagsService {
     const currentTag = currentResult.rows[0];
 
     const result = await this.pool.query(
-      `UPDATE tags 
+      `UPDATE ca_tags 
        SET active = false, is_deleted = true, deleted_at = now(), updated_by = $2 
        WHERE id = $1 
        RETURNING *`,

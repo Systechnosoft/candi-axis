@@ -10,7 +10,6 @@ import { Pool } from 'pg';
 import { PG_POOL } from '../../../infrastructure/database/database.module';
 import { StorageService } from '../../storage/storage.service';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfParse = require('pdf-parse');
 
 @Processor(QUEUE_NAMES.RESUME_PARSING)
@@ -29,7 +28,9 @@ export class ResumeParsingProcessor extends WorkerHost {
 
   async process(job: Job<ParseResumeJobPayload>) {
     const { documentId } = job.data;
-    this.logger.log(`[ResumeParsingProcessor] Starting job ${job.id} for document ${documentId}`);
+    this.logger.log(
+      `[ResumeParsingProcessor] Starting job ${job.id} for document ${documentId}`,
+    );
 
     // Mark as processing
     await this.documentsService.updateParseStatus(documentId, 'processing');
@@ -39,7 +40,10 @@ export class ResumeParsingProcessor extends WorkerHost {
       const doc = await this.documentsService.findOne(documentId);
 
       // 2. Download the file from storage
-      const fileBuffer = await this.storageService.downloadObject(doc.storage_bucket, doc.storage_key);
+      const fileBuffer = await this.storageService.downloadObject(
+        doc.storage_bucket,
+        doc.storage_key,
+      );
 
       // 3. Extract raw text from PDF/DOCX
       const rawText = await this.extractText(fileBuffer, doc.mime_type || '');
@@ -50,22 +54,29 @@ export class ResumeParsingProcessor extends WorkerHost {
       }
 
       // 4. Extract hyperlink annotations from PDF (runs in parallel with AI call)
-      let annotatedLinks: Array<{ type: string; url: string; label?: string }> = [];
+      let annotatedLinks: Array<{ type: string; url: string; label?: string }> =
+        [];
       if ((doc.mime_type || '').toLowerCase().includes('pdf')) {
         try {
           const links = await this.pdfLinkAnnotator.extractLinks(fileBuffer);
-          annotatedLinks = links.map((l) => ({ type: l.type, url: l.url, label: l.label }));
+          annotatedLinks = links.map((l) => ({
+            type: l.type,
+            url: l.url,
+            label: l.label,
+          }));
           this.logger.log(
             `[ResumeParsingProcessor] Extracted ${annotatedLinks.length} annotated links from PDF`,
           );
         } catch (linkErr: any) {
-          this.logger.warn(`[ResumeParsingProcessor] Annotation extraction failed (non-fatal): ${linkErr.message}`);
+          this.logger.warn(
+            `[ResumeParsingProcessor] Annotation extraction failed (non-fatal): ${linkErr.message}`,
+          );
         }
       }
 
       // 5. Resolve which user uploaded this document so we can get their org's AI config
       const uploaderRes = await this.pool.query(
-        `SELECT email FROM users WHERE id = $1`,
+        `SELECT email FROM ca_users WHERE id = $1`,
         [doc.uploaded_by],
       );
       const uploaderEmail = uploaderRes.rows[0]?.email;
@@ -79,7 +90,10 @@ export class ResumeParsingProcessor extends WorkerHost {
       this.logger.log(
         `[ResumeParsingProcessor] Calling AI parser for document ${documentId} (org: ${uploaderEmail})`,
       );
-      const parsed = await this.parserService.parseResumeText(rawText, uploaderEmail);
+      const parsed = await this.parserService.parseResumeText(
+        rawText,
+        uploaderEmail,
+      );
 
       // 7. Merge annotated links into the parsed JSON so the frontend can access them
       //    Also normalise GitHub/LinkedIn URLs from annotated links if the AI missed them
@@ -94,7 +108,10 @@ export class ResumeParsingProcessor extends WorkerHost {
             enrichedParsed.linkedin_url = link.url;
           } else if (link.type === 'github' && !enrichedParsed.github_url) {
             enrichedParsed.github_url = link.url;
-          } else if (link.type === 'portfolio' && !enrichedParsed.portfolio_url) {
+          } else if (
+            link.type === 'portfolio' &&
+            !enrichedParsed.portfolio_url
+          ) {
             enrichedParsed.portfolio_url = link.url;
           }
         }
@@ -112,7 +129,7 @@ export class ResumeParsingProcessor extends WorkerHost {
 
       this.logger.log(
         `[ResumeParsingProcessor] Successfully parsed document ${documentId} ` +
-        `(skills: ${(parsed.skills || []).length}, links: ${annotatedLinks.length})`,
+          `(skills: ${(parsed.skills || []).length}, links: ${annotatedLinks.length})`,
       );
     } catch (error: any) {
       this.logger.error(
@@ -144,7 +161,9 @@ export class ResumeParsingProcessor extends WorkerHost {
     try {
       const text = buffer.toString('utf8');
       // Strip binary noise — keep printable ASCII and common Unicode
-      return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ').replace(/\s+/g, ' ');
+      return text
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+        .replace(/\s+/g, ' ');
     } catch {
       throw new Error(
         'Could not extract text from the uploaded file. Only PDF and text-based DOCX files are supported.',

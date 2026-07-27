@@ -7,11 +7,7 @@ import { RbacModule } from '../rbac/rbac.module';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [
-    PassportModule,
-    RbacModule,
-    AuditModule,
-  ],
+  imports: [PassportModule, RbacModule, AuditModule],
   providers: [AuthService, SupabaseJwtStrategy],
   controllers: [AuthController],
   exports: [AuthService],

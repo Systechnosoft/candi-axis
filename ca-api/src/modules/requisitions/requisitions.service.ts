@@ -32,15 +32,16 @@ export class RequisitionsService {
     const status = createDto.status || 'draft';
 
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
-      [userId]
+      `SELECT org_id FROM public.ca_users WHERE id = $1`,
+      [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
       const defaultOrgRes = await this.pool.query(
-        `SELECT id FROM public.organisations ORDER BY created_at ASC LIMIT 1`
+        `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
-      orgId = defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
+      orgId =
+        defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
     }
 
     try {
@@ -50,7 +51,7 @@ export class RequisitionsService {
       if (status === 'closed') closedAt = new Date();
 
       const result = await this.pool.query(
-        `INSERT INTO job_requisitions (
+        `INSERT INTO ca_job_requisitions (
           org_id, code, title, department, openings_count, priority, 
           hiring_manager_id, owner_user_id, status, status_reason, 
           opened_at, closed_at, created_by, updated_by
@@ -139,7 +140,7 @@ export class RequisitionsService {
               hiring_manager_id, owner_user_id, status, status_reason, 
               opened_at, closed_at, created_at, updated_at,
               is_deleted
-       FROM job_requisitions 
+       FROM ca_job_requisitions 
        ${whereClause} 
        ORDER BY created_at DESC`,
       values,
@@ -150,7 +151,7 @@ export class RequisitionsService {
 
   async getRequisitionById(id: string) {
     const result = await this.pool.query(
-      `SELECT * FROM job_requisitions WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_job_requisitions WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -167,7 +168,7 @@ export class RequisitionsService {
     updateDto: UpdateRequisitionDto,
   ) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM job_requisitions WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_job_requisitions WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -237,7 +238,7 @@ export class RequisitionsService {
     values.push(userId);
 
     values.push(id);
-    const queryStr = `UPDATE job_requisitions 
+    const queryStr = `UPDATE ca_job_requisitions 
                       SET ${updateFields.join(', ')} 
                       WHERE id = $${counter} AND is_deleted = false 
                       RETURNING *`;
@@ -272,7 +273,7 @@ export class RequisitionsService {
 
   async deleteRequisition(id: string, userId: string) {
     const currentResult = await this.pool.query(
-      `SELECT * FROM job_requisitions WHERE id = $1 AND is_deleted = false`,
+      `SELECT * FROM ca_job_requisitions WHERE id = $1 AND is_deleted = false`,
       [id],
     );
 
@@ -282,7 +283,7 @@ export class RequisitionsService {
     const currentReq = currentResult.rows[0];
 
     const result = await this.pool.query(
-      `UPDATE job_requisitions 
+      `UPDATE ca_job_requisitions 
        SET is_deleted = true, deleted_at = now(), updated_by = $2,
            status = CASE WHEN status != 'closed' THEN 'closed' ELSE status END,
            closed_at = CASE WHEN closed_at IS NULL THEN now() ELSE closed_at END

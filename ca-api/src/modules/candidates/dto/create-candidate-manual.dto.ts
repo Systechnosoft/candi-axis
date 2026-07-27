@@ -243,7 +243,6 @@ export class CreateCandidateManualDto {
   tags?: string[];
 }
 
-
 export class CandidateProjectDto {
   @IsString()
   @IsOptional()
