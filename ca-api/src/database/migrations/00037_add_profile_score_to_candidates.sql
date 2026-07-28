@@ -1,1 +1,0 @@
--- 00037_add_profile_score_to_candidates.sql (Consolidated into 00019_create_candidates_table.sql)

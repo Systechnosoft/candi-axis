@@ -79,7 +79,7 @@ export class ApplicationStageService {
       // If moving to screening, create a screening review task for the interviewers
       if (toStage === 'screening') {
         const jpRes = await client.query(
-          'SELECT id, jd_id, name, interviewer_ids FROM public.job_postings WHERE id = $1',
+          'SELECT id, jd_id, name, interviewer_ids FROM public.ca_job_postings WHERE id = $1',
           [application.job_posting_id],
         );
         const jp = jpRes.rows[0];
@@ -93,7 +93,7 @@ export class ApplicationStageService {
           candidateName = candRes.rows[0]?.full_name || 'Candidate';
 
           const jdRes = await client.query(
-            'SELECT title FROM public.job_descriptions WHERE id = $1',
+            'SELECT title FROM public.ca_job_descriptions WHERE id = $1',
             [jp.jd_id],
           );
           jobTitle = jdRes.rows[0]?.title || 'Job Description';

@@ -1,1 +1,0 @@
--- 00039_auto_generate_codes_and_protect_edit.sql (Obsolete - Consolidated directly into base table creation migrations 00017, 00018, and 00038)

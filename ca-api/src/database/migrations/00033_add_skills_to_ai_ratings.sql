@@ -1,1 +1,0 @@
--- 00033_add_skills_to_ai_ratings.sql (Deprecated - AI Ratings module removed)

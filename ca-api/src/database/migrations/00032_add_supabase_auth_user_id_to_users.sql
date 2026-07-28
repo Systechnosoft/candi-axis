@@ -1,1 +1,0 @@
--- 00032_add_supabase_auth_user_id_to_users.sql (Obsolete - Consolidated directly into 00003_create_users_table.sql)

@@ -1,1 +1,0 @@
--- 00026_create_ai_ratings_table.sql (Deprecated - AI Ratings module removed)

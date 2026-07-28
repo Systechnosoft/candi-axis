@@ -62,13 +62,13 @@ export class ApplicationsService {
 
       // Verify or create Job Posting
       const jpCheck = await client.query(
-        'SELECT id FROM public.job_postings WHERE jd_id = $1 LIMIT 1',
+        'SELECT id FROM public.ca_job_postings WHERE jd_id = $1 LIMIT 1',
         [dto.jd_id],
       );
       let jobPostingId = jpCheck.rows[0]?.id;
       if (!jobPostingId) {
         const jpInsert = await client.query(
-          `INSERT INTO public.job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
+          `INSERT INTO public.ca_job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
           [orgId, dto.jd_id, 'Posting for JD'],
         );
         jobPostingId = jpInsert.rows[0].id;

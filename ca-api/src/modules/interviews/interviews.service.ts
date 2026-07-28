@@ -41,8 +41,8 @@ export class InterviewsService {
         ) as interviewer_names
       FROM public.ca_candidate_job_stages a
       JOIN ca_candidates c ON a.candidate_id = c.id
-      JOIN public.job_postings jp ON a.job_posting_id = jp.id
-      JOIN job_descriptions jd ON jp.jd_id = jd.id
+      JOIN public.ca_job_postings jp ON a.job_posting_id = jp.id
+      JOIN public.ca_job_descriptions jd ON jp.jd_id = jd.id
       LEFT JOIN ca_interviews i ON a.id = i.application_id AND i.is_deleted = false
       LEFT JOIN ca_users creator ON i.created_by = creator.id
       WHERE (a.stage = 'interviewing' OR i.id IS NOT NULL)

@@ -9,7 +9,7 @@ export class DashboardService {
   async getStats() {
     const queries = {
       openRequisitions:
-        "SELECT COUNT(*) FROM job_requisitions WHERE status = 'open' AND is_deleted = false",
+        "SELECT COUNT(*) FROM ca_job_requisitions WHERE status = 'open' AND is_deleted = false",
       totalCandidates:
         'SELECT COUNT(*) FROM ca_candidates WHERE is_deleted = false',
       draftOffers:
@@ -45,7 +45,7 @@ export class DashboardService {
         sh.reason,
         u.full_name as user_name
       FROM ca_status_history sh
-      LEFT JOIN users u ON sh.changed_by = u.id
+      LEFT JOIN ca_users u ON sh.changed_by = u.id
       ORDER BY sh.changed_at DESC
       LIMIT 10
     `);

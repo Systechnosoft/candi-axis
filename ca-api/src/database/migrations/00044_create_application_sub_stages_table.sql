@@ -1,1 +1,0 @@
--- 00044_create_application_sub_stages_table.sql (Obsolete - sub_stages are stored directly on candidate_job_stages in 00052)

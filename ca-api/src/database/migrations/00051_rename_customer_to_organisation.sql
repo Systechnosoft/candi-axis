@@ -1,1 +1,0 @@
--- 00051_rename_customer_to_organisation.sql (Obsolete - Consolidated directly into 0048_create_customer.sql)
