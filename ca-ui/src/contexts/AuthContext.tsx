@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // unmount the current page and clear any form data the user has entered.
   const initializedRef = React.useRef(false);
   const router = useRouter();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   /**
    * Fetches the ATS RBAC session from the backend using the Supabase access token.
@@ -53,16 +53,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchAtsSession = useCallback(async (showLoader = false) => {
     try {
       if (showLoader) setLoading(true);
-      const { data: { session: sbSession } } = await supabase.auth.getSession();
+      console.log('[AuthContext] Fetching Supabase session...');
+      const { data: { session: sbSession }, error: sessionError } = await supabase.auth.getSession();
+      console.log('[AuthContext] Supabase session fetched:', !!sbSession?.access_token, sessionError);
 
       if (!sbSession?.access_token) {
         setSession(null);
         return;
       }
 
+      console.log('[AuthContext] Fetching /api/auth/me...');
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${sbSession.access_token}` },
       });
+      console.log('[AuthContext] /api/auth/me response:', res.status);
 
       if (res.ok) {
         const data = await res.json();

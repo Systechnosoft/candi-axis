@@ -5,21 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, LogOut } from 'lucide-react';
 
-// Maps route prefixes to required ATS access modules
-// E.g. /job-descriptions requires "job_descriptions" module access
-const ROUTE_MODULE_MAP: Record<string, string> = {
-  '/dashboard': 'dashboard',
-  '/tasks': 'feedback',
-  '/requisitions': 'requisitions',
-  '/job-descriptions': 'job_descriptions',
-  '/job-postings': 'job_descriptions',
-  '/candidates': 'candidates',
-  '/interviews': 'interviews',
-  '/offers': 'offers',
-  '/notifications': '', // Accessible as long as ATS session exists
-  '/admin/organisations': 'organisations',
-  '/admin': 'users', // Admin uses "users" module for now
-};
+import { getRequiredModuleForPath, ROUTE_MODULE_MAP } from '@/lib/permissions/config';
 
 // Fallback route priority for roles that can't access dashboard
 const FALLBACK_ROUTES = ['/tasks', '/interviews', '/candidates', '/job-descriptions', '/requisitions', '/offers'];
@@ -30,9 +16,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   // Determine required module from route
-  const matchingRoute = Object.keys(ROUTE_MODULE_MAP).find((route) => pathname.startsWith(route));
-  const requiredModule = matchingRoute ? ROUTE_MODULE_MAP[matchingRoute] : null;
-  const isAccessDenied = !loading && session && requiredModule && !hasAccess(requiredModule);
+  const requiredModule = getRequiredModuleForPath(pathname);
+  
+  // Explicitly fail closed: If the route is unmapped (null), deny access. 
+  // If it's mapped to an empty string (like /notifications), it's permitted.
+  // Otherwise, check if user has access to the mapped module.
+  const isAccessDenied = !loading && session && (
+    requiredModule === null || (requiredModule !== '' && !hasAccess(requiredModule))
+  );
 
   useEffect(() => {
     if (isAccessDenied) {

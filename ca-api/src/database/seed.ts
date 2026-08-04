@@ -5,9 +5,9 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-let seedsDir = path.join(__dirname, '../../src/database/seeds');
+let seedsDir = path.join(process.cwd(), 'src/database/seeds');
 if (!fs.existsSync(seedsDir)) {
-  seedsDir = path.join(__dirname, 'seeds');
+  seedsDir = path.join(process.cwd(), 'dist/database/seeds');
 }
 
 async function runSeeds() {

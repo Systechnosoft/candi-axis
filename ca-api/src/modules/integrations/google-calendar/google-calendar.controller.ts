@@ -86,7 +86,7 @@ export class GoogleCalendarController {
         <body>
           <div class="card">
             <h2>Connection Successful!</h2>
-            <p>Your Google Calendar has been successfully integrated with Systechnosoft ATS.</p>
+            <p>Your Google Calendar has been successfully integrated with Systechnosoft CandiAxis.</p>
             <p>This window will close automatically shortly.</p>
             <div class="spinner"></div>
           </div>

@@ -107,7 +107,9 @@ async function run() {
     console.log('[bootstrap] Access modules ensured.');
 
     // 3. ensure super_admin module access
-    const modules = await client.query(`SELECT id FROM ca_modules`);
+    // Scoped strictly for Super Admin initialisation:
+    // Only active, non-platform modules are granted here since super_admin is CUSTOMER scoped.
+    const modules = await client.query(`SELECT id FROM ca_modules WHERE is_active = true AND is_platform_only = false`);
     for (const mod of modules.rows) {
       await client.query(
         `INSERT INTO ca_role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)

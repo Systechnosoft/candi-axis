@@ -112,23 +112,23 @@ export function JobDescriptionDetailModal({
         </div>
 
         {/* Specs Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-md border border-border/50">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-muted p-4 rounded-md border border-border/20">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase">Work Mode</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Work Mode</p>
             <p className="text-sm font-medium mt-1">{jobDescription.work_mode?.replace('_', ' ') || 'Any'}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase">Employment Type</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Employment Type</p>
             <p className="text-sm font-medium mt-1">{jobDescription.employment_type?.replace('_', ' ') || 'Any'}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase">Experience (Mo)</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Experience (Mo)</p>
             <p className="text-sm font-medium mt-1">
               {jobDescription.exp_min_months != null ? jobDescription.exp_min_months : '-'} to {jobDescription.exp_max_months != null ? jobDescription.exp_max_months : '-'}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase">Owner ID</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Owner ID</p>
             <p className="text-sm font-medium mt-1 truncate" title={jobDescription.owner_user_id || ''}>
               {jobDescription.owner_user_id ? 'Assigned' : 'Unassigned'}
             </p>

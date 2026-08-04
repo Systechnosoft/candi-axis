@@ -5,9 +5,9 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-let migrationsDir = path.join(__dirname, '../../src/database/migrations');
+let migrationsDir = path.join(process.cwd(), 'src/database/migrations');
 if (!fs.existsSync(migrationsDir)) {
-  migrationsDir = path.join(__dirname, 'migrations');
+  migrationsDir = path.join(process.cwd(), 'dist/database/migrations');
 }
 
 async function runMigrations() {
@@ -29,22 +29,43 @@ async function runMigrations() {
       )
     `);
 
+    // Check if this is an existing legacy database by looking for the users table
+    const checkTable = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'ca_users'
+      )
+    `);
+    const dbAlreadyHasSchema = checkTable.rows[0].exists;
+
     const appliedResult = await client.query(
       `SELECT filename FROM _migrations`,
     );
     const applied = new Set<string>(
-      appliedResult.rows.map((r: { filename: string }) => r.filename),
+      appliedResult.rows.map((r: { filename: string }) => {
+        const match = r.filename.match(/\d{5}_.*\.sql$/);
+        return match ? match[0] : r.filename;
+      })
     );
 
     const files = fs
       .readdirSync(migrationsDir)
-      .filter((file) => file.endsWith('.sql'))
+      .filter((file) => file.endsWith('.sql') && !file.endsWith('.down.sql'))
       .sort();
 
     let count = 0;
     for (const file of files) {
-      if (applied.has(file)) {
+      const match = file.match(/\d{5}_.*\.sql$/);
+      const strippedFilename = match ? match[0] : file;
+      if (applied.has(strippedFilename) || applied.has(file)) {
         console.log(`  -> Already applied, skipping: ${file}`);
+        continue;
+      }
+
+      // Fast-forward consolidated MVP migrations on existing databases
+      if (dbAlreadyHasSchema && file.startsWith('28072026_') && file < '28072026_00050') {
+        console.log(`  -> Legacy DB detected, automatically marking MVP migration as applied: ${file}`);
+        await client.query(`INSERT INTO _migrations (filename) VALUES ($1)`, [file]);
         continue;
       }
 

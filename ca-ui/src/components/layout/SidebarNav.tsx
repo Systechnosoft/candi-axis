@@ -20,16 +20,18 @@ import {
   Building
 } from 'lucide-react';
 
+import { getRequiredModuleForPath } from '@/lib/permissions/config';
+
 const NAV_ITEMS = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart, module: 'dashboard' },
-  { name: 'Tasks', href: '/tasks', icon: ClipboardList, module: 'candidates' },
-  { name: 'Requisitions', href: '/requisitions', icon: Briefcase, module: 'requisitions' },
-  { name: 'Job Descriptions', href: '/job-descriptions', icon: FileText, module: 'job_descriptions' },
-  { name: 'Job Postings', href: '/job-postings', icon: Globe, module: 'job_descriptions' },
-  { name: 'Candidates', href: '/candidates', icon: Users, module: 'candidates' },
-  { name: 'Interviews', href: '/interviews', icon: Calendar, module: 'interviews' },
-  { name: 'Offers', href: '/offers', icon: Award, module: 'offers' },
-  { name: 'Organisations', href: '/admin/organisations', icon: Building, module: 'organisations', superAdminOnly: true },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart },
+  { name: 'Tasks', href: '/tasks', icon: ClipboardList },
+  { name: 'Requisitions', href: '/requisitions', icon: Briefcase },
+  { name: 'Job Descriptions', href: '/job-descriptions', icon: FileText },
+  { name: 'Job Postings', href: '/job-postings', icon: Globe },
+  { name: 'Candidates', href: '/candidates', icon: Users },
+  { name: 'Interviews', href: '/interviews', icon: Calendar },
+  { name: 'Offers', href: '/offers', icon: Award },
+  { name: 'Organisations', href: '/admin/organisations', icon: Building, superAdminOnly: true },
 ];
 
 function NavLink({
@@ -101,7 +103,13 @@ export function SidebarNav() {
     >
       {/* Top spacing / padding */}
       <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-1.5 px-3">
-        {NAV_ITEMS.filter(item => (!item.module || hasAccess(item.module)) && (!(item as any).superAdminOnly || isSuperAdmin)).map((item) => (
+        {NAV_ITEMS.filter(item => {
+          if ((item as any).superAdminOnly && !isSuperAdmin) return false;
+          const reqModule = getRequiredModuleForPath(item.href);
+          if (reqModule === null) return false; // Unmapped protected routes explicitly hidden
+          if (reqModule === '') return true; // explicitly permitted
+          return hasAccess(reqModule);
+        }).map((item) => (
           <NavLink
             key={item.href}
             href={item.href}

@@ -11,10 +11,17 @@ export async function GET(req: NextRequest) {
   }
 
   const apiUrl = process.env.API_URL || 'http://127.0.0.1:3000';
+  console.log('[Auth Route] Fetching ATS session from:', apiUrl);
 
-  const res = await fetch(`${apiUrl}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${apiUrl}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    console.log('[Auth Route] Received response:', res.status);
 
   if (!res.ok) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,4 +29,8 @@ export async function GET(req: NextRequest) {
 
   const data = await res.json();
   return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('[Auth Route] Error fetching ATS session:', error.message);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

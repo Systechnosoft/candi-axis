@@ -17,7 +17,7 @@ export function FilterBar({ searchValue = '', onSearchChange }: FilterBarProps) 
             placeholder="Search..."
             value={searchValue}
             onChange={(e) => onSearchChange?.(e.target.value)}
-            className="h-9 w-full rounded-md border border-border bg-surface pl-9 pr-3 text-[14px] placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand"
+            className="h-9 w-full rounded-md border border-input bg-surface pl-9 pr-3 text-[14px] placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand"
           />
         </div>
         <Button variant="secondary" className="gap-2">

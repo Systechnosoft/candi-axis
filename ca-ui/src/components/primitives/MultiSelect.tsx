@@ -79,7 +79,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-left focus:outline-none focus:ring-1 focus:ring-brand shadow-sm transition-all duration-200"
+        className="flex items-center justify-between w-full px-3 py-2 text-sm border border-input rounded-md bg-surface text-left focus:outline-none focus:ring-1 focus:ring-brand shadow-sm transition-all duration-200"
       >
         <span className="truncate max-w-[90%] text-text-primary">
           {displayText}

@@ -9,26 +9,45 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        sidebar: "var(--sidebar)",
-        surface: "var(--surface)",
-        subtle: "var(--subtle)",
-        border: "var(--border)",
-        "strong-border": "var(--strong-border)",
-        brand: {
-          DEFAULT: "#2563EB",
-          hover: "#1D4ED8",
-          active: "#1E40AF",
+        border: "hsl(var(--border) / 0.2)",
+        input: "hsl(var(--border) / 0.6)",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "#6366F1",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
-        text: {
-          primary: "#111827",
-          secondary: "#6B7280",
-          muted: "#9CA3AF",
-          inverse: "#FFFFFF",
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        sidebar: "hsl(var(--sidebar))",
+        surface: "hsl(var(--card))",
+        subtle: "hsl(var(--muted))",
+        "strong-border": "hsl(var(--strong-border))",
+        brand: {
+          DEFAULT: "hsl(var(--primary))",
         },
         status: {
           success: "#16A34A",
@@ -46,6 +65,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "sans-serif"],
+        heading: ["var(--font-heading)", "Plus Jakarta Sans", "sans-serif"],
       },
       borderRadius: {
         DEFAULT: "6px",

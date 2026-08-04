@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Search, 
@@ -34,10 +35,17 @@ export function Topbar() {
   return (
     <header className="h-16 flex-shrink-0 bg-surface border-b border-border flex items-center justify-between px-6 z-40 relative">
       {/* Left: Logo Text */}
-      <div className="flex items-center gap-6">
-        <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-95 transition-opacity">
-          <span className="text-brand font-semibold text-lg tracking-tight">Systechnosoft ATS</span>
-        </Link>
+      <div className="flex items-center h-16 pointer-events-none">
+        <div className="flex items-center rounded-sm -ml-5 pointer-events-none">
+          <Image 
+            src="/logo.png" 
+            alt="CandiAxis" 
+            width={200}
+            height={80}
+            priority
+            className="object-contain object-left pointer-events-none" 
+          />
+        </div>
       </div>
 
       {/* Middle: Search bar */}

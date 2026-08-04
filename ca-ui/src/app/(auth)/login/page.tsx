@@ -14,7 +14,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
@@ -67,7 +67,7 @@ function LoginForm() {
       <div className="bg-surface border border-border rounded-md shadow-sm p-8 w-full max-w-sm">
         <div className="mb-6">
           <h1 className="text-[24px] font-semibold text-text-primary">Sign in</h1>
-          <p className="text-[14px] text-text-secondary mt-1">Systechnosoft ATS — Internal Portal</p>
+          <p className="text-[14px] text-text-secondary mt-1">CandiAxis — Internal Portal</p>
         </div>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">

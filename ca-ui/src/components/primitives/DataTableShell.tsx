@@ -13,7 +13,7 @@ export function DataTableShell({ children, className }: { children: React.ReactN
 
 export function TableHead({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <thead className={cn("bg-subtle text-text-secondary border-b border-strong-border", className)}>
+    <thead className={cn("bg-brand text-white [&_tr]:hover:!bg-brand [&_tr]:!transition-none", className)}>
       {children}
     </thead>
   );
@@ -21,7 +21,7 @@ export function TableHead({ children, className }: { children: React.ReactNode; 
 
 export function TableRow({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
   return (
-    <tr className={cn("h-10 border-b border-border hover:bg-subtle/50 transition-colors", className)} onClick={onClick}>
+    <tr className={cn("border-b border-border hover:bg-subtle/50 transition-colors", className)} onClick={onClick}>
       {children}
     </tr>
   );
@@ -29,7 +29,7 @@ export function TableRow({ children, className, onClick }: { children: React.Rea
 
 export function TableHeader({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <th className={cn("px-4 py-2 font-semibold align-middle", className)}>
+    <th className={cn("px-6 py-3.5 font-semibold align-middle text-[13px] tracking-wide", className)}>
       {children}
     </th>
   );
@@ -37,7 +37,7 @@ export function TableHeader({ children, className }: { children: React.ReactNode
 
 export function TableCell({ children, className, colSpan, ...props }: { children: React.ReactNode; className?: string; colSpan?: number; [key: string]: unknown }) {
   return (
-    <td className={cn("px-4 py-2 align-middle", className)} colSpan={colSpan} {...props}>
+    <td className={cn("px-6 py-3.5 align-middle", className)} colSpan={colSpan} {...props}>
       {children}
     </td>
   );
