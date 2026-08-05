@@ -1301,6 +1301,12 @@ export class CandidatesService {
 
     const parseDate = (val: any): Date | null => {
       if (!val) return null;
+      // Handle the case where val is a 4-digit year number (e.g., 2012)
+      // new Date(2012) evaluates to 2012 milliseconds since 1970.
+      if (typeof val === 'number' || /^\d{4}$/.test(String(val))) {
+        const year = typeof val === 'number' ? val : parseInt(val, 10);
+        return new Date(year, 0, 1);
+      }
       const d = new Date(val);
       return isNaN(d.getTime()) ? null : d;
     };
@@ -1314,6 +1320,11 @@ export class CandidatesService {
 
     const parseEducationEndDate = (val: any): Date | null => {
       if (!val) return null;
+      // If it's a pure number/year string, create a June 30th date
+      if (typeof val === 'number' || /^\d{4}$/.test(String(val))) {
+        const year = typeof val === 'number' ? val : parseInt(val, 10);
+        return new Date(year, 5, 30); // June 30th of that year
+      }
       const d = new Date(val);
       if (!isNaN(d.getTime())) return d;
       const year = parseYear(val);
@@ -1348,11 +1359,13 @@ export class CandidatesService {
         const currStart = curr.startDateObj!;
 
         if (currStart > prevEnd) {
-          const diffMs = currStart.getTime() - prevEnd.getTime();
-          const diffDays = diffMs / (1000 * 60 * 60 * 24);
-          const diffMonths = Math.floor(diffDays / 30.4375);
+          // Calculate calendar month difference
+          // Formula: (Year2 - Year1) * 12 + (Month2 - Month1) - 1
+          // The -1 accounts for the fact that if you end in Oct and start in Dec, the gap is only Nov (1 month).
+          const diffMonths = (currStart.getFullYear() - prevEnd.getFullYear()) * 12 
+                           + (currStart.getMonth() - prevEnd.getMonth()) - 1;
 
-          if (diffMonths >= 2) {
+          if (diffMonths > 0) {
             const prevDateStr = prevEnd.toLocaleDateString('en-US', {
               month: 'short',
               year: 'numeric',
@@ -1361,9 +1374,16 @@ export class CandidatesService {
               month: 'short',
               year: 'numeric',
             });
-            gaps.push(
-              `Experience gap of ${diffMonths} month${diffMonths > 1 ? 's' : ''} between ${prev.company_name} (ended ${prevDateStr}) and ${curr.company_name} (started ${currDateStr})`,
-            );
+            
+            // Only report if it's 2 or more months gap, or if you want to report 1 month gaps.
+            // Let's report gaps >= 1 month if they want to see any gap. 
+            // The previous logic reported diffMonths >= 2 (which was actually a 1 month calendar gap).
+            // So diffMonths >= 1 is equivalent to the old diffMonths >= 2.
+            if (diffMonths >= 1) {
+              gaps.push(
+                `Experience gap of ${diffMonths} month${diffMonths > 1 ? 's' : ''} between ${prev.company_name} (ended ${prevDateStr}) and ${curr.company_name} (started ${currDateStr})`,
+              );
+            }
           }
         }
       }
@@ -1383,11 +1403,10 @@ export class CandidatesService {
         const today = new Date();
         const prevEnd = latestEmp.endDateObj;
         if (today > prevEnd) {
-          const diffMs = today.getTime() - prevEnd.getTime();
-          const diffDays = diffMs / (1000 * 60 * 60 * 24);
-          const diffMonths = Math.floor(diffDays / 30.4375);
+          const diffMonths = (today.getFullYear() - prevEnd.getFullYear()) * 12 
+                           + (today.getMonth() - prevEnd.getMonth()) - 1;
 
-          if (diffMonths >= 2) {
+          if (diffMonths >= 1) {
             const prevDateStr = prevEnd.toLocaleDateString('en-US', {
               month: 'short',
               year: 'numeric',
@@ -1453,9 +1472,8 @@ export class CandidatesService {
         const empStart = firstEmp.startDateObj;
 
         if (empStart > edEnd) {
-          const diffMs = empStart.getTime() - edEnd.getTime();
-          const diffDays = diffMs / (1000 * 60 * 60 * 24);
-          const diffMonths = Math.floor(diffDays / 30.4375);
+          const diffMonths = (empStart.getFullYear() - edEnd.getFullYear()) * 12 
+                           + (empStart.getMonth() - edEnd.getMonth()) - 1;
 
           if (diffMonths >= 6) {
             // Only report if the gap is at least 6 months

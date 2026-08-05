@@ -25,9 +25,9 @@ export interface ParsedResume {
 
 const RESUME_PARSE_PROMPT = `
 You are an expert ATS (Applicant Tracking System) resume parser.
-Your task is to extract structured fields from the provided resume text.
-You must recognize common project headings such as: Projects, Academic Projects, Personal Projects, Professional Projects, Key Projects, Portfolio, Case Studies, and extract relevant details.
-You must return ONLY a valid JSON object adhering exactly to the following schema:
+Your task is to comprehensively extract structured fields from the provided resume text. Do not summarize or skip any employment history, education, or skills.
+You must return ONLY a valid JSON object adhering exactly to the following strict schema.
+
 {
   "full_name": "string",
   "email": "string",
@@ -36,20 +36,24 @@ You must return ONLY a valid JSON object adhering exactly to the following schem
   "linkedin_url": "string",
   "github_url": "string",
   "portfolio_url": "string",
-  "summary": "string (MUST be in bullet points, starting with •)",
-  "skills": ["string", "string"],
-  "education": [{"degree": "string", "field_of_study": "string", "institution": "string", "start_year": "string (Format: 'Mon YYYY', e.g. 'Jan 2018')", "end_year": "string (Format: 'Mon YYYY', e.g. 'May 2022')"}],
-  "employment": [{"title": "string", "company": "string", "start_date": "string (Format: 'Mon YYYY')", "end_date": "string (Format: 'Mon YYYY' or 'Present')", "description": "string (MUST be in bullet points)"}],
-  "certifications": [{"name": "string", "issuer": "string", "issued_on": "string (Format: 'Mon YYYY')", "expiry_on": "string (Format: 'Mon YYYY' or 'Present')"}],
-  "projects": [{"title": "string (Project Title/Name)", "description": "string (Project Description)", "technologies": ["string", "string"] or "string (comma-separated list of technologies used)", "duration": "string (Duration, e.g. 'Jan 2025 - Apr 2025' or '2024')", "role": "string (Role in project)", "project_url": "string (Project link or GitHub link if available)"}],
-  "total_experience_months": number,
-  "current_ctc": number,
-  "expected_ctc": number,
-  "notice_period_days": number
+  "summary": "string",
+  "skills": ["string"],
+  "education": [{"degree": "string", "field_of_study": "string", "institution": "string", "start_year": "string", "end_year": "string"}],
+  "employment": [{"title": "string", "company": "string", "start_date": "string", "end_date": "string", "description": "string"}],
+  "certifications": [{"name": "string", "issuer": "string", "issued_on": "string", "expiry_on": "string"}],
+  "projects": [{"title": "string", "description": "string", "technologies": ["string"], "duration": "string", "role": "string", "project_url": "string"}],
+  "total_experience_months": 0,
+  "current_ctc": 0,
+  "expected_ctc": 0,
+  "notice_period_days": 0
 }
-If a field is not present in the resume, return an empty string, empty array, or 0.
-Bullet points should be concise and professional.
-Do not wrap the JSON in Markdown formatting. Return the raw JSON object only.
+
+CRITICAL RULES:
+1. If a field is missing from the resume, use an empty string "", empty array [], or 0.
+2. For descriptions and summaries, preserve all bullet points exactly as they appear in the resume.
+3. EXTRACT ALL EMPLOYMENT AND EDUCATION ENTRIES. DO NOT SKIP ANY.
+4. Extract ALL skills mentioned in the resume into the skills array.
+5. You must output a pure JSON object.
 `.trim();
 
 @Injectable()
@@ -133,6 +137,8 @@ export class ResumeAiParserService {
           { role: 'user', content: text },
         ],
         temperature: 0.1,
+        max_tokens: 4096,
+        response_format: { type: 'json_object' },
       });
 
       const raw = completion.choices[0]?.message?.content;

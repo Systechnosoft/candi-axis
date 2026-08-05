@@ -164,8 +164,25 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
       updated[index] = { ...updated[index], [field]: value };
 
       // If setting this to current, unset others
-      if (field === 'is_current' && value === true) {
-        updated.forEach((emp, i) => { if (i !== index) emp.is_current = false; });
+      if (field === 'is_current') {
+        if (value === true) {
+          updated.forEach((emp, i) => { if (i !== index) emp.is_current = false; });
+          
+          // Save the existing end date in case they uncheck
+          if (updated[index].end_date) {
+            (updated[index] as any)._prev_end_date = updated[index].end_date;
+          }
+          
+          // Set to actual current month/year using existing utility
+          const now = new Date();
+          const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          updated[index].end_date = fromMonthValue(currentMonth);
+        } else {
+          // Restore previous end date if it was saved
+          if ((updated[index] as any)._prev_end_date) {
+            updated[index].end_date = (updated[index] as any)._prev_end_date;
+          }
+        }
       }
       return { ...prev, employments: updated };
     });

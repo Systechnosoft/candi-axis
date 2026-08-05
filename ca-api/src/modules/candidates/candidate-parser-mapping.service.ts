@@ -72,6 +72,7 @@ export class CandidateParserMappingService {
         ? Math.floor(json.totalYearsExperience * 12)
         : undefined,
       profile_summary: json?.summary || undefined,
+      tags: json?.skills || undefined,
     };
 
     const educations: ChildRowEducation[] = (json?.education || []).map(

@@ -26,7 +26,7 @@ export class DocumentsService {
 
   async registerUnattachedResume(userId: string, dto: RegisterDocumentDto) {
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1`,
+      `SELECT org_id FROM ca_users WHERE id = $1`,
       [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
@@ -225,26 +225,31 @@ export class DocumentsService {
   }
 
   async uploadResume(userId: string, file: Express.Multer.File) {
-    const upload = await this.storageService.uploadResume(file);
+    try {
+      const upload = await this.storageService.uploadResume(file);
 
-    const document = await this.registerUnattachedResume(userId, {
-      document_type: 'resume',
-      original_file_name: file.originalname,
-      storage_bucket: upload.bucket,
-      storage_key: upload.objectName,
-      mime_type: file.mimetype,
-      file_size_bytes: file.size,
-    });
+      const document = await this.registerUnattachedResume(userId, {
+        document_type: 'resume',
+        original_file_name: file.originalname,
+        storage_bucket: upload.bucket,
+        storage_key: upload.objectName,
+        mime_type: file.mimetype,
+        file_size_bytes: file.size,
+      });
 
-    await this.queueService.enqueue<ParseResumeJobPayload>(
-      QUEUE_NAMES.RESUME_PARSING,
-      'parse-resume',
-      {
-        documentId: document.id,
-        candidateId: document.entity_id,
-      },
-    );
+      await this.queueService.enqueue<ParseResumeJobPayload>(
+        QUEUE_NAMES.RESUME_PARSING,
+        'parse-resume',
+        {
+          documentId: document.id,
+          candidateId: document.entity_id,
+        },
+      );
 
-    return document;
+      return document;
+    } catch (error: any) {
+      console.error('Error in uploadResume:', error);
+      throw error;
+    }
   }
 }

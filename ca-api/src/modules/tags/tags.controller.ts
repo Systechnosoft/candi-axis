@@ -24,14 +24,14 @@ export class TagsController {
 
   @Post()
   @RequireModule('tags', 'editor')
-  create(@CurrentUser() user: any, @Body() createTagDto: CreateTagDto) {
+  create(@CurrentUser() user: { atsUserId: string }, @Body() createTagDto: CreateTagDto) {
     return this.tagsService.createTag(user.atsUserId, null, createTagDto);
   }
 
   @Get()
   @RequireModule('tags', 'viewer')
   findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: { atsUserId: string },
     @Query('search') search?: string,
     @Query('type') type?: string,
     @Query('active') active?: string,
@@ -42,7 +42,7 @@ export class TagsController {
   @Get('suggestions')
   @RequireModule('tags', 'viewer')
   getSuggestions(
-    @CurrentUser() user: any,
+    @CurrentUser() user: { atsUserId: string },
     @Query('type') type?: string,
     @Query('search') search?: string,
   ) {
@@ -59,7 +59,7 @@ export class TagsController {
   @RequireModule('tags', 'editor')
   update(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: { atsUserId: string },
     @Body() updateTagDto: UpdateTagDto,
   ) {
     return this.tagsService.updateTag(id, user.atsUserId, updateTagDto);
@@ -67,7 +67,7 @@ export class TagsController {
 
   @Delete(':id')
   @RequireModule('tags', 'editor')
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
+  remove(@Param('id') id: string, @CurrentUser() user: { atsUserId: string }) {
     return this.tagsService.deleteTag(id, user.atsUserId);
   }
 }

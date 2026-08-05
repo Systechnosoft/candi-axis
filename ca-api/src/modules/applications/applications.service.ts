@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../../infrastructure/database/database.module';
@@ -27,7 +28,7 @@ export class ApplicationsService {
       // Check for duplicate application
       const dupCheck = await client.query(
         `SELECT cjs.id FROM public.ca_candidate_job_stages cjs
-         JOIN public.job_postings jp ON cjs.job_posting_id = jp.id
+         JOIN public.ca_job_postings jp ON cjs.job_posting_id = jp.id
          WHERE cjs.candidate_id = $1 AND jp.jd_id = $2 AND cjs.deleted_at IS NULL`,
         [dto.candidate_id, dto.jd_id],
       );
@@ -39,35 +40,36 @@ export class ApplicationsService {
       }
 
       // Verify candidate exists
-      const candCheck = await client.query(
+      const candCheck = await client.query<{ id: string; org_id: string }>(
         'SELECT id, org_id FROM ca_candidates WHERE id = $1 AND is_deleted = false',
         [dto.candidate_id],
       );
       if (candCheck.rows.length === 0) {
         throw new NotFoundException('Candidate not found');
       }
-      const candidateOrgId = candCheck.rows[0].org_id;
+      const candidateOrgId = String(candCheck.rows[0].org_id);
 
       // Verify JD exists
-      const jdCheck = await client.query(
-        'SELECT id, org_id FROM job_descriptions WHERE id = $1 AND is_deleted = false',
+      const jdCheck = await client.query<{ id: string; org_id: string }>(
+        'SELECT id, org_id FROM ca_job_descriptions WHERE id = $1 AND is_deleted = false',
         [dto.jd_id],
       );
       if (jdCheck.rows.length === 0) {
         throw new NotFoundException('Job Description not found');
       }
-      const jdOrgId = jdCheck.rows[0].org_id;
+      const jdOrgId = String(jdCheck.rows[0].org_id);
 
       const orgId = candidateOrgId || jdOrgId;
 
       // Verify or create Job Posting
-      const jpCheck = await client.query(
+      const jpCheck = await client.query<{ id: string }>(
         'SELECT id FROM public.ca_job_postings WHERE jd_id = $1 LIMIT 1',
         [dto.jd_id],
       );
-      let jobPostingId = jpCheck.rows[0]?.id;
+      let jobPostingId: string | undefined =
+        jpCheck.rows.length > 0 ? String(jpCheck.rows[0].id) : undefined;
       if (!jobPostingId) {
-        const jpInsert = await client.query(
+        const jpInsert = await client.query<{ id: string }>(
           `INSERT INTO public.ca_job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
           [orgId, dto.jd_id, 'Posting for JD'],
         );
@@ -80,12 +82,21 @@ export class ApplicationsService {
         VALUES ($1, $2, $3, 'new', NULL)
         RETURNING *
       `;
-      const appRes = await client.query(appQuery, [
+      interface AppStageMapping {
+        id: string;
+        org_id: string;
+        candidate_id: string;
+        job_posting_id: string;
+        stage: string;
+        sub_stage: string | null;
+        created_at: Date;
+      }
+      const appRes = await client.query<AppStageMapping>(appQuery, [
         orgId,
         dto.candidate_id,
         jobPostingId,
       ]);
-      const application = appRes.rows[0];
+      const application: AppStageMapping = appRes.rows[0];
 
       // Audit log
       await this.auditService.log({
@@ -110,10 +121,14 @@ export class ApplicationsService {
       };
     } catch (err) {
       await client.query('ROLLBACK');
-      this.logger.error(
-        `Failed to create application: ${err.message}`,
-        err.stack,
-      );
+      if (err instanceof Error) {
+        this.logger.error(
+          `Failed to create application: ${err.message}`,
+          err.stack,
+        );
+      } else {
+        this.logger.error(`Failed to create application: ${String(err)}`);
+      }
       throw err;
     } finally {
       client.release();
@@ -134,11 +149,26 @@ export class ApplicationsService {
              ) as ai_score
       FROM public.ca_candidate_job_stages a
       JOIN public.ca_candidates c ON a.candidate_id = c.id
-      JOIN public.job_postings jp ON a.job_posting_id = jp.id
-      JOIN public.job_descriptions jd ON jp.jd_id = jd.id
+      JOIN public.ca_job_postings jp ON a.job_posting_id = jp.id
+      JOIN public.ca_job_descriptions jd ON jp.jd_id = jd.id
       WHERE a.id = $1 AND a.deleted_at IS NULL
     `;
-    const res = await this.pool.query(query, [id]);
+    interface FindOneApplicationResult {
+      id: string;
+      candidate_id: string;
+      stage: string;
+      sub_stage: string | null;
+      created_at: Date;
+      jd_id: string;
+      candidate_name: string;
+      candidate_email: string;
+      jd_title: string;
+      jd_requisition_id: string;
+      stage_updated_by_name: string | null;
+      created_by_name: string | null;
+      ai_score: number;
+    }
+    const res = await this.pool.query<FindOneApplicationResult>(query, [id]);
     if (res.rows.length === 0) {
       throw new NotFoundException('Application not found');
     }
@@ -172,7 +202,6 @@ export class ApplicationsService {
       stage,
       jd_id,
       candidate_id,
-      recruiter_id,
       search,
       posting_id,
     } = params;
@@ -181,8 +210,8 @@ export class ApplicationsService {
     let baseQuery = `
       FROM public.ca_candidate_job_stages a
       JOIN public.ca_candidates c ON a.candidate_id = c.id
-      JOIN public.job_postings jp ON a.job_posting_id = jp.id
-      JOIN public.job_descriptions jd ON jp.jd_id = jd.id
+      JOIN public.ca_job_postings jp ON a.job_posting_id = jp.id
+      JOIN public.ca_job_descriptions jd ON jp.jd_id = jd.id
       WHERE a.deleted_at IS NULL
     `;
     const queryParams: any[] = [];
@@ -210,10 +239,16 @@ export class ApplicationsService {
       paramIdx++;
     }
 
-    const countRes = await this.pool.query(
-      `SELECT COUNT(*) as total ${baseQuery}`,
-      queryParams,
-    );
+    let countRes;
+    try {
+      countRes = await this.pool.query<{ total: string }>(
+        `SELECT COUNT(*) as total ${baseQuery}`,
+        queryParams,
+      );
+    } catch (e: any) {
+      throw new InternalServerErrorException(`Count query failed: ${e.message}`);
+    }
+    
     const total = parseInt(countRes.rows[0].total, 10);
 
     const dataQuery = `
@@ -236,7 +271,14 @@ export class ApplicationsService {
       LIMIT $${paramIdx++} OFFSET $${paramIdx}
     `;
     queryParams.push(limit, offset);
-    const dataRes = await this.pool.query(dataQuery, queryParams);
+    
+    let dataRes;
+    try {
+      dataRes = await this.pool.query(dataQuery, queryParams);
+    } catch (e: any) {
+      this.logger.error(`Data query failed: ${e.message}. Query: ${dataQuery} | Params: ${JSON.stringify(queryParams)}`);
+      throw new InternalServerErrorException(`Data query failed: ${e.message}`);
+    }
 
     return {
       data: dataRes.rows,
@@ -249,7 +291,8 @@ export class ApplicationsService {
     };
   }
 
-  async refreshAiRating(userId: string, id: string) {
+  refreshAiRating(_userId: string, _id: string) {
     return { message: 'AI Rating is completed' };
   }
 }
+

@@ -38,7 +38,7 @@ const PROVIDER_DEFAULTS: Record<string, { model: string; baseUrl: string; label:
     label: 'Anthropic Claude'
   },
   groq: {
-    model: 'llama-3',
+    model: 'llama-3.3-70b-versatile',
     baseUrl: 'https://api.groq.com/openai/v1',
     label: 'Groq'
   }

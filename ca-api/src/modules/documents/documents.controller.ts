@@ -10,6 +10,7 @@ import {
   Param,
   Res,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -26,7 +27,7 @@ export class DocumentsController {
   @Post('register')
   @UseGuards(JwtAuthGuard)
   register(
-    @CurrentUser() user: any,
+    @CurrentUser() user: { atsUserId: string },
     @Body(new ValidationPipe({ whitelist: true })) dto: RegisterDocumentDto,
   ) {
     return this.documentsService.registerUnattachedResume(user.atsUserId, dto);
@@ -50,9 +51,12 @@ export class DocumentsController {
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadResume(
-    @CurrentUser() user: any,
+    @CurrentUser() user: { atsUserId: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
     return this.documentsService.uploadResume(user.atsUserId, file);
   }
 
