@@ -437,30 +437,26 @@ export class JobDescriptionsService {
           c.current_ctc,
           c.expected_ctc,
           c.notice_period_days,
-          COUNT(DISTINCT et.tag_id)::float as overlap_count,
+          COUNT(DISTINCT js.tag_id)::float as overlap_count,
           COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.type = 'skill' AND t.is_deleted = false AND t.active = true), '{}') as skills
         FROM ca_candidates c
-        JOIN ca_entity_tags et ON et.entity_type = 'candidate' AND et.entity_id = c.id
-        JOIN jd_skills js ON js.tag_id = et.tag_id
+        LEFT JOIN ca_entity_tags et ON et.entity_type = 'candidate' AND et.entity_id = c.id
+        LEFT JOIN jd_skills js ON js.tag_id = et.tag_id
 
         LEFT JOIN ca_entity_tags et_all ON et_all.entity_type = 'candidate' AND et_all.entity_id = c.id
         LEFT JOIN ca_tags t ON t.id = et_all.tag_id
         WHERE c.status = 'active'
           AND c.id = ANY($2::uuid[])
           AND NOT EXISTS (
-            SELECT 1 FROM public.candidate_job_stages cjs
+            SELECT 1 FROM public.ca_candidate_job_stages cjs
             JOIN public.ca_job_postings jp ON cjs.job_posting_id = jp.id
             WHERE cjs.candidate_id = c.id 
               AND jp.jd_id = $1 
+              AND jp.is_active = true
               AND cjs.stage != 'rejected'
               AND cjs.deleted_at IS NULL
           )
         GROUP BY c.id, c.full_name, c.current_designation, c.current_ctc, c.expected_ctc, c.notice_period_days
-        HAVING (
-          SELECT COUNT(*) FROM jd_must_have_skills
-        ) = COUNT(DISTINCT et.tag_id) FILTER (
-          WHERE et.tag_id IN (SELECT tag_id FROM jd_must_have_skills)
-        )
       )
       SELECT 
         m.candidate_id,

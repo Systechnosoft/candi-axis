@@ -29,13 +29,13 @@ async function run() {
   const authId = existingAuthUser.id;
   console.log('Found Supabase Auth ID:', authId);
 
-  // force update the ats database!
+  // force update the CA database!
   await client.query(
     `UPDATE ca_users SET supabase_auth_user_id = $1, is_active=true, status='active', is_deleted=false WHERE email_normalized = $2`,
     [authId, normalized],
   );
 
-  console.log('Forced update of supabase auth ID in ATS db to', authId);
+  console.log('Forced update of supabase auth ID in CA db to', authId);
 
   const res = await client.query(
     'SELECT supabase_auth_user_id, status, is_active FROM ca_users WHERE email_normalized = $1',

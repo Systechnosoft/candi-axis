@@ -6,7 +6,7 @@ const pool = new Pool({
 
 async function deleteCandidate() {
   try {
-    const res = await pool.query("DELETE FROM ca_candidates WHERE email = 'anujdhuiman@gmail.com'");
+    const res = await pool.query("DELETE FROM ca_candidates WHERE id = '29f5c731-24ae-43c8-8eb0-10c1ab5f81de'");
     console.log(`Deleted ${res.rowCount} candidate(s).`);
   } catch (err) {
     console.error('Error deleting candidate:', err);

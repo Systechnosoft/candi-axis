@@ -29,7 +29,7 @@ export class ApplicationsService {
       const dupCheck = await client.query(
         `SELECT cjs.id FROM public.ca_candidate_job_stages cjs
          JOIN public.ca_job_postings jp ON cjs.job_posting_id = jp.id
-         WHERE cjs.candidate_id = $1 AND jp.jd_id = $2 AND cjs.deleted_at IS NULL`,
+         WHERE cjs.candidate_id = $1 AND jp.jd_id = $2 AND cjs.deleted_at IS NULL AND jp.is_active = true`,
         [dto.candidate_id, dto.jd_id],
       );
 
@@ -62,18 +62,22 @@ export class ApplicationsService {
       const orgId = candidateOrgId || jdOrgId;
 
       // Verify or create Job Posting
-      const jpCheck = await client.query<{ id: string }>(
-        'SELECT id FROM public.ca_job_postings WHERE jd_id = $1 LIMIT 1',
-        [dto.jd_id],
-      );
-      let jobPostingId: string | undefined =
-        jpCheck.rows.length > 0 ? String(jpCheck.rows[0].id) : undefined;
+      let jobPostingId: string | undefined = dto.job_posting_id;
+      
       if (!jobPostingId) {
-        const jpInsert = await client.query<{ id: string }>(
-          `INSERT INTO public.ca_job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
-          [orgId, dto.jd_id, 'Posting for JD'],
+        const jpCheck = await client.query<{ id: string }>(
+          'SELECT id FROM public.ca_job_postings WHERE jd_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1',
+          [dto.jd_id],
         );
-        jobPostingId = jpInsert.rows[0].id;
+        jobPostingId = jpCheck.rows.length > 0 ? String(jpCheck.rows[0].id) : undefined;
+        
+        if (!jobPostingId) {
+          const jpInsert = await client.query<{ id: string }>(
+            `INSERT INTO public.ca_job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
+            [orgId, dto.jd_id, 'Posting for JD'],
+          );
+          jobPostingId = jpInsert.rows[0].id;
+        }
       }
 
       // Create application (stage mapping)

@@ -1,13 +1,13 @@
 /**
  * Standalone bootstrap-admin script (Supabase Auth version).
- * Creates/ensures the Super Admin user in both Supabase Auth and the ATS public.users table.
+ * Creates/ensures the Super Admin user in both Supabase Auth and the CA public.users table.
  *
  * Usage: ts-node src/bootstrap/bootstrap-admin.ts
  *
  * Behavior:
  * - If BOOTSTRAP_ADMIN_EMAIL is not set, exits cleanly.
  * - Creates or locates the user in Supabase Auth via Admin API.
- * - Creates or links the corresponding ATS users row via supabase_auth_user_id.
+ * - Creates or links the corresponding CA users row via supabase_auth_user_id.
  * - Ensures super_admin role, access_modules, and role_module_access entries.
  * - Fully idempotent.
  */
@@ -18,7 +18,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const ATS_MODULES = [
+const CA_MODULES = [
   { code: 'dashboard', name: 'Dashboard', sort: 10 },
   { code: 'organisations', name: 'Organisations', sort: 20 },
   { code: 'users', name: 'Users', sort: 30 },
@@ -96,7 +96,7 @@ async function run() {
     }
 
     // 2. ensure access modules
-    for (const mod of ATS_MODULES) {
+    for (const mod of CA_MODULES) {
       await client.query(
         `INSERT INTO ca_modules (code, name, is_system, is_active, sort_order)
          VALUES ($1, $2, true, true, $3)
@@ -159,16 +159,16 @@ async function run() {
       );
     }
 
-    // 5. Ensure ATS user
-    const existingAts = await client.query(
+    // 5. Ensure CA user
+    const existingCA = await client.query(
       `SELECT id FROM ca_users WHERE email_normalized = $1 LIMIT 1`,
       [normalized],
     );
 
     let userId: string;
-    if (existingAts.rows[0]) {
-      userId = existingAts.rows[0].id;
-      console.log(`[bootstrap] ATS user already exists (${email}).`);
+    if (existingCA.rows[0]) {
+      userId = existingCA.rows[0].id;
+      console.log(`[bootstrap] CA user already exists (${email}).`);
       await client.query(
         `UPDATE ca_users SET supabase_auth_user_id = $1 WHERE id = $2 AND supabase_auth_user_id IS NULL`,
         [supabaseAuthUserId, userId],
@@ -181,7 +181,7 @@ async function run() {
         [normalized, normalized, name, supabaseAuthUserId],
       );
       userId = ins.rows[0].id;
-      console.log(`[bootstrap] ATS user created: ${email}`);
+      console.log(`[bootstrap] CA user created: ${email}`);
     }
 
     // 6. Ensure super_admin role assignment

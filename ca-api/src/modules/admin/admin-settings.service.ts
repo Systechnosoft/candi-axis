@@ -386,7 +386,7 @@ export class AdminSettingsService {
     return null;
   }
 
-  async getAiConfigForOrg(email: string) {
+  async getAiConfigForOrg(email: string): Promise<{ provider: string; model: string; base_url: string; api_key: string | null }> {
     const orgPrefix = this.getOrgPrefix(email);
     const query = `
       SELECT setting_key, setting_value 
@@ -395,7 +395,7 @@ export class AdminSettingsService {
     `;
     const res = await this.pool.query(query, [`${orgPrefix}%`]);
 
-    const config: any = {
+    const config: { provider: string; model: string; base_url: string; api_key: string | null } = {
       provider: 'gemini',
       model: this.getProviderDefaultModel('gemini'),
       base_url: this.getProviderDefaultBaseUrl('gemini'),

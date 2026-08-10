@@ -7,10 +7,12 @@ import {
   Max,
   IsOptional,
   IsBoolean,
+  IsNotEmpty,
 } from 'class-validator';
 
 export class AssignEntityTagDto {
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   tagId: string;
 
   @IsString()

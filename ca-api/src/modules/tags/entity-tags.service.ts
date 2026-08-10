@@ -166,6 +166,66 @@ export class EntityTagsService {
       );
 
       const newAssignments = [];
+      
+      if (replaceDto.tags && replaceDto.tags.length > 0) {
+        // First resolve any tagIds that are not UUIDs (e.g. new tag names from frontend)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        for (const tag of replaceDto.tags) {
+          if (!uuidRegex.test(tag.tagId)) {
+            // It's a tag name, let's find it or create it
+            const cleanName = tag.tagId.trim().replace(/\s+/g, ' ');
+            const normalizedName = cleanName.toLowerCase();
+            
+            const existingTag = await client.query(
+              `SELECT id FROM ca_tags WHERE normalized_name = $1 AND is_deleted = false LIMIT 1`,
+              [normalizedName]
+            );
+            
+            if (existingTag.rows.length > 0) {
+              tag.tagId = existingTag.rows[0].id;
+            } else {
+              // Get user org_id to create new tag
+              const userRes = await client.query(`SELECT org_id FROM ca_users WHERE id = $1`, [userId]);
+              let orgId = userRes.rows[0]?.org_id;
+              if (!orgId) {
+                const defaultOrgRes = await client.query(`SELECT id FROM ca_organisations ORDER BY created_at ASC LIMIT 1`);
+                orgId = defaultOrgRes.rows[0]?.id || '7af2ebf4-6888-4757-a585-bcd9115bb0da';
+              }
+              
+              const insertTagRes = await client.query(
+                `INSERT INTO ca_tags (org_id, name, normalized_name, type, created_by, updated_by)
+                 VALUES ($1, $2, $3, 'skill', $4, $4) RETURNING id`,
+                [orgId, cleanName, normalizedName, userId]
+              );
+              tag.tagId = insertTagRes.rows[0].id;
+            }
+          }
+        }
+
+        // Now validate all UUIDs exist
+        const tagIds = replaceDto.tags.map(t => t.tagId);
+        const validTagsResult = await client.query(
+          `SELECT id FROM ca_tags WHERE id = ANY($1) AND active = true AND is_deleted = false`,
+          [tagIds],
+        );
+        const validTagIds = new Set(validTagsResult.rows.map(r => r.id));
+        
+        for (const tag of replaceDto.tags) {
+          if (!validTagIds.has(tag.tagId)) {
+            throw new BadRequestException(`Tag with ID or Name '${tag.tagId}' not found or inactive.`);
+          }
+        }
+
+        // Check for duplicate skills in the payload
+        const seenTags = new Set<string>();
+        for (const tag of replaceDto.tags) {
+          if (seenTags.has(tag.tagId)) {
+            throw new BadRequestException('Duplicate skill');
+          }
+          seenTags.add(tag.tagId);
+        }
+      }
+
       for (const tag of replaceDto.tags) {
         const source = tag.source || 'manual';
         const confidence = tag.confidence ?? null;

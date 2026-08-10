@@ -21,17 +21,6 @@ export class MatchingService {
         jcm.created_at as "createdAt" 
       FROM ca_job_candidate_matches jcm
       WHERE jcm.job_id = $1 AND jcm.is_active = true AND jcm.deleted_at IS NULL
-        AND (
-          SELECT COUNT(*) FROM ca_entity_tags 
-          WHERE entity_type = 'job_description' AND entity_id = $1 AND is_starred = true
-        ) = (
-          SELECT COUNT(DISTINCT et.tag_id) FROM ca_entity_tags et
-          WHERE et.entity_type = 'candidate' AND et.entity_id = jcm.candidate_id
-            AND et.tag_id IN (
-              SELECT tag_id FROM ca_entity_tags 
-              WHERE entity_type = 'job_description' AND entity_id = $1 AND is_starred = true
-            )
-        )
     `;
     const res = await this.pool.query(query, [jobId]);
     return res.rows.map((row) => ({
@@ -119,19 +108,14 @@ export class MatchingService {
         candidate_matches AS (
           SELECT 
             c.id as candidate_id,
-            COUNT(DISTINCT et.tag_id)::float as overlap_count
+            COUNT(DISTINCT js.tag_id)::float as overlap_count
           FROM ca_candidates c
-          JOIN ca_entity_tags et ON et.entity_type = 'candidate' AND et.entity_id = c.id
-          JOIN jd_skills js ON js.tag_id = et.tag_id
+          LEFT JOIN ca_entity_tags et ON et.entity_type = 'candidate' AND et.entity_id = c.id
+          LEFT JOIN jd_skills js ON js.tag_id = et.tag_id
           WHERE c.status = 'active'
             AND c.is_deleted = false
             AND c.id = ANY($2::uuid[])
           GROUP BY c.id
-          HAVING (
-            SELECT COUNT(*) FROM jd_must_have_skills
-          ) = COUNT(DISTINCT et.tag_id) FILTER (
-            WHERE et.tag_id IN (SELECT tag_id FROM jd_must_have_skills)
-          )
         )
         SELECT 
           m.candidate_id,

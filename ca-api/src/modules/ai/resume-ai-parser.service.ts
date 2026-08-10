@@ -63,7 +63,12 @@ export class ResumeAiParserService {
   constructor(private readonly adminService: AdminSettingsService) {}
 
   async parseResumeText(text: string, email: string): Promise<ParsedResume> {
-    const config = await this.adminService.getAiConfigForOrg(email);
+    const config: {
+      provider: string;
+      model: string;
+      base_url: string;
+      api_key: string | null;
+    } = await this.adminService.getAiConfigForOrg(email);
     const provider = (config.provider || 'gemini').toLowerCase();
     const apiKey = config.api_key;
     const model = config.model;
@@ -164,7 +169,7 @@ export class ResumeAiParserService {
         .trim();
     }
     try {
-      return JSON.parse(cleaned);
+      return JSON.parse(cleaned) as ParsedResume;
     } catch {
       throw new Error(
         `Failed to parse JSON from AI provider response. Raw snippet: ${cleaned.slice(0, 200)}`,

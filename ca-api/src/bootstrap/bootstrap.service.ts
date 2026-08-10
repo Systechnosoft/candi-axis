@@ -5,7 +5,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PG_POOL } from '../infrastructure/database/database.module';
 import { AuditService } from '../modules/audit/audit.service';
 
-const ATS_MODULES = [
+const CA_MODULES = [
   { code: 'dashboard', name: 'Dashboard', sort: 10 },
   { code: 'organisations', name: 'Organisations', sort: 20 },
   { code: 'users', name: 'Users', sort: 30 },
@@ -37,7 +37,7 @@ export class BootstrapService {
   ) {}
 
   async run(): Promise<void> {
-    this.logger.log('Running ATS bootstrap...');
+    this.logger.log('Running CA bootstrap...');
 
     const superAdminRole = await this.ensureSuperAdminRole();
     await this.ensureAccessModules();
@@ -66,7 +66,7 @@ export class BootstrapService {
   }
 
   private async ensureAccessModules() {
-    for (const mod of ATS_MODULES) {
+    for (const mod of CA_MODULES) {
       await this.pool.query(
         `INSERT INTO ca_modules (code, name, is_system, is_active, sort_order)
          VALUES ($1, $2, true, true, $3)
@@ -160,7 +160,7 @@ export class BootstrapService {
       this.logger.log(`Supabase Auth bootstrap user created: ${email}`);
     }
 
-    // 2. Ensure ATS user record
+    // 2. Ensure CA user record
     const existing = await this.pool.query(
       `SELECT id FROM ca_users WHERE email_normalized = $1 LIMIT 1`,
       [normalized],
@@ -169,7 +169,7 @@ export class BootstrapService {
     let userId: string;
     if (existing.rows[0]) {
       userId = existing.rows[0].id;
-      this.logger.debug(`ATS user already exists (${email}).`);
+      this.logger.debug(`CA user already exists (${email}).`);
       // Ensure supabase_auth_user_id is linked
       await this.pool.query(
         `UPDATE ca_users SET supabase_auth_user_id = $1 WHERE id = $2 AND supabase_auth_user_id IS NULL`,
@@ -183,7 +183,7 @@ export class BootstrapService {
         [normalized, normalized, name, supabaseAuthUserId],
       );
       userId = result.rows[0].id;
-      this.logger.log(`ATS bootstrap user created: ${email}`);
+      this.logger.log(`CA bootstrap user created: ${email}`);
 
       await this.auditService.log({
         entityType: 'user',

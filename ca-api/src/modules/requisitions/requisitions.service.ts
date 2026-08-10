@@ -305,4 +305,37 @@ export class RequisitionsService {
 
     return { message: 'Requisition successfully archived.' };
   }
+
+  async restoreRequisition(id: string, userId: string) {
+    const currentResult = await this.pool.query(
+      `SELECT * FROM ca_job_requisitions WHERE id = $1 AND is_deleted = true`,
+      [id],
+    );
+
+    if (currentResult.rows.length === 0) {
+      throw new NotFoundException(`Archived Requisition with ID ${id} not found.`);
+    }
+    const currentReq = currentResult.rows[0];
+
+    const result = await this.pool.query(
+      `UPDATE ca_job_requisitions 
+       SET is_deleted = false, updated_by = $2
+       WHERE id = $1 
+       RETURNING *`,
+      [id, userId],
+    );
+    const restoredReq = result.rows[0];
+
+    await this.auditService.log({
+      entityType: 'job_requisitions',
+      entityId: restoredReq.id,
+      action: 'UPDATE',
+      beforeJson: currentReq,
+      afterJson: restoredReq,
+      changedBy: userId,
+      reasonContext: 'Job Requisition restored via API',
+    });
+
+    return { message: 'Requisition successfully restored.' };
+  }
 }

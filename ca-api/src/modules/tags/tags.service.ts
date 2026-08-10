@@ -119,8 +119,11 @@ export class TagsService {
     }
 
     if (query.search) {
-      conditions.push(`name ILIKE $${counter++}`);
-      values.push(`%${query.search}%`);
+      const cleanedSearch = this.cleanText(query.search);
+      if (cleanedSearch) {
+        conditions.push(`name ILIKE $${counter++}`);
+        values.push(`%${cleanedSearch}%`);
+      }
     }
 
     const whereClause =
@@ -159,8 +162,11 @@ export class TagsService {
     }
 
     if (search) {
-      conditions.push(`name ILIKE $${counter++}`);
-      values.push(`%${search}%`);
+      const cleanedSearch = this.cleanText(search);
+      if (cleanedSearch) {
+        conditions.push(`name ILIKE $${counter++}`);
+        values.push(`%${cleanedSearch}%`);
+      }
     }
 
     const whereClause = `WHERE ${conditions.join(' AND ')}`;

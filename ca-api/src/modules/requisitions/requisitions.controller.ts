@@ -75,4 +75,10 @@ export class RequisitionsController {
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.requisitionsService.deleteRequisition(id, user.atsUserId);
   }
+
+  @Post(':id/restore')
+  @RequireModule('requisitions', 'editor')
+  restore(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.requisitionsService.restoreRequisition(id, user.atsUserId);
+  }
 }

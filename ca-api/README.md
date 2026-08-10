@@ -1,6 +1,6 @@
 # CandiAxis API
 
-The core backend service for the **CandiAxis** Applicant Tracking System (ATS). 
+The core backend service for the **CandiAxis** Applicant Tracking System (CA). 
 Built with [NestJS](https://nestjs.com/), TypeScript, and PostgreSQL.
 
 ## 🚀 Features
