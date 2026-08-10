@@ -26,4 +26,9 @@ export const requisitionsApi = {
     const { data } = await apiClient.delete<{ message: string }>(`/requisitions/${id}`);
     return data;
   },
+
+  restoreRequisition: async (id: string) => {
+    const { data } = await apiClient.post<{ message: string }>(`/requisitions/${id}/restore`);
+    return data;
+  },
 };

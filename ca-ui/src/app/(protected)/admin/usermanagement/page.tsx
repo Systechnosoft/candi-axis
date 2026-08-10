@@ -96,7 +96,7 @@ export default function UsersManagementPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder="Search by name or email..." 
+              placeholder="Search here..." 
               className="pl-9 pr-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-64 bg-surface"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -145,7 +145,7 @@ export default function UsersManagementPage() {
                 <TableHeader>Department</TableHeader>
                 <TableHeader>Role</TableHeader>
                 <TableHeader>Status</TableHeader>
-                <TableHeader className="text-right">Actions</TableHeader>
+                <TableHeader className="text-right"></TableHeader>
               </TableRow>
             </TableHead>
             <tbody>
@@ -159,7 +159,7 @@ export default function UsersManagementPage() {
                   <TableCell className="capitalize">{user.role_code.replace('_', ' ')}</TableCell>
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <button 
                         onClick={() => handleEdit(user)}
                         className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"

@@ -43,7 +43,7 @@ export function Topbar() {
             width={200}
             height={80}
             priority
-            className="object-contain object-left pointer-events-none" 
+            className="object-contain object-left pointer-events-none"
           />
         </div>
       </div>

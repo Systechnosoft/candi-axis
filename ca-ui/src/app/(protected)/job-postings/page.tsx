@@ -193,7 +193,7 @@ export default function JobPostingsPage() {
 
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-12 w-full">
+    <div className="flex flex-col gap-4 max-w-6xl mx-auto pb-8 w-full">
       <PageHeader 
         title="Job Postings" 
         actions={
@@ -207,13 +207,13 @@ export default function JobPostingsPage() {
       />
       
       <Card>
-        <div className="flex flex-wrap items-center gap-4 mb-4 p-4 border-b border-border bg-subtle/50 rounded-t-md">
+        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-subtle/50 rounded-t-md">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder="Search " 
-              className="pl-9 pr-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-80 bg-surface"
+              placeholder="Search here..." 
+              className="pl-9 pr-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-80 bg-surface"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -221,12 +221,12 @@ export default function JobPostingsPage() {
         </div>
 
         {error && (
-          <div className="mx-4 mb-4 p-3 rounded-md bg-danger/10 border border-danger/20 text-danger text-sm">
+          <div className="mx-2 mt-2 mb-2 p-2 rounded-md bg-danger/10 border border-danger/20 text-danger text-sm">
             {error}
           </div>
         )}
 
-        <div className="px-4 pb-4 overflow-x-auto">
+        <div className="px-2 py-2 overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-12 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin" />

@@ -64,6 +64,8 @@ export default function EditJobDescriptionPage() {
       await jobDescriptionsApi.updateJobDescription(id, data);
       // Replace tags with current selection (empty array clears all tags)
       await tagsApi.replaceTags('job_description', id, selectedTags.map(t => ({ id: t.id, is_starred: t.is_starred })));
+      // Automatically refresh matches using new tags
+      await jobDescriptionsApi.rematch(id);
       router.push('/job-descriptions');
     } catch (err) {
       const errorStr = err as { response?: { data?: { message?: string } } };

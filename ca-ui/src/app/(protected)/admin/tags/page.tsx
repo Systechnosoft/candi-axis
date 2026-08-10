@@ -141,7 +141,7 @@ export default function TagsManagementPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder="Search tags..." 
+              placeholder="Search here..." 
               className="pl-9 pr-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-64"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -178,7 +178,7 @@ export default function TagsManagementPage() {
                 <TableHeader>Type</TableHeader>
                 <TableHeader>Description</TableHeader>
                 <TableHeader>Status</TableHeader>
-                <TableHeader>Actions</TableHeader>
+                <TableHeader className="text-right"></TableHeader>
               </TableRow>
             </TableHead>
             <tbody>
@@ -188,8 +188,8 @@ export default function TagsManagementPage() {
                   <TableCell><Badge variant="default" className="uppercase text-[10px] tracking-wider">{tag.type}</Badge></TableCell>
                   <TableCell className="text-sm text-text-secondary truncate max-w-xs">{tag.description || '-'}</TableCell>
                   <TableCell><Badge variant={tag.active ? 'success' : 'error'}>{tag.active ? 'Active' : 'Disabled'}</Badge></TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => openEditModal(tag)}><Edit2 className="w-4 h-4" /></Button>
                       {tag.active && <Button variant="ghost" size="sm" className="text-status-error hover:bg-status-error/10 hover:text-status-error" onClick={() => disableTag(tag)}><Archive className="w-4 h-4" /></Button>}
                     </div>

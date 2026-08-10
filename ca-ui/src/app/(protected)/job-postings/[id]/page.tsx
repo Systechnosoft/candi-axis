@@ -750,7 +750,7 @@ export default function JobPostingDetailPage() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input 
             type="text" 
-            placeholder="Search candidates by name, role, email, location..." 
+            placeholder="Search here..." 
             className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-border focus:ring-1 focus:ring-brand outline-none bg-surface text-text-primary"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -795,7 +795,7 @@ export default function JobPostingDetailPage() {
           <DataTableShell className="w-full text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader className="w-20 text-center">Actions</TableHeader>
+                <TableHeader className="w-20 text-center"></TableHeader>
                 <TableHeader className="w-20">Fit Score</TableHeader>
                 <TableHeader className="min-w-[140px]">Candidate Name</TableHeader>
                 <TableHeader className="min-w-[120px]">Role</TableHeader>
@@ -810,7 +810,7 @@ export default function JobPostingDetailPage() {
               {filteredCandidates.map((app) => (
                 <TableRow key={app.id}>
                   <TableCell className="w-20 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1">
                       <button 
                         onClick={() => handleOpenEditDrawer(app)}
                         className="p-1 hover:bg-subtle rounded text-text-secondary hover:text-brand transition-colors"
@@ -819,9 +819,9 @@ export default function JobPostingDetailPage() {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => router.push(`/applications/${app.id}`)}
+                        onClick={() => router.push(`/candidates/${app.candidate_id}`)}
                         className="p-1 hover:bg-subtle rounded text-text-secondary hover:text-brand transition-colors"
-                        title="Go to Application Workspace"
+                        title="View Candidate Profile"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </button>

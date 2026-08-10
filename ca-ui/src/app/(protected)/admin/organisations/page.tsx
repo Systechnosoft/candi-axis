@@ -227,13 +227,13 @@ export default function OrganisationsPage() {
       filterBar={
         <div className="flex items-center justify-between gap-4">
           <FilterBar searchValue={search} onSearchChange={(val) => { setSearch(val); setPage(1); }} />
-          <Button onClick={handleOpenAddDrawer} className="flex items-center gap-2">
+          <Button onClick={handleOpenAddDrawer} className="flex items-center gap-2 h-8 py-1">
             <Plus className="w-4 h-4" /> Add Organisation
           </Button>
         </div>
       }
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <DataTableShell>
           <TableHead>
             <TableRow>
@@ -245,7 +245,7 @@ export default function OrganisationsPage() {
               <TableHeader>Industry</TableHeader>
               <TableHeader>Status</TableHeader>
               <TableHeader>Created On</TableHeader>
-              <TableHeader className="text-right">Actions</TableHeader>
+              <TableHeader className="text-right"></TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
@@ -286,13 +286,13 @@ export default function OrganisationsPage() {
                   <TableCell>{getStatusBadge(org.status)}</TableCell>
                   <TableCell>{new Date(org.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => handleOpenEditDrawer(org)}
                         className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
                         title="Edit Organisation"
                       >
-                        <Edit2 className="w-4.5 h-4.5" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeactivate(org)}
@@ -300,14 +300,14 @@ export default function OrganisationsPage() {
                         title={org.status === 'INACTIVE' ? 'Already Inactive' : 'Deactivate Organisation'}
                         disabled={org.status === 'INACTIVE'}
                       >
-                        <Ban className="w-4.5 h-4.5" />
+                        <Ban className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(org)}
                         className="p-1.5 text-text-secondary hover:text-status-error hover:bg-status-error/10 rounded-md transition-colors"
                         title="Delete Organisation"
                       >
-                        <Trash2 className="w-4.5 h-4.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </TableCell>
@@ -319,11 +319,11 @@ export default function OrganisationsPage() {
 
         {/* Pagination footer */}
         {totalPages > 1 && (
-          <div className="p-4 border border-border bg-surface flex items-center justify-between text-sm rounded-lg shadow-sm">
+          <div className="px-3 py-2 border border-border bg-surface flex items-center justify-between text-xs rounded-md shadow-sm">
             <button
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page === 1}
-              className="p-1.5 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -333,7 +333,7 @@ export default function OrganisationsPage() {
             <button
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={page === totalPages}
-              className="p-1.5 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

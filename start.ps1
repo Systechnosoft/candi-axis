@@ -1,12 +1,12 @@
 $ErrorActionPreference = "Stop"
 
 $SCRIPT_DIR = $PSScriptRoot
-# FIXED FOLDER NAMES: updated from 'ats-api' to your actual folder names 'ca-api'
+# FIXED FOLDER NAMES: updated from 'ca-api' to your actual folder names 'ca-api'
 $API_DIR = Join-Path $SCRIPT_DIR "ca-api"
 $UI_DIR = Join-Path $SCRIPT_DIR "ca-ui"
 
 Write-Host "==========================================="
-Write-Host "  CandiAxis (ATS) - Full Startup Flow"
+Write-Host "  CandiAxis - Full Startup Flow"
 Write-Host "==========================================="
 
 # --- 1. MinIO Setup & Startup ---
@@ -23,8 +23,8 @@ if (-not (Test-Path $MinioExe)) {
     Invoke-WebRequest -Uri "https://dl.min.io/server/minio/release/windows-amd64/minio.exe" -OutFile $MinioExe
 }
 
-$env:MINIO_ROOT_USER = "ats-admin"
-$env:MINIO_ROOT_PASSWORD = "ats-password-123"
+$env:MINIO_ROOT_USER = "ca-admin"
+$env:MINIO_ROOT_PASSWORD = "ca-password-123"
 # Spawns MinIO in a separate background window so it doesn't block the script
 Start-Process -FilePath $MinioExe -ArgumentList "server $MinioDataDir --console-address `":9001`"" -WindowStyle Normal
 Write-Host "  -> MinIO started in new window (API: 9000, Console: 9001)"

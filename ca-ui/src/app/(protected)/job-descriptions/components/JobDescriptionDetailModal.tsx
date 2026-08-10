@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ModalShell } from '@/components/primitives/ModalShell';
+import { DrawerShell } from '@/components/primitives/ModalShell';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { JobDescription } from '@/types/job-descriptions';
@@ -81,8 +81,17 @@ export function JobDescriptionDetailModal({
   };
 
   return (
-    <ModalShell title="Job Description Details" onClose={onClose}>
-      <div className="flex flex-col gap-6 max-h-[70vh] overflow-y-auto p-1">
+    <DrawerShell 
+      title="Job Description Details" 
+      className="max-w-2xl"
+      onClose={onClose}
+      footer={
+        <Button variant="secondary" onClick={onClose} type="button">
+          Close
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-6 p-1">
 
         {/* Header Block */}
         <div className="flex justify-between items-start border-b border-border pb-4">
@@ -104,7 +113,21 @@ export function JobDescriptionDetailModal({
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            {getStatusBadge(jobDescription.status)}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Update Status:</span>
+              <select
+                className="px-2 py-1.5 border border-border bg-white rounded-md text-sm outline-none focus:ring-1 focus:ring-brand"
+                value={jobDescription.status}
+                disabled={statusUpdating}
+                onChange={(e) => handleStatusUpdate(e.target.value)}
+              >
+                <option value="draft">Draft</option>
+                <option value="open">Open</option>
+                <option value="on_hold">On Hold</option>
+                <option value="closed">Closed</option>
+              </select>
+              {statusUpdating && <Loader2 className="w-4 h-4 animate-spin text-brand" />}
+            </div>
             {jobDescription.published_internal_at && (
               <span className="text-xs text-gray-500">Published: {new Date(jobDescription.published_internal_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
             )}
@@ -176,27 +199,6 @@ export function JobDescriptionDetailModal({
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-border">
-        <div className="flex gap-2 items-center">
-          <span className="text-sm text-gray-500 mr-2">Update Status:</span>
-          <select
-            className="px-2 py-1.5 border border-border bg-white rounded-md text-sm outline-none focus:ring-1 focus:ring-brand"
-            value={jobDescription.status}
-            disabled={statusUpdating}
-            onChange={(e) => handleStatusUpdate(e.target.value)}
-          >
-            <option value="draft">Draft</option>
-            <option value="open">Open</option>
-            <option value="on_hold">On Hold</option>
-            <option value="closed">Closed</option>
-          </select>
-          {statusUpdating && <Loader2 className="w-4 h-4 animate-spin text-brand" />}
-        </div>
-        <Button variant="secondary" onClick={onClose} type="button">
-          Close
-        </Button>
-      </div>
-    </ModalShell>
+    </DrawerShell>
   );
 }

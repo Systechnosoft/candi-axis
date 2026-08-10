@@ -13,7 +13,7 @@ export function ListPage({ title, breadcrumbs, actions, filterBar, children }: L
   return (
     <div className="flex flex-col h-full w-full">
       <PageHeader title={title} breadcrumbs={breadcrumbs} actions={actions} />
-      {filterBar && <div className="mb-4">{filterBar}</div>}
+      {filterBar && <div className="mb-2">{filterBar}</div>}
       <div className="flex-1 min-h-0 relative">
         {children}
       </div>

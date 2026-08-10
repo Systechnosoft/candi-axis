@@ -196,6 +196,9 @@ export default function JobDescriptionDetailPage() {
     try {
       await jobDescriptionsApi.updateJobDescription(id, data);
       await tagsApi.replaceTags('job_description', id, drawerSelectedTags.map(t => ({ id: t.id, is_starred: t.is_starred })));
+      // Automatically refresh match scores with updated tags
+      await jobDescriptionsApi.rematch(id);
+      
       setIsEditDrawerOpen(false);
       
       const updatedJd = await jobDescriptionsApi.getJobDescription(id);
@@ -318,7 +321,7 @@ export default function JobDescriptionDetailPage() {
                 if (associatedPosting) {
                   window.open(`/job-postings/${associatedPosting.id}`, '_blank');
                 } else {
-                  router.push(`/job-postings?create=true&jd_id=${id}`);
+                  window.open(`/job-postings?create=true&jd_id=${id}`, '_blank');
                 }
               }}
               className="gap-2 bg-surface hover:bg-subtle text-sm border-border"

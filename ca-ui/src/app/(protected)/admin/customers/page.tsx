@@ -233,7 +233,7 @@ export default function CustomersPage() {
               <TableHeader>Industry</TableHeader>
               <TableHeader>Status</TableHeader>
               <TableHeader>Created On</TableHeader>
-              <TableHeader className="text-right">Actions</TableHeader>
+              <TableHeader className="text-right"></TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
@@ -274,13 +274,13 @@ export default function CustomersPage() {
                   <TableCell>{getStatusBadge(cust.status)}</TableCell>
                   <TableCell>{new Date(cust.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => handleOpenEditDrawer(cust)}
                         className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
                         title="Edit Customer"
                       >
-                        <Edit2 className="w-4.5 h-4.5" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeactivate(cust)}
@@ -288,7 +288,7 @@ export default function CustomersPage() {
                         title="Deactivate Customer"
                         disabled={cust.status === 'INACTIVE'}
                       >
-                        <Ban className="w-4.5 h-4.5" />
+                        <Ban className="w-4 h-4" />
                       </button>
                     </div>
                   </TableCell>
@@ -300,11 +300,11 @@ export default function CustomersPage() {
 
         {/* Pagination footer */}
         {totalPages > 1 && (
-          <div className="p-4 border border-border bg-surface flex items-center justify-between text-sm rounded-lg shadow-sm">
+          <div className="px-3 py-2 border border-border bg-surface flex items-center justify-between text-xs rounded-md shadow-sm">
             <button
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page === 1}
-              className="p-1.5 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -314,7 +314,7 @@ export default function CustomersPage() {
             <button
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={page === totalPages}
-              className="p-1.5 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

@@ -88,7 +88,7 @@ export default function TasksPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder="Search candidate, position..." 
+              placeholder="Search here..." 
               className="pl-9 pr-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-64 bg-surface"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

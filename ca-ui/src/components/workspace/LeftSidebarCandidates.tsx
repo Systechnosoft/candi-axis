@@ -318,11 +318,11 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
 
       {/* Pagination Footer */}
       {isPagingEnabled && totalPages > 1 && (
-        <div className="p-3 border-t border-border bg-surface/10 flex items-center justify-between gap-1 select-none font-sans">
+        <div className="px-3 py-2 border-t border-border bg-surface/10 flex items-center justify-between gap-1 select-none font-sans text-xs">
           <button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+            className="p-1 rounded-md hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             title="Previous Page"
           >
             <ChevronLeft className="w-4 h-4 text-text-secondary" />
@@ -333,7 +333,7 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`w-6 h-6 flex items-center justify-center text-xs font-black rounded-lg transition-all duration-150 ${
+                className={`w-5 h-5 flex items-center justify-center text-xs font-black rounded-md transition-all duration-150 ${
                   currentPage === page
                     ? 'bg-brand text-white shadow-sm ring-1 ring-brand'
                     : 'text-text-secondary hover:bg-slate-100'
@@ -347,7 +347,7 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+            className="p-1 rounded-md hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             title="Next Page"
           >
             <ChevronRight className="w-4 h-4 text-text-secondary" />

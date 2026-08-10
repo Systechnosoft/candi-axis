@@ -44,7 +44,7 @@ export function LinkToPostingModal({ candidateId, candidateName, onClose }: Link
     p.jd_code?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleLink = async (jdId: string, postingName: string) => {
+  const handleLink = async (postingId: string, jdId: string, postingName: string) => {
     if (!jdId) {
       toast.error('This posting does not have an associated Job Description.');
       return;
@@ -54,6 +54,7 @@ export function LinkToPostingModal({ candidateId, candidateName, onClose }: Link
       const app = await ApplicationsService.createApplication({
         candidate_id: candidateId,
         jd_id: jdId,
+        job_posting_id: postingId,
         source: 'manual'
       });
       toast.success(`Candidate added to posting "${postingName}" successfully`);
@@ -108,7 +109,7 @@ export function LinkToPostingModal({ candidateId, candidateName, onClose }: Link
                   <button 
                     key={p.id}
                     disabled={submitting}
-                    onClick={() => handleLink(p.jd_id, p.name)}
+                    onClick={() => handleLink(p.id, p.jd_id, p.name)}
                     className="flex items-center justify-between p-4 border border-border rounded-xl hover:border-brand hover:bg-brand/5 text-left transition-all group"
                   >
                     <div className="flex items-center gap-3">

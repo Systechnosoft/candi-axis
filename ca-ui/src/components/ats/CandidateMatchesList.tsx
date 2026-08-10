@@ -202,7 +202,7 @@ export const CandidateMatchesList: React.FC<CandidateMatchesListProps> = ({
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="p-3 border-t border-border bg-subtle/5 flex items-center justify-between text-xs shrink-0 select-none rounded-b-xl">
+        <div className="px-3 py-2 border-t border-border bg-subtle/5 flex items-center justify-between text-xs shrink-0 select-none rounded-b-md">
           <button
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}

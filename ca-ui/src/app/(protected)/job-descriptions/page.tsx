@@ -206,20 +206,20 @@ export default function JobDescriptionsPage() {
       />
       
       <Card>
-        <div className="flex flex-wrap items-center gap-4 mb-4 p-4 border-b border-border bg-subtle/50">
+        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-subtle/50">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder="Search code or title..." 
-              className="pl-9 pr-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-64 bg-surface"
+              placeholder="Search here..." 
+              className="pl-9 pr-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-64 bg-surface"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
           <select 
-            className="px-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none bg-surface max-w-48 truncate"
+            className="px-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none bg-surface max-w-48 truncate"
             value={reqFilter}
             onChange={(e) => setReqFilter(e.target.value)}
           >
@@ -230,7 +230,7 @@ export default function JobDescriptionsPage() {
           </select>
 
           <select 
-            className="px-3 py-1.5 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none bg-surface"
+            className="px-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none bg-surface"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -243,12 +243,12 @@ export default function JobDescriptionsPage() {
         </div>
 
         {error && (
-          <div className="mx-4 mb-4 p-3 rounded-md bg-danger/10 border border-danger/20 text-danger text-sm">
+          <div className="mx-2 mt-2 mb-2 p-2 rounded-md bg-danger/10 border border-danger/20 text-danger text-sm">
             {error}
           </div>
         )}
 
-        <div className="px-4 pb-4 overflow-x-auto">
+        <div className="px-2 py-2 overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-12 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -261,13 +261,13 @@ export default function JobDescriptionsPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  <TableHeader>Req Reference</TableHeader>
+                  <TableHeader>Job Desc. Id</TableHeader>
                   <TableHeader>Job Title</TableHeader>
                   <TableHeader>Work Mode</TableHeader>
                   <TableHeader>Emp Type</TableHeader>
                   <TableHeader>Owner</TableHeader>
                   <TableHeader>Status</TableHeader>
-                  <TableHeader className="text-right">Actions</TableHeader>
+                  <TableHeader className="text-right"></TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>
@@ -278,7 +278,7 @@ export default function JobDescriptionsPage() {
                          className="flex flex-col cursor-pointer hover:opacity-80 group"
                          onClick={() => router.push(`/job-descriptions/${jd.id}`)}
                        >
-                          <span className="font-bold text-brand group-hover:underline text-xs">{jd.requisition_code || '-'}</span>
+                          <span className="font-bold text-brand group-hover:underline text-xs">{jd.code || '-'}</span>
                        </div>
                     </TableCell>
                     <TableCell>
@@ -292,7 +292,7 @@ export default function JobDescriptionsPage() {
                     <TableCell>{getUserName(jd.owner_user_id)}</TableCell>
                     <TableCell>{getStatusBadge(jd.status)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button 
                           onClick={() => openDetailModal(jd)}
                           className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"

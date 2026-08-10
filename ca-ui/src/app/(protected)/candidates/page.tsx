@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ListPage } from '@/components/templates/ListPage';
 import { FilterBar } from '@/components/primitives/FilterBar';
+import { Card } from '@/components/primitives/Card';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
@@ -145,7 +146,6 @@ export default function CandidatesPage() {
   return (
     <ListPage 
       title="Candidates" 
-      filterBar={<FilterBar searchValue={search} onSearchChange={setSearch} />}
       actions={
         <Link href="/candidates/intake">
           <Button variant="primary">Add Candidate</Button>
@@ -153,7 +153,12 @@ export default function CandidatesPage() {
       }
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 h-full min-h-0 items-start">
-        <DataTableShell>
+        <Card>
+          <div className="p-2 border-b border-border bg-subtle/50 rounded-t-md">
+            <FilterBar searchValue={search} onSearchChange={setSearch} />
+          </div>
+          <div className="px-2 py-2 overflow-x-auto">
+            <DataTableShell className="w-full text-sm">
           <TableHead>
             <TableRow>
               <TableHeader className="w-10">&nbsp;</TableHeader>
@@ -214,6 +219,8 @@ export default function CandidatesPage() {
             )}
           </tbody>
         </DataTableShell>
+          </div>
+        </Card>
         
         {selectedCandidate && (
           <div className="hidden lg:flex flex-col gap-4 sticky top-6">
