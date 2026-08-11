@@ -7,13 +7,14 @@ import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Badge } from '@/components/primitives/Badge';
+import { cn, formatDate } from '@/lib/utils';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { jobPostingsApi } from '@/lib/api/job-postings';
 import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { JobPosting } from '@/types/job-postings';
 import { JobDescription } from '@/types/job-descriptions';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Edit2, Loader2, Search } from 'lucide-react';
+import { Plus, Edit2, Loader2, Search, Download, FilterX, RefreshCw } from 'lucide-react';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { usersApi } from '@/lib/api/users';
 import { MultiSelect } from '@/components/primitives/MultiSelect';
@@ -193,7 +194,7 @@ export default function JobPostingsPage() {
 
 
   return (
-    <div className="flex flex-col gap-4 max-w-6xl mx-auto pb-8 w-full">
+    <div className="flex flex-col gap-4 w-full pb-8">
       <PageHeader 
         title="Job Postings" 
         actions={
@@ -207,16 +208,35 @@ export default function JobPostingsPage() {
       />
       
       <Card>
-        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-subtle/50 rounded-t-md">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input 
-              type="text" 
-              placeholder="Search here..." 
-              className="pl-9 pr-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-80 bg-surface"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-surface rounded-t-md">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input 
+                type="text" 
+                placeholder="search here..." 
+                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-48 bg-surface"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+              Search
+            </button>
+          </div>
+          
+          <div className="flex-1"></div>
+
+          <div className="flex items-center gap-1 ml-auto">
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
+              <Download className="w-4 h-4" />
+            </button>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); }}>
+              <FilterX className="w-4 h-4" />
+            </button>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -226,7 +246,7 @@ export default function JobPostingsPage() {
           </div>
         )}
 
-        <div className="px-2 py-2 overflow-x-auto">
+        <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-12 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -242,8 +262,9 @@ export default function JobPostingsPage() {
                   {canEdit && <TableHeader className="w-10">{""}</TableHeader>}
                   <TableHeader className="w-24">ID</TableHeader>
                   <TableHeader>Name</TableHeader>
-                  <TableHeader>Description</TableHeader>
                   <TableHeader>JD</TableHeader>
+                  <TableHeader>Updated By</TableHeader>
+                  <TableHeader>Updated On</TableHeader>
                   <TableHeader>Status</TableHeader>
                 </TableRow>
               </TableHead>
@@ -272,19 +293,18 @@ export default function JobPostingsPage() {
                         {posting.name}
                       </span>
                     </TableCell>
-                    <TableCell className="text-text-secondary max-w-sm truncate">
-                      {posting.description ? (
-                        stripHtml(posting.description)
-                      ) : (
-                        <span className="text-text-muted italic">No description</span>
-                      )}
-                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-semibold text-text-primary text-xs">
                           {posting.jd_title || '-'}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className="text-text-secondary">
+                      {posting.updated_by_name || '-'}
+                    </TableCell>
+                    <TableCell className="text-text-secondary">
+                      {formatDate(posting.updated_at)}
                     </TableCell>
                     <TableCell>
                       {posting.is_active ? (

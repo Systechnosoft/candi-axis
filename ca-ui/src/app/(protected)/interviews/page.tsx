@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/primitives/FilterBar';
 import { InterviewRoundCard } from '@/components/ats/InterviewRoundCard';
 import { InterviewsService } from '@/lib/api/interviews';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 export default function InterviewsPage() {
   const [interviews, setInterviews] = useState<any[]>([]);
@@ -32,12 +33,7 @@ export default function InterviewsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return 'N/A';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+
 
   const formatTime = (dateStr?: string | null) => {
     if (!dateStr) return 'N/A';

@@ -19,6 +19,7 @@ export interface JobDescription {
   published_internal_at: string | null;
   created_at: string;
   updated_at: string;
+  updated_by_name?: string | null;
 }
 
 export interface CreateJobDescriptionRequest {

@@ -47,7 +47,8 @@ export class ApplicationStageService {
         SET stage = $1, 
             stage_reason = $2, 
             sub_stage = $3,
-            updated_at = now()
+            updated_at = now(),
+            updated_by = $5
         WHERE id = $4
         RETURNING *
       `;
@@ -56,6 +57,7 @@ export class ApplicationStageService {
         reason || null,
         toSubStage,
         applicationId,
+        userId,
       ]);
       const updatedApp = updateRes.rows[0];
 

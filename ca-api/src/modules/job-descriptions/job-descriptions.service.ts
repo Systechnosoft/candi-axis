@@ -165,11 +165,13 @@ export class JobDescriptionsService {
       `SELECT jd.id, jd.requisition_id, jd.title, jd.code, jd.location, jd.work_mode, jd.employment_type,
               jd.job_summary, jd.responsibilities_text, jd.must_have_text, jd.nice_to_have_text,
               jd.status, jd.owner_user_id, jd.created_at, jd.updated_at,
-              req.title as requisition_title, req.code as requisition_code
+              req.title as requisition_title, req.code as requisition_code,
+              u.full_name as updated_by_name
        FROM ca_job_descriptions jd
        LEFT JOIN ca_job_requisitions req ON jd.requisition_id = req.id
+       LEFT JOIN ca_users u ON jd.updated_by = u.id
        ${whereClause}
-       ORDER BY jd.created_at DESC`,
+       ORDER BY jd.updated_at DESC`,
       values,
     );
 

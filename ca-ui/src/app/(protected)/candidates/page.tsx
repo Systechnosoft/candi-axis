@@ -7,11 +7,12 @@ import { Card } from '@/components/primitives/Card';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
+import { formatDate, toTitleCase } from '@/lib/utils';
 import { CandidateSummaryCard } from '@/components/ats/CandidateSummaryCard';
 import Link from 'next/link';
 import { CandidatesService } from '@/lib/api/candidates';
 import { Candidate } from '@/types/candidates';
-import { Loader2, Edit } from 'lucide-react';
+import { Loader2, Edit2, Eye } from 'lucide-react';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { CandidateForm } from './intake/components/CandidateForm';
 import { ApplicationsService } from '@/lib/api/applications';
@@ -22,7 +23,6 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [page] = useState(1);
   const limit = 20;
 
@@ -33,11 +33,6 @@ export default function CandidatesPage() {
       try {
         const res = await CandidatesService.getCandidates({ page, limit, search });
         setCandidates(res.data);
-        if (res.data.length > 0 && !selectedCandidate) {
-          setSelectedCandidate(res.data[0]);
-        } else if (res.data.length === 0) {
-          setSelectedCandidate(null);
-        }
       } catch {
         setError('Failed to load candidates.');
       } finally {
@@ -152,20 +147,22 @@ export default function CandidatesPage() {
         </Link>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 h-full min-h-0 items-start">
-        <Card>
+      <div className="flex flex-col gap-6 h-full min-h-0 w-full">
+        <Card className="w-full">
           <div className="p-2 border-b border-border bg-subtle/50 rounded-t-md">
             <FilterBar searchValue={search} onSearchChange={setSearch} />
           </div>
-          <div className="px-2 py-2 overflow-x-auto">
+          <div className="overflow-x-auto">
             <DataTableShell className="w-full text-sm">
           <TableHead>
             <TableRow>
-              <TableHeader className="w-10">&nbsp;</TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Role</TableHeader>
               <TableHeader>Stage</TableHeader>
+              <TableHeader>Updated By</TableHeader>
+              <TableHeader>Updated On</TableHeader>
               <TableHeader>Date</TableHeader>
+              <TableHeader className="text-right"></TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
@@ -194,26 +191,36 @@ export default function CandidatesPage() {
               candidates.map((candidate) => (
                 <TableRow 
                   key={candidate.id} 
-                  onClick={() => setSelectedCandidate(candidate)} 
-                  className={selectedCandidate?.id === candidate.id ? 'bg-subtle cursor-pointer' : 'cursor-pointer hover:bg-subtle'}
+                  className="cursor-pointer hover:bg-subtle"
                 >
-                  <TableCell className="w-10" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => handleOpenEditDrawer(candidate)}
-                      className="text-text-muted hover:text-brand transition-colors p-1"
-                      title="Edit Profile"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </TableCell>
                   <TableCell className="font-semibold text-brand">
                     <Link href={`/candidates/${candidate.id}`} className="hover:underline" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                       {candidate.full_name}
                     </Link>
                   </TableCell>
                   <TableCell>{candidate.current_designation || candidate.source || 'N/A'}</TableCell>
-                  <TableCell><Badge variant="info">{candidate.status || 'Applied'}</Badge></TableCell>
-                  <TableCell>{new Date(candidate.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</TableCell>
+                  <TableCell><Badge variant="info">{toTitleCase(candidate.status || 'Applied')}</Badge></TableCell>
+                  <TableCell className="text-text-secondary">{candidate.updated_by_name || '-'}</TableCell>
+                  <TableCell className="text-text-secondary">{formatDate(candidate.updated_at)}</TableCell>
+                  <TableCell>{formatDate(candidate.created_at)}</TableCell>
+                  <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      <Link 
+                        href={`/candidates/${candidate.id}`}
+                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors inline-block"
+                        title="View Profile"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Link>
+                      <button 
+                        onClick={() => handleOpenEditDrawer(candidate)}
+                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
+                        title="Edit Profile"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -221,20 +228,6 @@ export default function CandidatesPage() {
         </DataTableShell>
           </div>
         </Card>
-        
-        {selectedCandidate && (
-          <div className="hidden lg:flex flex-col gap-4 sticky top-6">
-            <h3 className="text-[14px] font-semibold text-text-primary">Preview</h3>
-            <CandidateSummaryCard 
-              name={selectedCandidate.full_name} 
-              role={selectedCandidate.current_designation || selectedCandidate.source || 'N/A'} 
-              email={selectedCandidate.email || ''} 
-              phone={selectedCandidate.phone || ''} 
-              location={selectedCandidate.location || 'Not specified'} 
-              stage={selectedCandidate.status || 'Applied'} 
-            />
-          </div>
-        )}
       </div>
       {isEditDrawerOpen && (
         <DrawerShell80

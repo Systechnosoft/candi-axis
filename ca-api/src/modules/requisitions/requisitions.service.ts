@@ -113,21 +113,21 @@ export class RequisitionsService {
 
     // Filter by soft-delete
     if (query.activeOnly !== 'false') {
-      conditions.push(`is_deleted = false`);
+      conditions.push(`req.is_deleted = false`);
     }
 
     if (query.status) {
-      conditions.push(`status = $${counter++}`);
+      conditions.push(`req.status = $${counter++}`);
       values.push(query.status);
     }
 
     if (query.department) {
-      conditions.push(`department = $${counter++}`);
+      conditions.push(`req.department = $${counter++}`);
       values.push(query.department);
     }
 
     if (query.search) {
-      conditions.push(`(title ILIKE $${counter} OR code ILIKE $${counter})`);
+      conditions.push(`(req.title ILIKE $${counter} OR req.code ILIKE $${counter})`);
       values.push(`%${query.search}%`);
       counter++;
     }
@@ -136,13 +136,14 @@ export class RequisitionsService {
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const result = await this.pool.query(
-      `SELECT id, code, title, department, openings_count, priority, 
-              hiring_manager_id, owner_user_id, status, status_reason, 
-              opened_at, closed_at, created_at, updated_at,
-              is_deleted
-       FROM ca_job_requisitions 
+      `SELECT req.id, req.code, req.title, req.department, req.openings_count, req.priority, 
+              req.hiring_manager_id, req.owner_user_id, req.status, req.status_reason, 
+              req.opened_at, req.closed_at, req.created_at, req.updated_at,
+              req.is_deleted, u.full_name as updated_by_name
+       FROM ca_job_requisitions req
+       LEFT JOIN ca_users u ON req.updated_by = u.id
        ${whereClause} 
-       ORDER BY created_at DESC`,
+       ORDER BY req.updated_at DESC`,
       values,
     );
 

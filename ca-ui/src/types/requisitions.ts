@@ -17,6 +17,7 @@ export interface Requisition {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+  updated_by_name?: string | null;
 }
 
 export interface CreateRequisitionRequest {

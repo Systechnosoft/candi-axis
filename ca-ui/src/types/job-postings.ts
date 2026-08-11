@@ -11,6 +11,7 @@ export interface JobPosting {
   jd_code?: string | null;
   hr_ids?: string[] | null;
   interviewer_ids?: string[] | null;
+  updated_by_name?: string | null;
 }
 
 export interface CreateJobPostingRequest {

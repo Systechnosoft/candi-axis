@@ -9,19 +9,9 @@ import { Badge } from '@/components/primitives/Badge';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { TasksService, Task } from '@/lib/api/tasks';
 import { Search, Loader2, Eye, ClipboardList, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
  
-const formatDate = (dateStr?: string | null): string => {
-  if (!dateStr) return '-';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+
 
 const formatAssignee = (roleNames?: string | null): string => {
   if (!roleNames) return 'interviewers';

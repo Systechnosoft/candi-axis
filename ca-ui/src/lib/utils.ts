@@ -125,4 +125,23 @@ export function formatToHtmlBullets(text: string | null | undefined): string {
   return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
 }
 
+export function formatDate(dateInput?: string | null | Date): string {
+  if (!dateInput) return '-';
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return String(dateInput);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
+export function toTitleCase(str?: string | null): string {
+  if (!str) return '-';
+  return str
+    .split('_')
+    .join(' ')
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}

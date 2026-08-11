@@ -134,11 +134,13 @@ export class JobPostingsService {
     const result = await this.pool.query(
       `SELECT jp.id, jp.code, jp.name, jp.description, jp.jd_id, jp.is_active, jp.created_at, jp.updated_at,
               jp.hr_ids, jp.interviewer_ids,
-              jd.title as jd_title, jd.code as jd_code
+              jd.title as jd_title, jd.code as jd_code,
+              u.full_name as updated_by_name
        FROM ca_job_postings jp
        LEFT JOIN ca_job_descriptions jd ON jp.jd_id = jd.id
+       LEFT JOIN ca_users u ON jp.updated_by = u.id
        ${whereClause}
-       ORDER BY jp.created_at DESC`,
+       ORDER BY jp.updated_at DESC`,
       values,
     );
 

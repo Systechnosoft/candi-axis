@@ -1115,12 +1115,12 @@ export class CandidatesService {
   async findAll(page: number = 1, limit: number = 20, search?: string) {
     const offset = (page - 1) * limit;
 
-    let baseQuery = `FROM ca_candidates WHERE is_deleted = false`;
+    let baseQuery = `FROM ca_candidates c WHERE c.is_deleted = false`;
     const params: any[] = [];
 
     if (search && search.trim() !== '') {
       params.push(`%${search}%`);
-      baseQuery += ` AND (full_name ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1)`;
+      baseQuery += ` AND (c.full_name ILIKE $1 OR c.email ILIKE $1 OR c.phone ILIKE $1)`;
     }
 
     const countQuery = `SELECT count(*) as total ${baseQuery}`;
@@ -1128,10 +1128,12 @@ export class CandidatesService {
     const total = parseInt(countRes.rows[0].total, 10);
 
     const dataQuery = `
-      SELECT id, full_name, email, phone, location, total_exp_months, status, 
-             source, current_company, current_designation, created_at, last_resume_uploaded_at, profile_score 
+      SELECT c.id, c.full_name, c.email, c.phone, c.location, c.total_exp_months, c.status, 
+             c.source, c.current_company, c.current_designation, c.created_at, c.last_resume_uploaded_at, c.profile_score,
+             c.updated_at, u.full_name as updated_by_name
       ${baseQuery}
-      ORDER BY created_at DESC 
+      LEFT JOIN ca_users u ON c.updated_by = u.id
+      ORDER BY c.updated_at DESC 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
 

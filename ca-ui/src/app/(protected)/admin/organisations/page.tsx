@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ListPage } from '@/components/templates/ListPage';
 import { FilterBar } from '@/components/primitives/FilterBar';
+import { Card } from '@/components/primitives/Card';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
+import { cn, formatDate, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { OrganisationsService, Organisation } from '@/lib/api/organisations';
 import { Loader2, Edit2, Ban, ShieldAlert, Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
@@ -224,17 +226,19 @@ export default function OrganisationsPage() {
   return (
     <ListPage
       title="Organisations"
-      filterBar={
-        <div className="flex items-center justify-between gap-4">
-          <FilterBar searchValue={search} onSearchChange={(val) => { setSearch(val); setPage(1); }} />
-          <Button onClick={handleOpenAddDrawer} className="flex items-center gap-2 h-8 py-1">
-            <Plus className="w-4 h-4" /> Add Organisation
-          </Button>
-        </div>
+      actions={
+        <Button onClick={handleOpenAddDrawer} className="flex items-center gap-2 h-[34px]">
+          <Plus className="w-4 h-4" /> Add Organisation
+        </Button>
       }
     >
-      <div className="flex flex-col gap-4">
-        <DataTableShell>
+      <div className="flex flex-col gap-4 h-full min-h-0 w-full">
+        <Card className="w-full flex flex-col min-h-0">
+          <div className="p-2 border-b border-border bg-surface rounded-t-md">
+            <FilterBar searchValue={search} onSearchChange={(val) => { setSearch(val); setPage(1); }} onRefresh={fetchOrganisations} />
+          </div>
+          <div className="overflow-x-auto">
+            <DataTableShell>
           <TableHead>
             <TableRow>
               <TableHeader>Org Code</TableHeader>
@@ -282,9 +286,9 @@ export default function OrganisationsPage() {
                     {org.primary_contact_phone && <div className="text-xs text-text-secondary">{org.primary_contact_phone}</div>}
                     {!org.primary_contact_email && !org.primary_contact_phone && '-'}
                   </TableCell>
-                  <TableCell>{org.industry || '-'}</TableCell>
+                  <TableCell>{toTitleCase(org.industry) || '-'}</TableCell>
                   <TableCell>{getStatusBadge(org.status)}</TableCell>
-                  <TableCell>{new Date(org.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
+                  <TableCell>{formatDate(org.created_at)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -316,10 +320,11 @@ export default function OrganisationsPage() {
             )}
           </tbody>
         </DataTableShell>
+        </div>
 
         {/* Pagination footer */}
         {totalPages > 1 && (
-          <div className="px-3 py-2 border border-border bg-surface flex items-center justify-between text-xs rounded-md shadow-sm">
+          <div className="px-3 py-2 border-t border-border bg-surface flex items-center justify-between text-xs rounded-b-md">
             <button
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page === 1}
@@ -339,6 +344,7 @@ export default function OrganisationsPage() {
             </button>
           </div>
         )}
+        </Card>
       </div>
 
       {/* Add/Edit Drawer */}

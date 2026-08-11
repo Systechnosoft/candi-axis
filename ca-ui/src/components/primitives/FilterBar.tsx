@@ -1,29 +1,43 @@
 import React from 'react';
-import { Search, Filter } from 'lucide-react';
-import { Button } from './Button';
+import { Search, Download, FilterX, RefreshCw } from 'lucide-react';
 
 interface FilterBarProps {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  onRefresh?: () => void;
 }
 
-export function FilterBar({ searchValue = '', onSearchChange }: FilterBarProps) {
+export function FilterBar({ searchValue = '', onSearchChange, onRefresh }: FilterBarProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex flex-1 items-center space-x-2">
-        <div className="relative max-w-sm w-full">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-          <input
-            placeholder="Search here..."
+    <div className="flex flex-wrap items-center gap-2 bg-surface">
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input 
+            type="text" 
+            placeholder="search here..." 
+            className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-48 bg-surface"
             value={searchValue}
             onChange={(e) => onSearchChange?.(e.target.value)}
-            className="h-8 w-full rounded-md border border-input bg-surface pl-9 pr-3 text-[14px] placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand"
           />
         </div>
-        <Button variant="secondary" className="gap-2 h-8 py-1">
-          <Filter className="w-4 h-4" />
-          Filters
-        </Button>
+        <button onClick={onRefresh} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+          Search
+        </button>
+      </div>
+      
+      <div className="flex-1"></div>
+
+      <div className="flex items-center gap-1 ml-auto">
+        <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
+          <Download className="w-4 h-4" />
+        </button>
+        <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => onSearchChange?.('')}>
+          <FilterX className="w-4 h-4" />
+        </button>
+        <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={onRefresh}>
+          <RefreshCw className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

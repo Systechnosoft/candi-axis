@@ -82,8 +82,8 @@ export class ApplicationsService {
 
       // Create application (stage mapping)
       const appQuery = `
-        INSERT INTO public.ca_candidate_job_stages (org_id, candidate_id, job_posting_id, stage, sub_stage)
-        VALUES ($1, $2, $3, 'new', NULL)
+        INSERT INTO public.ca_candidate_job_stages (org_id, candidate_id, job_posting_id, stage, sub_stage, updated_by)
+        VALUES ($1, $2, $3, 'new', NULL, $4)
         RETURNING *
       `;
       interface AppStageMapping {
@@ -94,11 +94,13 @@ export class ApplicationsService {
         stage: string;
         sub_stage: string | null;
         created_at: Date;
+        updated_by: string | null;
       }
       const appRes = await client.query<AppStageMapping>(appQuery, [
         orgId,
         dto.candidate_id,
         jobPostingId,
+        userId,
       ]);
       const application: AppStageMapping = appRes.rows[0];
 
@@ -145,7 +147,7 @@ export class ApplicationsService {
              jp.jd_id,
              c.full_name as candidate_name, c.email as candidate_email,
              jd.title as jd_title, jd.requisition_id as jd_requisition_id,
-             NULL as stage_updated_by_name,
+             u.full_name as stage_updated_by_name,
              NULL as created_by_name,
              COALESCE(
                (SELECT rating FROM ca_job_candidate_matches WHERE candidate_id = a.candidate_id AND job_id = jp.jd_id AND is_active = true AND deleted_at IS NULL LIMIT 1),
@@ -155,6 +157,7 @@ export class ApplicationsService {
       JOIN public.ca_candidates c ON a.candidate_id = c.id
       JOIN public.ca_job_postings jp ON a.job_posting_id = jp.id
       JOIN public.ca_job_descriptions jd ON jp.jd_id = jd.id
+      LEFT JOIN public.ca_users u ON a.updated_by = u.id
       WHERE a.id = $1 AND a.deleted_at IS NULL
     `;
     interface FindOneApplicationResult {

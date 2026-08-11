@@ -6,11 +6,12 @@ import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Badge } from '@/components/primitives/Badge';
+import { cn, formatDate, toTitleCase } from '@/lib/utils';
 import { requisitionsApi } from '@/lib/api/requisitions';
 import { usersApi } from '@/lib/api/users';
 import { Requisition, CreateRequisitionRequest, RequisitionStatus } from '@/types/requisitions';
 import { UserLookup } from '@/types/users';
-import { Plus, Edit2, Archive, ArchiveRestore, Loader2, Search } from 'lucide-react';
+import { Plus, Edit2, Archive, ArchiveRestore, Loader2, Search, Download, FilterX, RefreshCw } from 'lucide-react';
 import { RequisitionModal } from './components/RequisitionModal';
 
 export default function RequisitionsPage() {
@@ -131,7 +132,7 @@ export default function RequisitionsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 max-w-6xl mx-auto pb-8">
+    <div className="flex flex-col gap-4 w-full pb-8">
       <PageHeader 
         title="Requisitions" 
         actions={
@@ -142,38 +143,70 @@ export default function RequisitionsPage() {
       />
       
       <Card>
-        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-subtle/50">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input 
-              type="text" 
-              placeholder="Search here..." 
-              className="pl-9 pr-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-64 bg-surface"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-surface">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input 
+                type="text" 
+                placeholder="search here..." 
+                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-48 bg-surface"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+              Search
+            </button>
           </div>
-          <select 
-            className="px-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none bg-surface"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as RequisitionStatus | '')}
-          >
-            <option value="">All Statuses</option>
-            <option value="draft">Draft</option>
-            <option value="open">Open</option>
-            <option value="on_hold">On Hold</option>
-            <option value="closed">Closed</option>
-          </select>
 
-          <select 
-            className="px-3 py-1 text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none bg-surface"
-            value={activeFilter}
-            onChange={(e) => setActiveFilter(e.target.value)}
-          >
-            <option value="true">Active Only</option>
-            <option value="all">Include Archived</option>
-            <option value="false">Archived Only</option>
-          </select>
+          <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+              <div className="px-3 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center">
+                Status
+              </div>
+              <select 
+                className="pl-3 pr-8 h-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as RequisitionStatus | '')}
+              >
+                <option value="">All</option>
+                <option value="draft">Draft</option>
+                <option value="open">Open</option>
+                <option value="on_hold">On Hold</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+              <div className="px-3 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center">
+                Visibility
+              </div>
+              <select 
+                className="pl-3 pr-8 h-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                value={activeFilter}
+                onChange={(e) => setActiveFilter(e.target.value)}
+              >
+                <option value="active">Active Only</option>
+                <option value="archived">Archived</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 ml-auto">
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
+              <Download className="w-4 h-4" />
+            </button>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); setActiveFilter('active'); }}>
+              <FilterX className="w-4 h-4" />
+            </button>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -182,7 +215,7 @@ export default function RequisitionsPage() {
           </div>
         )}
 
-        <div className="px-2 py-2 overflow-x-auto">
+        <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-12 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -199,6 +232,8 @@ export default function RequisitionsPage() {
                   <TableHeader>Title</TableHeader>
                   <TableHeader>Department</TableHeader>
                   <TableHeader className="text-center">Openings</TableHeader>
+                  <TableHeader>Updated By</TableHeader>
+                  <TableHeader>Updated On</TableHeader>
                   <TableHeader>Status</TableHeader>
                   <TableHeader className="text-right"></TableHeader>
                 </TableRow>
@@ -206,15 +241,19 @@ export default function RequisitionsPage() {
               <tbody>
                 {requisitions.map(req => (
                   <TableRow key={req.id} className={req.is_deleted ? 'opacity-60 bg-subtle/20' : ''}>
-                    <TableCell 
-                      className="font-mono font-bold text-xs text-brand hover:underline cursor-pointer transition-colors"
-                      onClick={() => openViewModal(req)}
-                    >
+                    <TableCell className="font-mono font-bold text-xs text-brand">
                       {req.code}
                     </TableCell>
-                    <TableCell className="font-medium text-text-primary">{req.title}</TableCell>
-                    <TableCell>{req.department}</TableCell>
+                    <TableCell 
+                      className="font-medium text-text-primary hover:underline cursor-pointer transition-colors hover:text-brand"
+                      onClick={() => openViewModal(req)}
+                    >
+                      {req.title}
+                    </TableCell>
+                    <TableCell>{toTitleCase(req.department)}</TableCell>
                     <TableCell className="text-center">{req.openings_count}</TableCell>
+                    <TableCell className="text-text-secondary">{req.updated_by_name || '-'}</TableCell>
+                    <TableCell className="text-text-secondary">{formatDate(req.updated_at)}</TableCell>
                     <TableCell>{req.is_deleted ? <Badge variant="secondary">Archived</Badge> : getStatusBadge(req.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

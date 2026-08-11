@@ -84,6 +84,7 @@ export interface Candidate {
   updated_at: string;
   gap_details?: string | null;
   profile_score?: number | null;
+  updated_by_name?: string | null;
 
   educations?: CandidateEducation[];
   employments?: CandidateEmployment[];
