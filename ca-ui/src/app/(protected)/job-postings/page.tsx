@@ -262,7 +262,7 @@ export default function JobPostingsPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors">
               Search
             </button>
           </div>

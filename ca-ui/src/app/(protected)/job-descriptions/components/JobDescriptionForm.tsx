@@ -6,7 +6,7 @@ import { Button } from '@/components/primitives/Button';
 import { JobDescription, CreateJobDescriptionRequest, RequisitionOption } from '@/types/job-descriptions';
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
-import { Loader2, Archive, ArchiveRestore } from 'lucide-react';
+import { Loader2, Archive, ArchiveRestore, X } from 'lucide-react';
 import { cleanText } from '@/lib/utils';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { TagSelector } from '@/components/ats/TagSelector';
@@ -113,7 +113,7 @@ export function JobDescriptionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8 pb-12">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8 pb-12 relative">
       {error && (
         <div className="p-4 rounded-md bg-danger/10 border border-danger/20 text-danger font-medium shadow-sm">
           {error}
@@ -338,7 +338,7 @@ export function JobDescriptionForm({
         </Button>
         <Button variant="primary" type="submit" disabled={saving} className="px-6">
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />}
-          Save Job Description
+          {mode === 'edit' ? 'Update' : 'Create'}
         </Button>
       </div>
     </form>

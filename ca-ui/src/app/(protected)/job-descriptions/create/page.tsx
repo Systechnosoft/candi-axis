@@ -10,7 +10,9 @@ import { usersApi } from '@/lib/api/users';
 import { RequisitionOption, CreateJobDescriptionRequest } from '@/types/job-descriptions';
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
+import { ModalShell } from '@/components/primitives/ModalShell';
+import { Button } from '@/components/primitives/Button';
 
 export default function CreateJobDescriptionPage() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function CreateJobDescriptionPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export default function CreateJobDescriptionPage() {
       if (selectedTags.length > 0) {
         await tagsApi.replaceTags('job_description', newJd.id, selectedTags.map(t => ({ id: t.id, is_starred: t.is_starred })));
       }
-      router.push('/job-descriptions');
+      setSuccessMessage('Job description created successfully!');
     } catch (err) {
       const errorStr = err as { response?: { data?: { message?: string } } };
       setError(errorStr.response?.data?.message || 'Failed to create job description');
@@ -57,6 +60,11 @@ export default function CreateJobDescriptionPage() {
   };
 
   const handleCancel = () => {
+    router.push('/job-descriptions');
+  };
+
+  const handleSuccessClose = () => {
+    setSuccessMessage(null);
     router.push('/job-descriptions');
   };
 
@@ -85,6 +93,26 @@ export default function CreateJobDescriptionPage() {
         saving={saving}
         error={error}
       />
+      {/* Success Modal */}
+      {successMessage && (
+        <ModalShell
+          title="Success"
+          onClose={handleSuccessClose}
+          className="max-w-sm"
+          footer={
+            <Button variant="primary" onClick={handleSuccessClose}>
+              OK
+            </Button>
+          }
+        >
+          <div className="text-sm text-text-primary flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center text-success shrink-0">
+              <Check className="w-5 h-5" />
+            </div>
+            {successMessage}
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }

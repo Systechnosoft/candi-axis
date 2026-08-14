@@ -245,6 +245,55 @@ function buildInterviewerEmailHtml(params: {
   return wrapEmailHtml(bodyContent, orgName);
 }
 
+interface InterviewData {
+  id: string;
+  application_id: string;
+  round_no: number;
+  round_type: string;
+  scheduled_start_utc: string | Date;
+  duration_mins: number;
+  mode: string;
+  location: string;
+  meeting_link: string;
+  status: string;
+}
+
+interface ApplicationData {
+  candidate_id: string;
+  job_posting_id: string;
+  candidate_name: string;
+  candidate_email: string;
+  job_title: string;
+  jd_id: string;
+}
+
+interface InterviewerData {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+interface OrganizerData {
+  full_name: string;
+  email: string;
+  org_id: string;
+}
+
+interface CCUserData {
+  email: string;
+}
+
+interface OrgData {
+  name: string;
+}
+
+interface ResumeDocData {
+  storage_bucket: string;
+  storage_key: string;
+  original_file_name: string;
+  mime_type: string;
+}
+
 @Processor(QUEUE_NAMES.CALENDAR_INVITES)
 export class CalendarInviteProcessor extends WorkerHost {
   private readonly logger = new Logger(CalendarInviteProcessor.name);
@@ -287,7 +336,7 @@ export class CalendarInviteProcessor extends WorkerHost {
 
     try {
       // 1. Fetch interview details (re-query to pick up any updated meeting_link from Google Meet)
-      const interviewRes = await client.query(
+      const interviewRes = await client.query<InterviewData>(
         `SELECT id, application_id, round_no, round_type, scheduled_start_utc, duration_mins, mode, location, meeting_link, status 
          FROM ca_interviews WHERE id = $1 AND is_deleted = false`,
         [interviewId],
@@ -298,7 +347,7 @@ export class CalendarInviteProcessor extends WorkerHost {
       const interview = interviewRes.rows[0];
 
       // 2. Fetch application and candidate details
-      const appRes = await client.query(
+      const appRes = await client.query<ApplicationData>(
         `SELECT cjs.candidate_id, cjs.job_posting_id, c.full_name as candidate_name, c.email as candidate_email,
                 jp.name as job_title, jp.jd_id
          FROM ca_candidate_job_stages cjs
@@ -313,7 +362,7 @@ export class CalendarInviteProcessor extends WorkerHost {
       const appData = appRes.rows[0];
 
       // 3. Fetch interviewers
-      const interviewersRes = await client.query(
+      const interviewersRes = await client.query<InterviewerData>(
         `SELECT u.id, u.full_name, u.email 
          FROM ca_users u
          JOIN ca_interview_assignments ia ON u.id = ia.interviewer_user_id
@@ -323,7 +372,7 @@ export class CalendarInviteProcessor extends WorkerHost {
       const interviewers = interviewersRes.rows;
 
       // 4. Fetch recruiter/organizer (actor)
-      const actorRes = await client.query(
+      const actorRes = await client.query<OrganizerData>(
         `SELECT full_name, email, org_id FROM ca_users WHERE id = $1 AND is_active = true AND is_deleted = false`,
         [actorUserId],
       );
@@ -335,7 +384,7 @@ export class CalendarInviteProcessor extends WorkerHost {
       // 5. Fetch organisation name for email sign-off
       let orgName = 'Recruitment Team';
       try {
-        const orgRes = await client.query(
+        const orgRes = await client.query<OrgData>(
           `SELECT name FROM ca_organisations WHERE id = $1`,
           [organizer.org_id],
         );
@@ -349,7 +398,7 @@ export class CalendarInviteProcessor extends WorkerHost {
       // 6. Fetch CC emails
       let ccEmails: string[] = [];
       if (ccUserIds.length > 0) {
-        const ccRes = await client.query(
+        const ccRes = await client.query<CCUserData>(
           `SELECT email FROM ca_users WHERE id = ANY($1) AND is_active = true AND is_deleted = false`,
           [ccUserIds],
         );
@@ -365,7 +414,7 @@ export class CalendarInviteProcessor extends WorkerHost {
         contentType: string;
       } | null = null;
       try {
-        const resumeDoc = await client.query(
+        const resumeDoc = await client.query<ResumeDocData>(
           `SELECT storage_bucket, storage_key, original_file_name, mime_type
            FROM ca_documents
            WHERE entity_type = 'candidate' AND entity_id = $1 AND is_primary = true AND is_deleted = false
@@ -391,9 +440,11 @@ export class CalendarInviteProcessor extends WorkerHost {
             `No primary resume found for candidate ${appData.candidate_id}. Interviewer email will be sent without attachment.`,
           );
         }
-      } catch (resumeErr: any) {
+      } catch (resumeErr: unknown) {
+        const errMsg =
+          resumeErr instanceof Error ? resumeErr.message : String(resumeErr);
         this.logger.warn(
-          `Failed to fetch resume for candidate ${appData.candidate_id}: ${resumeErr.message}. Continuing without attachment.`,
+          `Failed to fetch resume for candidate ${appData.candidate_id}: ${errMsg}. Continuing without attachment.`,
         );
       }
 
@@ -493,10 +544,18 @@ export class CalendarInviteProcessor extends WorkerHost {
           this.logger.log(
             `Candidate email sent to: ${appData.candidate_email}`,
           );
-        } catch (candidateEmailErr: any) {
+        } catch (candidateEmailErr: unknown) {
+          const errMsg =
+            candidateEmailErr instanceof Error
+              ? candidateEmailErr.message
+              : String(candidateEmailErr);
+          const errStack =
+            candidateEmailErr instanceof Error
+              ? candidateEmailErr.stack
+              : undefined;
           this.logger.error(
-            `Failed to send candidate email: ${candidateEmailErr.message}`,
-            candidateEmailErr.stack,
+            `Failed to send candidate email: ${errMsg}`,
+            errStack,
           );
         }
       } else {
@@ -542,10 +601,16 @@ export class CalendarInviteProcessor extends WorkerHost {
           this.logger.log(
             `Interviewer email sent to: ${interviewer.email}${resumeAttachment ? ' (with resume)' : ' (no resume attached)'}`,
           );
-        } catch (intEmailErr: any) {
+        } catch (intEmailErr: unknown) {
+          const errMsg =
+            intEmailErr instanceof Error
+              ? intEmailErr.message
+              : String(intEmailErr);
+          const errStack =
+            intEmailErr instanceof Error ? intEmailErr.stack : undefined;
           this.logger.error(
-            `Failed to send interviewer email to ${interviewer.email}: ${intEmailErr.message}`,
-            intEmailErr.stack,
+            `Failed to send interviewer email to ${interviewer.email}: ${errMsg}`,
+            errStack,
           );
         }
       }
@@ -605,10 +670,12 @@ export class CalendarInviteProcessor extends WorkerHost {
       this.logger.log(
         `Successfully processed calendar invite for interview: ${interviewId}`,
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const errStack = err instanceof Error ? err.stack : undefined;
       this.logger.error(
-        `Failed processing calendar invite for interview ${interviewId}: ${err.message}`,
-        err.stack,
+        `Failed processing calendar invite for interview ${interviewId}: ${errMsg}`,
+        errStack,
       );
 
       try {
@@ -625,15 +692,17 @@ export class CalendarInviteProcessor extends WorkerHost {
           beforeJson: null,
           afterJson: {
             outlook_status: 'failed',
-            error: err.message,
+            error: errMsg,
           },
           reasonContext:
             'Failed to process and send interview calendar invite via dedicated calendar-invites BullMQ job.',
         });
-      } catch (dbErr: any) {
+      } catch (dbErr: unknown) {
+        const dbErrMsg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+        const dbErrStack = dbErr instanceof Error ? dbErr.stack : undefined;
         this.logger.error(
-          `Failed to record scheduling failure in DB: ${dbErr.message}`,
-          dbErr.stack,
+          `Failed to record scheduling failure in DB: ${dbErrMsg}`,
+          dbErrStack,
         );
       }
 

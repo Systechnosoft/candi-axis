@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export function DataTableShell({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn("w-full overflow-auto bg-surface p-3", className)}>
-      <table className="w-full text-left text-[13px] font-medium text-text-primary whitespace-nowrap [&_tbody_tr:nth-child(odd)]:bg-[#ebf5f5] [&_tbody_tr:nth-child(even)]:bg-surface">
+      <table className="w-full text-left text-[13px] font-medium text-text-primary whitespace-nowrap [&_tbody_tr:nth-child(odd)]:bg-subtle/50 [&_tbody_tr:nth-child(even)]:bg-surface">
         {children}
       </table>
     </div>

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import { 
   Search, 
   UserCircle, 
@@ -19,6 +20,17 @@ export function Topbar() {
   const { session, logout, hasAccess } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed');
+    if (stored === 'true') {
+      setIsCollapsed(true);
+    }
+    const handleToggle = () => setIsCollapsed(prev => !prev);
+    window.addEventListener('sidebar-toggle', handleToggle);
+    return () => window.removeEventListener('sidebar-toggle', handleToggle);
+  }, []);
 
   // Close the dropdown when clicking outside
   useEffect(() => {
@@ -34,38 +46,40 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="h-16 flex-shrink-0 bg-surface border-b border-border flex items-center justify-between px-6 z-40 relative">
-      {/* Left: Logo Text */}
-      <div className="flex items-center h-16 mr-0 gap-0.5">
+    <header className="h-16 flex-shrink-0 bg-surface border-b border-border flex items-center justify-between pl-3 pr-6 z-40 relative">
+      {/* Left: Sidebar matching area for Menu Button & Logo */}
+      <div className="flex items-center h-16 mr-0">
         <button
           onClick={() => window.dispatchEvent(new Event('sidebar-toggle'))}
-          className="p-1.5 -ml-1.5 rounded-md hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
+          className="px-3 h-[36px] rounded-md hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors focus:outline-none flex items-center justify-center"
           title="Toggle Sidebar"
           aria-label="Toggle Sidebar"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
-        <Image 
+        <div className='flex items-center h-full'> 
+          <Image 
           src="/logo.png" 
           alt="CandiAxis" 
           width={200}
           height={80}
           priority
           className="object-contain object-left pointer-events-none"
-        />
+        /></div>
+       
       </div>
 
       {/* Middle: Search bar */}
       <div className="flex-1 max-w-md mx-6">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input 
-            type="text" 
-            placeholder="Search candidates, reqs, jobs..." 
-            className="w-full pl-9 pr-4 py-1.5 bg-subtle border border-border rounded-md text-[14px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-          />
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input 
+              type="text" 
+              placeholder="Search candidates, reqs, jobs..." 
+              className="w-full pl-9 pr-4 py-1.5 bg-subtle border border-border rounded-md text-[14px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+            />
+          </div>
         </div>
-      </div>
       
       {/* Right: User Menu */}
       <div 

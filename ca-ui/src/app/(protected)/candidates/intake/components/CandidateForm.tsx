@@ -5,7 +5,7 @@ import { Button } from '@/components/primitives/Button';
 import { Card } from '@/components/primitives/Card';
 import { cleanText, formatToHtmlBullets } from '@/lib/utils';
 import { CandidateFormValues, DuplicateMatchResponse, CandidateEducation, CandidateEmployment, CandidateCertification, CandidateSocialLink } from '@/types/candidates';
-import { AlertCircle, CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Plus, Trash2, X } from 'lucide-react';
 import { TagSelector } from '@/components/ats/TagSelector';
 import { Tag } from '@/types/tags';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
@@ -297,7 +297,7 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleFormSubmit} className="flex flex-col gap-8 pb-12 w-full max-w-4xl mx-auto">
+    <form onSubmit={handleFormSubmit} className="flex flex-col gap-8 pb-12 w-full max-w-4xl mx-auto relative">
       {mode === 'parsed' && (
         <div className="bg-brand-50 border border-brand/20 p-4 rounded-lg flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-brand mt-0.5" />

@@ -7,7 +7,7 @@ import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Badge } from '@/components/primitives/Badge';
-import { cn, formatDate, toTitleCase } from '@/lib/utils';
+import { cn, formatDate, toTitleCase, exportToCSV } from '@/lib/utils';
 import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { usersApi } from '@/lib/api/users';
 import { tagsApi } from '@/lib/api/tags';
@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Edit2, Archive, Loader2, Search, Download, FilterX, RefreshCw, Check } from 'lucide-react';
 import { DrawerShell80, ModalShell } from '@/components/primitives/ModalShell';
 import { MultiSelect } from '@/components/primitives/MultiSelect';
+import { ArchiveConfirmModal } from '@/components/ui/ArchiveConfirmModal';
+
 import { JobDescriptionForm } from './components/JobDescriptionForm';
 import { TablePagination } from '@/components/primitives/TablePagination';
 
@@ -165,14 +167,14 @@ export default function JobDescriptionsPage() {
       exportToCSV(
         pageData,
         [
-          { header: 'JD Id', accessor: j => j.code || '-' },
-          { header: 'Job Title', accessor: j => j.title },
-          { header: 'Work Mode', accessor: j => toTitleCase(j.work_mode) || '-' },
-          { header: 'Emp Type', accessor: j => toTitleCase(j.employment_type) || '-' },
-          { header: 'Owner', accessor: j => getUserName(j.owner_user_id) },
-          { header: 'Updated By', accessor: j => j.updated_by_name || '-' },
-          { header: 'Updated On', accessor: j => j.updated_at ? formatDate(j.updated_at) : (j.created_at ? formatDate(j.created_at) : '-') },
-          { header: 'Status', accessor: j => toTitleCase(j.status) }
+          { header: 'JD Id', accessor: (j: JobDescription) => j.code || '-' },
+          { header: 'Job Title', accessor: (j: JobDescription) => j.title },
+          { header: 'Work Mode', accessor: (j: JobDescription) => toTitleCase(j.work_mode) || '-' },
+          { header: 'Emp Type', accessor: (j: JobDescription) => toTitleCase(j.employment_type) || '-' },
+          { header: 'Owner', accessor: (j: JobDescription) => getUserName(j.owner_user_id) },
+          { header: 'Updated By', accessor: (j: JobDescription) => j.updated_by_name || '-' },
+          { header: 'Updated On', accessor: (j: JobDescription) => j.updated_at ? formatDate(j.updated_at) : (j.created_at ? formatDate(j.created_at) : '-') },
+          { header: 'Status', accessor: (j: JobDescription) => toTitleCase(j.status) }
         ],
         `job-descriptions-page-${page}.csv`
       );
@@ -256,7 +258,7 @@ export default function JobDescriptionsPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors">
               Search
             </button>
           </div>
@@ -296,7 +298,7 @@ export default function JobDescriptionsPage() {
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
               <Download className="w-4 h-4" />
             </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setReqFilter(''); setStatusFilter(''); }}>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setReqFilter([]); setStatusFilter(''); }}>
               <FilterX className="w-4 h-4" />
             </button>
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
@@ -324,7 +326,7 @@ export default function JobDescriptionsPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  <TableHeader className="text-right"></TableHeader>
+                  <TableHeader className="text-right">{""}</TableHeader>
                   <TableHeader>JD Id</TableHeader>
                   <TableHeader>Job Title</TableHeader>
                   <TableHeader>Work Mode</TableHeader>
@@ -439,33 +441,15 @@ export default function JobDescriptionsPage() {
         </DrawerShell80>
       )}
 
-      {/* Archive Modal */}
-      {isArchiveModalOpen && jdToArchive && (
-        <ModalShell
-          title="Archive Job Description"
-          onClose={() => setIsArchiveModalOpen(false)}
-          className="max-w-md"
-          footer={
-            <>
-              <Button variant="outline" onClick={() => setIsArchiveModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" className="bg-danger hover:bg-danger/90 border-danger text-white" onClick={confirmArchive} disabled={drawerSaving}>
-                {drawerSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Archive'}
-              </Button>
-            </>
-          }
-        >
-          <div className="text-sm text-text-primary">
-            Are you sure you want to archive &quot;{jdToArchive.title}&quot;?
-          </div>
-          {drawerError && (
-            <div className="mt-4 p-2 bg-danger/10 border border-danger/20 text-danger text-sm rounded-md">
-              {drawerError}
-            </div>
-          )}
-        </ModalShell>
-      )}
+      <ArchiveConfirmModal
+        isOpen={isArchiveModalOpen && !!jdToArchive}
+        onClose={() => setIsArchiveModalOpen(false)}
+        onConfirm={confirmArchive}
+        title="Archive Job Description"
+        itemName={jdToArchive?.title || ''}
+        isArchiving={true}
+        saving={drawerSaving}
+      />
 
       {/* Success Modal */}
       {successMessage && (

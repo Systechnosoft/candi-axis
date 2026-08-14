@@ -153,7 +153,7 @@ export default function CandidatesPage() {
     >
       <div className="flex flex-col gap-6 h-full min-h-0 w-full">
         <Card className="w-full">
-          <div className="p-2 border-b border-border bg-subtle/50 rounded-t-md">
+          <div className="p-2 border-b border-border bg-surface items-center">
             <FilterBar searchValue={search} onSearchChange={setSearch} />
           </div>
           <div className="overflow-x-auto">

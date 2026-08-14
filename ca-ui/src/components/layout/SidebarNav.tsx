@@ -71,7 +71,7 @@ function NavLink({
       href={href}
       className={cn(
         "flex items-center rounded-md transition-all duration-200",
-        isSubItem ? "gap-2 px-3 py-1 text-[12px]" : "gap-3 px-3 h-[36px] text-[14px]",
+        isSubItem ? "gap-3 px-3 py-1 text-[12px]" : "gap-3 px-3 h-[36px] text-[14px]",
         isActive
           ? "bg-brand/10 text-brand font-medium"
           : "text-text-secondary hover:bg-subtle hover:text-text-primary",
@@ -201,8 +201,8 @@ export function SidebarNav() {
         isCollapsed ? "w-[64px]" : "w-[190px]"
       )}
     >
-      {/* Top spacing / padding */}
-      <div className="flex-1 overflow-y-auto pb-6 flex flex-col gap-1.5 px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Top spacing / padding adjusted to align first item with page heading */}
+      <div className="flex-1 overflow-y-auto pb-6 pt-6 flex flex-col gap-0.5 px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {NAV_ITEMS.filter(item => {
           if ((item as any).superAdminOnly && !isSuperAdmin) return false;
           const reqModule = getRequiredModuleForPath(item.href);
@@ -217,7 +217,7 @@ export function SidebarNav() {
                 item={item}
                 pathname={pathname}
                 hasAccess={hasAccess}
-                isSuperAdmin={isSuperAdmin}
+                isSuperAdmin={!!isSuperAdmin}
                 isSidebarCollapsed={isCollapsed}
               />
             );

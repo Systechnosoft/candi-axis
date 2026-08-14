@@ -9,7 +9,7 @@ interface FilterBarProps {
 
 export function FilterBar({ searchValue = '', onSearchChange, onRefresh }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 bg-surface">
+    <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-2">
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -21,7 +21,7 @@ export function FilterBar({ searchValue = '', onSearchChange, onRefresh }: Filte
             onChange={(e) => onSearchChange?.(e.target.value)}
           />
         </div>
-        <button onClick={onRefresh} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+        <button onClick={onRefresh} className="h-[34px] px-4 text-sm font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors">
           Search
         </button>
       </div>

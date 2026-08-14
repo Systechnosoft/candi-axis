@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Pool } from 'pg';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { PG_POOL } from '../infrastructure/database/database.module';
 import { AuditService } from '../modules/audit/audit.service';
 
@@ -47,8 +47,8 @@ export class BootstrapService {
     this.logger.log('Bootstrap complete.');
   }
 
-  private async ensureSuperAdminRole() {
-    const existing = await this.pool.query(
+  private async ensureSuperAdminRole(): Promise<{ id: string }> {
+    const existing = await this.pool.query<{ id: string }>(
       `SELECT id FROM ca_roles WHERE code = 'super_admin' LIMIT 1`,
     );
     if (existing.rows[0]) {
@@ -56,7 +56,7 @@ export class BootstrapService {
       return existing.rows[0];
     }
 
-    const result = await this.pool.query(
+    const result = await this.pool.query<{ id: string }>(
       `INSERT INTO ca_roles (code, name, description, is_system, is_active)
        VALUES ('super_admin', 'Super Admin', 'System-level privileged role', true, true)
        RETURNING id`,
@@ -78,8 +78,10 @@ export class BootstrapService {
   }
 
   private async ensureSuperAdminModuleAccess(roleId: string) {
-    const modules = await this.pool.query(`SELECT id FROM ca_modules`);
-    for (const mod of modules.rows) {
+    const { rows } = await this.pool.query<{ id: string }>(
+      `SELECT id FROM ca_modules`,
+    );
+    for (const mod of rows) {
       await this.pool.query(
         `INSERT INTO ca_role_permissions (role_id, module_id, can_read, can_create, can_update, can_delete)
          VALUES ($1, $2, true, true, true, true)
@@ -108,13 +110,9 @@ export class BootstrapService {
       return;
     }
 
-    const supabaseAdmin: SupabaseClient = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: { autoRefreshToken: false, persistSession: false },
-      },
-    );
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     const normalized = email.trim().toLowerCase();
     const name =
@@ -161,7 +159,7 @@ export class BootstrapService {
     }
 
     // 2. Ensure CA user record
-    const existing = await this.pool.query(
+    const existing = await this.pool.query<{ id: string }>(
       `SELECT id FROM ca_users WHERE email_normalized = $1 LIMIT 1`,
       [normalized],
     );
@@ -176,7 +174,7 @@ export class BootstrapService {
         [supabaseAuthUserId, userId],
       );
     } else {
-      const result = await this.pool.query(
+      const result = await this.pool.query<{ id: string }>(
         `INSERT INTO ca_users (email, email_normalized, full_name, status, is_active, supabase_auth_user_id, org_id)
          VALUES ($1, $2, $3, 'active', true, $4, NULL)
          RETURNING id`,

@@ -795,7 +795,7 @@ export default function JobPostingDetailPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+            <button className="h-[34px] px-4 text-sm font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors">
               Search
             </button>
           </div>
@@ -849,7 +849,7 @@ export default function JobPostingDetailPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  <TableHeader className="w-20 text-center"></TableHeader>
+                  <TableHeader className="w-20 text-center">{""}</TableHeader>
                   <TableHeader className="w-20">Fit Score</TableHeader>
                   <TableHeader className="min-w-[140px]">Candidate Name</TableHeader>
                   <TableHeader className="min-w-[120px]">Role</TableHeader>

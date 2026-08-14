@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
 import {
   Injectable,
   Inject,
@@ -12,14 +13,62 @@ import { AuditService } from '../audit/audit.service';
 import { CreateCandidateManualDto } from './dto/create-candidate-manual.dto';
 import { CreateCandidateParsedDto } from './dto/create-candidate-parsed.dto';
 import { UpdateCandidateDto } from './dto/update-candidate.dto';
-import {
-  CandidateParserMappingService,
-  MappedCandidatePayload,
-} from './candidate-parser-mapping.service';
+import { CandidateParserMappingService } from './candidate-parser-mapping.service';
 import { CandidateDuplicateService } from './candidate-duplicate.service';
 import { DocumentsService } from '../documents/documents.service';
 import { normalizeCandidateChildData } from './utils/parsed-candidate-normalizer';
 import { calculateProfileScore, DEFAULT_WEIGHTS } from './utils/profile-scorer';
+
+export interface ChildDataPayload {
+  educations?: {
+    qualification_level?: string;
+    degree?: string;
+    field_of_study?: string;
+    institution_name?: string;
+    start_year?: number | string;
+    end_year?: number | string;
+    grade_or_percentage?: string;
+    is_highest?: boolean;
+    id?: string;
+  }[];
+  employments?: {
+    company_name?: string;
+    job_title?: string;
+    employment_type?: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    is_current?: boolean;
+    responsibilities_summary?: string;
+    id?: string;
+  }[];
+  certifications?: {
+    certification_name?: string;
+    issuer?: string;
+    issued_on?: string;
+    expiry_on?: string;
+    does_not_expire?: boolean;
+    credential_id?: string;
+    credential_url?: string;
+    id?: string;
+  }[];
+  social_links?: {
+    link_type?: string;
+    url?: string;
+    display_label?: string;
+    is_primary?: boolean;
+    id?: string;
+  }[];
+  projects?: {
+    title?: string;
+    description?: string;
+    technologies?: string;
+    duration?: string;
+    role?: string;
+    project_url?: string;
+    id?: string;
+  }[];
+}
 
 @Injectable()
 export class CandidatesService {
@@ -35,7 +84,7 @@ export class CandidatesService {
     this.logger = new Logger(CandidatesService.name);
   }
 
-  private cleanText(text: string): string {
+  private cleanText(text?: string | null): string {
     if (!text) return '';
     return text.trim().replace(/ +/g, ' ');
   }
@@ -50,7 +99,28 @@ export class CandidatesService {
     return phone.replace(/[^0-9+]/g, '');
   }
 
-  private normalizeCandidatePayload(data: any): any {
+  private normalizeCandidatePayload(data: {
+    email?: string;
+    phone?: string;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    social_links?: Array<{
+      link_type?: string;
+      url?: string;
+      display_label?: string;
+      label?: string;
+      is_primary?: boolean;
+    }>;
+    current_designation?: string;
+    current_company?: string;
+    employments?: Array<{
+      job_title?: string;
+      company_name?: string;
+      is_current?: boolean;
+    }>;
+    [key: string]: any;
+  }): Record<string, any> {
     const email = this.normalizeEmail(data.email);
     const phone = this.normalizePhone(data.phone);
     const firstName = data.first_name ? this.cleanText(data.first_name) : null;
@@ -62,7 +132,7 @@ export class CandidatesService {
     }
 
     const socialLinks = (data.social_links || [])
-      .map((link: any) => {
+      .map((link) => {
         const validTypes = [
           'linkedin',
           'github',
@@ -97,7 +167,7 @@ export class CandidatesService {
           is_primary: !!link.is_primary,
         };
       })
-      .filter((link: any) => link.url && link.link_type);
+      .filter((link) => link.url && link.link_type);
 
     let currentDesignation = data.current_designation
       ? this.cleanText(data.current_designation)
@@ -113,7 +183,7 @@ export class CandidatesService {
     ) {
       // Find current or latest employment
       const latest =
-        data.employments.find((e: any) => e.is_current) || data.employments[0];
+        data.employments.find((e) => e.is_current) || data.employments[0];
       if (latest) {
         currentDesignation = this.cleanText(latest.job_title);
         currentCompany = this.cleanText(latest.company_name);
@@ -125,15 +195,15 @@ export class CandidatesService {
       full_name: fullName,
       first_name: firstName,
       last_name: lastName,
-      email: data.email ? data.email.trim() : null,
+      email: data.email ? String(data.email).trim() : null,
       email_normalized: email,
       secondary_email: data.secondary_email
-        ? data.secondary_email.trim()
+        ? String(data.secondary_email).trim()
         : null,
-      phone: data.phone ? data.phone.trim() : null,
+      phone: data.phone ? String(data.phone).trim() : null,
       phone_normalized: phone,
       secondary_phone: data.secondary_phone
-        ? data.secondary_phone.trim()
+        ? String(data.secondary_phone).trim()
         : null,
       location: data.location ? this.cleanText(data.location) : null,
       current_designation: currentDesignation,
@@ -176,23 +246,17 @@ export class CandidatesService {
     client: PoolClient,
     candidateId: string,
     userId: string,
-    data: {
-      educations?: any[];
-      employments?: any[];
-      certifications?: any[];
-      social_links?: any[];
-      projects?: any[];
-    },
+    data: ChildDataPayload,
   ) {
-    const normalized = normalizeCandidateChildData(data);
+    const normalized = normalizeCandidateChildData(data) as ChildDataPayload;
 
-    const userRes = await client.query(
+    const userRes = await client.query<{ org_id: string }>(
       `SELECT org_id FROM public.ca_users WHERE id = $1`,
       [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
-      const defaultOrgRes = await client.query(
+      const defaultOrgRes = await client.query<{ id: string }>(
         `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
       orgId =
@@ -338,13 +402,13 @@ export class CandidatesService {
       `Saving ${tags.length} tags for candidate ${candidateId} (source: ${source})`,
     );
 
-    const userRes = await client.query(
+    const userRes = await client.query<{ org_id: string }>(
       `SELECT org_id FROM public.ca_users WHERE id = $1`,
       [userId],
     );
     let orgId = userRes.rows[0]?.org_id;
     if (!orgId) {
-      const defaultOrgRes = await client.query(
+      const defaultOrgRes = await client.query<{ id: string }>(
         `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
       orgId =
@@ -358,7 +422,7 @@ export class CandidatesService {
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(cleanedName)) {
-        const existingTagRes = await client.query(
+        const existingTagRes = await client.query<{ name: string }>(
           `SELECT name FROM ca_tags WHERE id = $1`,
           [cleanedName],
         );
@@ -374,7 +438,7 @@ export class CandidatesService {
       this.logger.log(`Checking tag in dictionary: "${cleanedName}"`);
 
       // Check/Insert tag in tags table
-      const tagInsertResult = await client.query(
+      const tagInsertResult = await client.query<{ id: string }>(
         `INSERT INTO ca_tags (org_id, name, normalized_name, type, created_by, updated_by)
          VALUES ($1, $2, $3, 'skill', $4, $4)
          ON CONFLICT (normalized_name, type) 
@@ -398,15 +462,9 @@ export class CandidatesService {
     client: PoolClient,
     candidateId: string,
     userId: string,
-    data: {
-      educations?: any[];
-      employments?: any[];
-      certifications?: any[];
-      social_links?: any[];
-      projects?: any[];
-    },
+    data: ChildDataPayload,
   ) {
-    const normalized = normalizeCandidateChildData(data);
+    const normalized = normalizeCandidateChildData(data) as ChildDataPayload;
 
     if (normalized.educations) {
       await client.query(
@@ -414,8 +472,8 @@ export class CandidatesService {
         [candidateId],
       );
       const incomingIds = normalized.educations
-        .filter((e: any) => e.id)
-        .map((e: any) => e.id);
+        .filter((e: { id?: string }) => e.id)
+        .map((e: { id?: string }) => e.id);
       if (incomingIds.length > 0) {
         await client.query(
           `UPDATE ca_candidate_educations SET is_deleted = true, deleted_at = now() WHERE candidate_id = $1 AND id != ALL($2)`,
@@ -479,8 +537,8 @@ export class CandidatesService {
         [candidateId],
       );
       const incomingIds = normalized.employments
-        .filter((e: any) => e.id)
-        .map((e: any) => e.id);
+        .filter((e: { id?: string }) => e.id)
+        .map((e: { id?: string }) => e.id);
       if (incomingIds.length > 0) {
         await client.query(
           `UPDATE ca_candidate_employments SET is_deleted = true, deleted_at = now() WHERE candidate_id = $1 AND id != ALL($2)`,
@@ -1336,7 +1394,14 @@ export class CandidatesService {
     };
 
     // 1. Experience Gaps between consecutive employments
-    let validEmps: any[] = [];
+    let validEmps: Array<{
+      start_date?: string;
+      end_date?: string;
+      is_current?: boolean;
+      company_name?: string;
+      startDateObj: Date;
+      endDateObj: Date | null;
+    }> = [];
     if (employments && employments.length > 0) {
       validEmps = employments
         .filter((e) => e.start_date)
@@ -1357,14 +1422,16 @@ export class CandidatesService {
         }
 
         const prevEnd = prev.endDateObj;
-        const currStart = curr.startDateObj!;
+        const currStart = curr.startDateObj;
 
         if (currStart > prevEnd) {
           // Calculate calendar month difference
           // Formula: (Year2 - Year1) * 12 + (Month2 - Month1) - 1
           // The -1 accounts for the fact that if you end in Oct and start in Dec, the gap is only Nov (1 month).
-          const diffMonths = (currStart.getFullYear() - prevEnd.getFullYear()) * 12 
-                           + (currStart.getMonth() - prevEnd.getMonth()) - 1;
+          const diffMonths =
+            (currStart.getFullYear() - prevEnd.getFullYear()) * 12 +
+            (currStart.getMonth() - prevEnd.getMonth()) -
+            1;
 
           if (diffMonths > 0) {
             const prevDateStr = prevEnd.toLocaleDateString('en-US', {
@@ -1375,9 +1442,9 @@ export class CandidatesService {
               month: 'short',
               year: 'numeric',
             });
-            
+
             // Only report if it's 2 or more months gap, or if you want to report 1 month gaps.
-            // Let's report gaps >= 1 month if they want to see any gap. 
+            // Let's report gaps >= 1 month if they want to see any gap.
             // The previous logic reported diffMonths >= 2 (which was actually a 1 month calendar gap).
             // So diffMonths >= 1 is equivalent to the old diffMonths >= 2.
             if (diffMonths >= 1) {
@@ -1404,8 +1471,10 @@ export class CandidatesService {
         const today = new Date();
         const prevEnd = latestEmp.endDateObj;
         if (today > prevEnd) {
-          const diffMonths = (today.getFullYear() - prevEnd.getFullYear()) * 12 
-                           + (today.getMonth() - prevEnd.getMonth()) - 1;
+          const diffMonths =
+            (today.getFullYear() - prevEnd.getFullYear()) * 12 +
+            (today.getMonth() - prevEnd.getMonth()) -
+            1;
 
           if (diffMonths >= 1) {
             const prevDateStr = prevEnd.toLocaleDateString('en-US', {
@@ -1473,8 +1542,10 @@ export class CandidatesService {
         const empStart = firstEmp.startDateObj;
 
         if (empStart > edEnd) {
-          const diffMonths = (empStart.getFullYear() - edEnd.getFullYear()) * 12 
-                           + (empStart.getMonth() - edEnd.getMonth()) - 1;
+          const diffMonths =
+            (empStart.getFullYear() - edEnd.getFullYear()) * 12 +
+            (empStart.getMonth() - edEnd.getMonth()) -
+            1;
 
           if (diffMonths >= 6) {
             // Only report if the gap is at least 6 months

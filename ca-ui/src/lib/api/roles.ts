@@ -22,6 +22,7 @@ export interface Role {
   is_active: boolean;
   user_count?: number;
   permissions?: ModulePermission[];
+  description?: string;
 }
 
 export interface Module {

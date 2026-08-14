@@ -99,7 +99,7 @@ export default function RolesPage() {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [loadInitialData]);
 
   const handleSelectRole = async (role: Role, customModules?: Module[]) => {
     setError(null);

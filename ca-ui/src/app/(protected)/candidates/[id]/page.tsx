@@ -419,7 +419,7 @@ export default function ViewCandidatePage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full bg-surface overflow-y-auto w-full items-center justify-center">
+      <div className="flex flex-col bg-surface w-full items-center justify-center pt-20">
         <Loader2 className="w-8 h-8 animate-spin text-brand" />
         <span className="mt-4 text-text-muted">Loading candidate details...</span>
       </div>

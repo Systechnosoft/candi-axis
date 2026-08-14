@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
-  Inject,
-  NotFoundException,
-  BadRequestException,
   Logger,
+  BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { Pool } from 'pg';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +12,23 @@ import { PG_POOL } from '../../infrastructure/database/database.module';
 import { AuditService } from '../audit/audit.service';
 import { UpdateAiConfigDto } from './dto/update-ai-config.dto';
 import { CandidatesService } from '../candidates/candidates.service';
+
+interface ProviderConfig {
+  has_custom_key: boolean;
+  base_url: string | null;
+  model: string | null;
+  maskedKey: string | null;
+  api_key?: string | null;
+}
+
+interface AiConfig {
+  provider: string;
+  providers: Record<string, ProviderConfig>;
+  has_custom_key?: boolean;
+  base_url?: string | null;
+  model?: string | null;
+  maskedKey?: string | null;
+}
 
 @Injectable()
 export class AdminSettingsService {
@@ -139,16 +156,19 @@ export class AdminSettingsService {
     return `${this.getProviderDisplayName(provider)} provider selected — invalid or missing API key.`;
   }
 
-  async getAiConfig(email: string) {
+  async getAiConfig(email: string): Promise<AiConfig> {
     const orgPrefix = this.getOrgPrefix(email);
     const query = `
       SELECT setting_key, setting_value 
       FROM ca_admin_settings 
       WHERE setting_key LIKE $1
     `;
-    const res = await this.pool.query(query, [`${orgPrefix}%`]);
+    const res = await this.pool.query<{
+      setting_key: string;
+      setting_value: string;
+    }>(query, [`${orgPrefix}%`]);
 
-    const config: any = {
+    const config: AiConfig = {
       provider: 'gemini',
       providers: {},
     };
@@ -166,16 +186,16 @@ export class AdminSettingsService {
     res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
-      let val = row.setting_value;
+      let val = String(row.setting_value);
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
       if (val === 'null' || val === null) {
-        val = null;
+        val = '';
       }
 
       if (key === 'ai_parsing_provider') {
-        if (val) config.provider = val;
+        if (val) config.provider = val.trim();
       } else if (key.startsWith('ai_parsing_api_key_')) {
         const prov = key.replace('ai_parsing_api_key_', '');
         if (config.providers[prov]) {
@@ -184,7 +204,7 @@ export class AdminSettingsService {
             decrypted &&
             !decrypted.includes('*') &&
             decrypted.trim().length > 0;
-          config.providers[prov].has_custom_key = isConfigured;
+          config.providers[prov].has_custom_key = Boolean(isConfigured);
           config.providers[prov].maskedKey = isConfigured
             ? this.maskApiKey(decrypted)
             : null;
@@ -361,41 +381,73 @@ export class AdminSettingsService {
     }
   }
 
+  async getActiveAiProviders(email: string) {
+    const orgPrefix = this.getOrgPrefix(email);
+    const keyNameProvider = `${orgPrefix}ai_parsing_provider`;
+    const keyNameModel = `${orgPrefix}ai_parsing_model_`;
+
+    const settingsRes = await this.pool.query<{
+      setting_key: string;
+      setting_value: string;
+    }>(
+      `SELECT setting_key, setting_value FROM ca_admin_settings 
+       WHERE (setting_key = $1 OR setting_key LIKE $2) AND is_active = true`,
+      [keyNameProvider, `${keyNameModel}%`],
+    );
+
+    return settingsRes.rows;
+  }
+
   async getActiveApiKey(
     email: string,
     provider: string,
   ): Promise<string | null> {
     const orgPrefix = this.getOrgPrefix(email);
-    const keyName = `${orgPrefix}ai_parsing_api_key_${provider}`;
+    const settingKey = `${orgPrefix}ai_parsing_api_key_${provider}`;
 
-    const res = await this.pool.query(
-      'SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 AND is_active = true',
-      [keyName],
+    const existing = await this.pool.query<{ setting_value: string }>(
+      'SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 LIMIT 1',
+      [settingKey],
     );
 
-    let val = res.rows[0]?.setting_value;
-    if (!val) return null;
-    if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
-      val = val.slice(1, -1);
-    }
+    if (existing.rows[0]) {
+      let val = String(existing.rows[0].setting_value);
+      if (val === 'null' || !val) return null;
+      if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
+        val = val.slice(1, -1);
+      }
 
-    const decrypted = this.decrypt(val);
-    if (this.validateApiKey(decrypted, provider)) {
-      return decrypted;
+      const decrypted = this.decrypt(val);
+      if (this.validateApiKey(decrypted, provider)) {
+        return decrypted;
+      }
     }
     return null;
   }
 
-  async getAiConfigForOrg(email: string): Promise<{ provider: string; model: string; base_url: string; api_key: string | null }> {
+  async getAiConfigForOrg(email: string): Promise<{
+    provider: string;
+    model: string;
+    base_url: string;
+    api_key: string | null;
+  }> {
     const orgPrefix = this.getOrgPrefix(email);
     const query = `
       SELECT setting_key, setting_value 
       FROM ca_admin_settings 
       WHERE setting_key LIKE $1
     `;
-    const res = await this.pool.query(query, [`${orgPrefix}%`]);
+    const res = await this.pool.query<{
+      setting_key: string;
+      setting_value: string;
+    }>(query, [`${orgPrefix}%`]);
 
-    const config: { provider: string; model: string; base_url: string; api_key: string | null } = {
+    const config: {
+      provider: string;
+      model: string;
+      base_url: string;
+      api_key: string | null;
+    } = {
       provider: 'gemini',
       model: this.getProviderDefaultModel('gemini'),
       base_url: this.getProviderDefaultBaseUrl('gemini'),
@@ -405,7 +457,7 @@ export class AdminSettingsService {
     res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
-      let val = row.setting_value;
+      let val: string | null = row.setting_value;
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
@@ -425,7 +477,7 @@ export class AdminSettingsService {
     res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
-      let val = row.setting_value;
+      let val: string | null = row.setting_value;
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
@@ -470,7 +522,9 @@ export class AdminSettingsService {
   async getScoringWeights(email: string) {
     const orgPrefix = this.getOrgPrefix(email);
     const keyName = `${orgPrefix}resume_scoring_weights`;
-    const res = await this.pool.query(
+    const res = await this.pool.query<{
+      setting_value: Record<string, number>;
+    }>(
       'SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 AND is_active = true',
       [keyName],
     );
@@ -480,7 +534,11 @@ export class AdminSettingsService {
     return res.rows[0].setting_value;
   }
 
-  async updateScoringWeights(userId: string, email: string, weights: any) {
+  async updateScoringWeights(
+    userId: string,
+    email: string,
+    weights: Record<string, number>,
+  ) {
     const orgPrefix = this.getOrgPrefix(email);
     const keyName = `${orgPrefix}resume_scoring_weights`;
 
@@ -544,17 +602,18 @@ export class AdminSettingsService {
   }
 
   async getOrgIdByEmail(email: string): Promise<string | null> {
-    const res = await this.pool.query(
+    const res = await this.pool.query<{ org_id: string }>(
       `SELECT org_id FROM public.users WHERE email_normalized = $1 LIMIT 1`,
       [email.trim().toLowerCase()],
     );
     return res.rows[0]?.org_id || null;
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   async getConfigurations(email: string) {
     // Platform-wide settings — no org_id filter.
     // Super admins (who have no org_id) can still manage all configurations.
-    const res = await this.pool.query(
+    const res = await this.pool.query<Record<string, any>>(
       `SELECT id, provider, display_name, auth_mode, config_json, is_active, is_default, 
               last_test_status, last_test_message, last_tested_at 
        FROM public.ca_interview_provider_configurations
@@ -563,6 +622,7 @@ export class AdminSettingsService {
     return res.rows;
   }
 
+  /* eslint-disable-next-line @typescript-eslint/require-await */
   async getProviders() {
     return [
       {
@@ -673,10 +733,17 @@ export class AdminSettingsService {
     ];
   }
 
-  async saveProviderConfig(userId: string, email: string, data: any) {
-    const { provider, auth_mode } = data;
-    const config_json = data.config_json || data.config || {};
-    const credentials_json = data.credentials_json || data.credentials || {};
+  async saveConfiguration(
+    userId: string,
+    email: string,
+    data: Record<string, any>,
+  ) {
+    const provider = String(data.provider);
+    const auth_mode = String(data.auth_mode);
+    const config_json: Record<string, any> =
+      data.config_json || data.config || {};
+    const credentials_json: Record<string, any> =
+      data.credentials_json || data.credentials || {};
 
     // Derive a human-readable display name from the provider code if not sent
     const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -685,20 +752,21 @@ export class AdminSettingsService {
       ZOOM: 'Zoom',
       CISCO_WEBEX: 'Cisco Webex',
     };
-    const display_name: string =
+    const display_name = String(
       data.display_name ||
-      PROVIDER_DISPLAY_NAMES[provider] ||
-      provider.replace(/_/g, ' ');
+        PROVIDER_DISPLAY_NAMES[provider] ||
+        provider.replace(/_/g, ' '),
+    );
 
     // Provider configurations are platform-wide (not org-scoped).
     // Resolve org_id from user or fall back to the first organisation.
-    const userRes = await this.pool.query(
+    const userRes = await this.pool.query<{ org_id: string }>(
       `SELECT org_id FROM public.users WHERE id = $1 LIMIT 1`,
       [userId],
     );
     let orgId: string | null = userRes.rows[0]?.org_id || null;
     if (!orgId) {
-      const fallbackRes = await this.pool.query(
+      const fallbackRes = await this.pool.query<{ id: string }>(
         `SELECT id FROM public.ca_organisations ORDER BY created_at ASC LIMIT 1`,
       );
       orgId = fallbackRes.rows[0]?.id || null;
@@ -709,7 +777,7 @@ export class AdminSettingsService {
       );
     }
 
-    const res = await this.pool.query(
+    const res = await this.pool.query<{ id: string }>(
       `INSERT INTO public.ca_interview_provider_configurations 
          (org_id, provider, display_name, auth_mode, config_json, encrypted_credentials_json, is_active, is_default, created_by, updated_by)
        VALUES ($1, $2, $3, $4, $5, $6, true, false, $7, $7)
@@ -731,7 +799,7 @@ export class AdminSettingsService {
         userId,
       ],
     );
-    return { success: true, id: res.rows[0].id };
+    return { success: true, id: res.rows[0]?.id };
   }
 
   async testProviderConfig(userId: string, id: string) {
@@ -771,7 +839,7 @@ export class AdminSettingsService {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      const orgRes = await client.query(
+      const orgRes = await client.query<{ org_id: string }>(
         `SELECT org_id FROM public.ca_interview_provider_configurations WHERE id = $1`,
         [id],
       );

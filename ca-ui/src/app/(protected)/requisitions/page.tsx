@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ArchiveConfirmModal } from '@/components/ui/ArchiveConfirmModal';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
@@ -241,7 +242,7 @@ export default function RequisitionsPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors">
               Search
             </button>
           </div>
@@ -329,7 +330,7 @@ export default function RequisitionsPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  <TableHeader className="text-right"></TableHeader>
+                  <TableHeader className="text-right">{""}</TableHeader>
                   <TableHeader>Requisition ID</TableHeader>
                   <TableHeader>Title</TableHeader>
                   <TableHeader>Department</TableHeader>
@@ -366,7 +367,7 @@ export default function RequisitionsPage() {
                     <TableCell className="text-center">{req.openings_count}</TableCell>
                     <TableCell className="text-text-secondary">{req.updated_by_name || '-'}</TableCell>
                     <TableCell className="text-text-secondary">{formatDate(req.updated_at)}</TableCell>
-                    <TableCell>{req.is_deleted ? <Badge variant="secondary">Archived</Badge> : getStatusBadge(req.status)}</TableCell>
+                    <TableCell>{req.is_deleted ? <Badge variant="default">Archived</Badge> : getStatusBadge(req.status)}</TableCell>
                   </TableRow>
                 ))}
               </tbody>
@@ -398,60 +399,26 @@ export default function RequisitionsPage() {
       />
 
       {/* Archive Modal */}
-      {isArchiveModalOpen && reqToArchive && (
-        <ModalShell
-          title="Archive Requisition"
-          onClose={() => setIsArchiveModalOpen(false)}
-          className="max-w-md"
-          footer={
-            <>
-              <Button variant="outline" onClick={() => setIsArchiveModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" className="bg-danger hover:bg-danger/90 border-danger text-white" onClick={confirmArchive} disabled={modalSaving}>
-                {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Archive'}
-              </Button>
-            </>
-          }
-        >
-          <div className="text-sm text-text-primary">
-            Are you sure you want to archive &quot;{reqToArchive.title}&quot;?
-          </div>
-          {modalError && (
-            <div className="mt-4 p-2 bg-danger/10 border border-danger/20 text-danger text-sm rounded-md">
-              {modalError}
-            </div>
-          )}
-        </ModalShell>
-      )}
+      <ArchiveConfirmModal
+        isOpen={isArchiveModalOpen && !!reqToArchive}
+        onClose={() => setIsArchiveModalOpen(false)}
+        onConfirm={confirmArchive}
+        title="Archive Requisition"
+        itemName={reqToArchive?.title || ''}
+        isArchiving={true}
+        saving={modalSaving}
+      />
 
       {/* Unarchive Modal */}
-      {isUnarchiveModalOpen && reqToUnarchive && (
-        <ModalShell
-          title="Unarchive Requisition"
-          onClose={() => setIsUnarchiveModalOpen(false)}
-          className="max-w-md"
-          footer={
-            <>
-              <Button variant="outline" onClick={() => setIsUnarchiveModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={confirmUnarchive} disabled={modalSaving}>
-                {modalSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Unarchive'}
-              </Button>
-            </>
-          }
-        >
-          <div className="text-sm text-text-primary">
-            Are you sure you want to unarchive &quot;{reqToUnarchive.title}&quot;?
-          </div>
-          {modalError && (
-            <div className="mt-4 p-2 bg-danger/10 border border-danger/20 text-danger text-sm rounded-md">
-              {modalError}
-            </div>
-          )}
-        </ModalShell>
-      )}
+      <ArchiveConfirmModal
+        isOpen={isUnarchiveModalOpen && !!reqToUnarchive}
+        onClose={() => setIsUnarchiveModalOpen(false)}
+        onConfirm={confirmUnarchive}
+        title="Unarchive Requisition"
+        itemName={reqToUnarchive?.title || ''}
+        isArchiving={false}
+        saving={modalSaving}
+      />
     </div>
   );
 }
