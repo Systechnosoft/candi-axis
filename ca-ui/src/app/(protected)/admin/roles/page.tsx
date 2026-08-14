@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { useAuth } from '@/contexts/AuthContext';
 import { rolesApi, Role, Module, ModulePermission } from '@/lib/api/roles';
-import { Plus, Loader2, Shield, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Loader2, Shield, Trash2, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react';
 
 const SYSTEM_ROLE_TYPES = [
   { value: 'ADMIN', label: 'Admin (Customer level)' },
@@ -90,9 +89,7 @@ export default function RolesPage() {
       // Fetch roles
       const list = await rolesApi.getRoles();
       setRoles(list);
-      if (list.length > 0) {
-        handleSelectRole(list[0], mods);
-      }
+      // Role selection is now manual, starting with the empty state.
     } catch (err: any) {
       setError(err.message || 'Failed to load roles and permissions data');
     } finally {
@@ -225,9 +222,7 @@ export default function RolesPage() {
       setSuccessMessage('Role deleted successfully!');
       const list = await rolesApi.getRoles();
       setRoles(list);
-      if (list.length > 0) {
-        handleSelectRole(list[0]);
-      } else {
+      if (selectedRole?.id === role.id) {
         setSelectedRole(null);
       }
     } catch (err: any) {
@@ -343,45 +338,48 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
-      <PageHeader 
-        title="Roles & Permissions" 
-        actions={
-          <Button onClick={handleOpenAddModal} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Add Role
-          </Button>
-        }
-      />
-      <p className="text-text-secondary -mt-2 mb-4">Manage roles and module access</p>
-
+    <div className="flex flex-col min-h-[calc(100vh-64px)] w-full pb-10">
       {error && (
-        <div className="bg-semantic-error-light text-semantic-error border border-semantic-error-border rounded-lg p-4 flex items-center gap-2">
+        <div className="m-4 bg-semantic-error-light text-semantic-error border border-semantic-error-border rounded-lg p-4 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {successMessage && (
-        <div className="bg-semantic-success-light text-semantic-success border border-semantic-success-border rounded-lg p-4 flex items-center gap-2">
+        <div className="m-4 bg-semantic-success-light text-semantic-success border border-semantic-success-border rounded-lg p-4 flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center p-12 text-text-muted">
+        <div className="flex-1 flex items-center justify-center p-12 text-text-muted">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden border-t border-border">
           
           {/* Left Panel: Role List */}
-          <Card className="md:col-span-1 border border-border flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-border bg-subtle/50 font-semibold text-sm text-text-primary">
-              Roles
+          <div className="lg:col-span-4 border-r border-border bg-subtle/30 flex flex-col">
+            <div className="p-5 border-b border-border flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold text-text-primary tracking-tight font-jakarta">Roles</h1>
+                <Button onClick={handleOpenAddModal} className="flex items-center gap-2 flex-shrink-0">
+                  <Plus className="w-4 h-4" /> Add Role
+                </Button>
+              </div>
+              <p className="text-sm text-text-secondary">Manage roles available in your organization.</p>
             </div>
             
-            <div className="flex flex-col divide-y divide-border max-h-[600px] overflow-y-auto">
+            <div className="p-3 lg:p-4">
+              <div className="border border-border rounded-lg bg-surface flex flex-col overflow-hidden">
+                <div className="px-5 py-3 border-b border-border bg-subtle/30 flex justify-between items-center text-sm font-semibold text-text-secondary">
+                  <span>Role</span>
+                  <span>Action</span>
+                </div>
+            
+            <div className="flex flex-col divide-y divide-border">
               {roles.length === 0 ? (
                 <div className="p-6 text-center text-text-secondary text-sm">
                   No roles found.
@@ -392,118 +390,88 @@ export default function RolesPage() {
                   return (
                     <div 
                       key={r.id}
-                      className={`p-4 flex items-center justify-between transition-colors ${
-                        isSelected ? 'bg-brand/10 border-l-4 border-brand' : 'hover:bg-subtle/40'
+                      onClick={() => handleSelectRole(r)}
+                      className={`px-5 py-4 flex items-center justify-between cursor-pointer transition-colors ${
+                        isSelected ? 'bg-brand/5' : 'hover:bg-subtle/40'
                       }`}
                     >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-sm text-text-primary">{r.name.toUpperCase()}</span>
-                        <span className="text-xs text-text-secondary capitalize">{r.role_type.replace('_', ' ').toLowerCase()} ({r.user_count} users)</span>
+                      <div className="flex flex-col gap-0.5 min-w-0 pr-4">
+                        <span className="font-semibold text-sm text-text-primary truncate">{r.name.toUpperCase()}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSelectRole(r)}
-                          className={isSelected ? 'text-brand font-semibold' : ''}
-                        >
-                          Manage
-                        </Button>
-                        
-                        {r.is_editable && (
-                          <button 
-                            onClick={() => handleDeleteRole(r)}
-                            className="p-1.5 text-text-muted hover:text-status-error hover:bg-status-error/10 rounded-md transition-all"
-                            title="Delete Role"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-brand font-semibold text-sm whitespace-nowrap">
+                        Manage
+                      </span>
                     </div>
                   );
-                })
-              )}
-            </div>
-          </Card>
-
-          {/* Right Panel: Module Permissions */}
-          <Card className="md:col-span-2 border border-border flex flex-col">
-            {selectedRole ? (
-              <>
-                <div className="p-4 border-b border-border bg-subtle/50 flex items-center justify-between">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs text-text-secondary uppercase font-semibold tracking-wider">Managing Access For</span>
-                    <span className="font-bold text-lg text-brand flex items-center gap-1.5">
-                      <Shield className="w-5 h-5" />
-                      {selectedRole.name.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button variant="secondary" size="sm" onClick={handleResetPermissions} disabled={savingPermissions}>
-                      Reset
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={handleUpdatePermissions} disabled={savingPermissions}>
-                      {savingPermissions ? 'Saving...' : 'Update'}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-6 flex flex-col gap-4 max-h-[600px] overflow-y-auto">
-                  <p className="text-sm text-text-secondary -mt-2">
-                    Configure the access level for each module in this role. Access changes are applied immediately upon saving.
-                  </p>
-                  
-                  <div className="flex flex-col gap-3">
-                    {UI_MODULES.map(u => {
-                      const currentVal = rolePermissionsState[u.code] || 'deny';
-                      return (
-                        <div key={u.code} className="p-4 border border-border rounded-lg bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold text-sm text-text-primary">{u.name}</span>
-                            <span className="text-xs text-text-secondary">{u.description}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-3 bg-subtle/30 p-1.5 rounded-lg border border-border max-w-fit">
-                            {['deny', 'viewer', 'editor', 'administrator'].map(level => {
-                              const checked = currentVal === level;
-                              return (
-                                <label 
-                                  key={level} 
-                                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all ${
-                                    checked 
-                                      ? 'bg-brand text-white shadow-sm' 
-                                      : 'text-text-secondary hover:text-text-primary hover:bg-subtle/50'
-                                  }`}
-                                >
-                                  <input 
-                                    type="radio" 
-                                    name={`perm-${u.code}`} 
-                                    value={level} 
-                                    checked={checked} 
-                                    onChange={() => handlePermissionRadioChange(u.code, level)}
-                                    className="hidden"
-                                  />
-                                  <span className="capitalize">{level}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="p-12 text-center text-text-muted flex flex-col items-center justify-center gap-2">
-                <Shield className="w-12 h-12 text-text-muted/40" />
-                <span>Select a role from the left panel to configure access control permissions.</span>
+                  })
+                )}
               </div>
+            </div>
+          </div>
+        </div>
+
+          {/* Right Panel: Permissions Configuration */}
+          <div className="lg:col-span-8 bg-surface flex flex-col">
+            {!selectedRole ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                <Shield className="w-12 h-12 text-text-muted/20 mb-4" />
+                <h2 className="text-lg font-semibold text-text-primary mb-2">No role selected</h2>
+                <p className="text-sm text-text-secondary">Select a role from the left panel to configure its permissions.</p>
+              </div>
+            ) : (
+              (() => {
+                const isSuperAdminRole = selectedRole.code === 'super_admin';
+                const canEditRole = !isSuperAdminRole && (isSuperAdmin || selectedRole.org_id === session?.org_id);
+                
+                return (
+                  <div className="p-4 lg:p-6 w-full">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                      <div>
+                        <h2 className="text-xl font-bold text-text-primary">{selectedRole.name.toUpperCase()}</h2>
+                        {selectedRole.description && (
+                          <p className="text-sm text-text-secondary mt-1">{selectedRole.description}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" onClick={handleResetPermissions} disabled={savingPermissions || !canEditRole}>
+                          Reset
+                        </Button>
+                        <Button variant="primary" size="sm" onClick={handleUpdatePermissions} disabled={savingPermissions || !canEditRole}>
+                          {savingPermissions ? 'Saving...' : 'Update Permissions'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-lg bg-surface">
+                      {UI_MODULES.map(u => {
+                        const currentVal = rolePermissionsState[u.code] || 'deny';
+                        return (
+                          <div key={u.code} className="px-6 py-4 border-b border-border last:border-b-0 flex items-center">
+                            <span className="font-semibold text-sm text-text-primary w-[30%]">{u.name}</span>
+                            <div className="w-[70%] flex items-center justify-between">
+                              {['deny', 'viewer', 'editor', 'administrator'].map(level => {
+                                const checked = currentVal === level;
+                                return (
+                                  <label key={level} className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full cursor-pointer transition-colors ${checked ? 'bg-brand/10 text-brand' : 'hover:bg-subtle text-text-secondary'}`}>
+                                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${checked ? 'border-brand' : 'border-text-secondary/50'}`}>
+                                      {checked && <div className="w-2 h-2 rounded-full bg-brand" />}
+                                    </div>
+                                    <input type="radio" name={`perm-${u.code}`} value={level} checked={checked} onChange={() => handlePermissionRadioChange(u.code, level)} className="hidden" disabled={!canEditRole} />
+                                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()
             )}
-          </Card>
+          </div>
         </div>
       )}
 

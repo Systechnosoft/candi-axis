@@ -10,6 +10,7 @@ export const ROUTE_MODULE_MAP: Record<string, string> = {
   '/candidates': 'candidates',
   '/interviews': 'interviews',
   '/offers': 'offers',
+  '/tags': '',
   '/notifications': '',
   '/admin/organisations': 'organisations',
   '/admin': 'users',

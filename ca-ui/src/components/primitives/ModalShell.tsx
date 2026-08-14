@@ -15,8 +15,8 @@ export function ModalShell({ title, children, footer, onClose, className }: { ti
       <div className={cn("bg-surface w-full max-w-lg rounded-md shadow-lg flex flex-col max-h-[90vh]", className)}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-[16px] font-semibold text-text-primary">{title}</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1 rounded-md border border-brand text-brand hover:bg-brand/10 transition-colors focus:outline-none focus:ring-1 focus:ring-brand focus:ring-offset-1">
+            <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-6 overflow-y-auto min-h-0 flex-1">
@@ -45,8 +45,8 @@ export function DrawerShell({ title, children, footer, onClose, className }: { t
       <div className={cn("bg-surface w-full max-w-md h-full shadow-xl flex flex-col border-l border-border animate-in slide-in-from-right", className)}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-subtle/50">
           <h2 className="text-[16px] font-semibold text-text-primary">{title}</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1 rounded-md border border-brand text-brand hover:bg-brand/10 transition-colors focus:outline-none focus:ring-1 focus:ring-brand focus:ring-offset-1">
+            <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-6 overflow-y-auto min-h-0 flex-1">
@@ -98,8 +98,8 @@ export function DrawerShell80({ title, children, footer, onClose, className }: {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-subtle/50 shrink-0">
           <h2 className="text-[16px] font-bold text-text-primary">{title}</h2>
-          <button onClick={handleClose} className="text-text-muted hover:text-text-primary transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={handleClose} className="p-1 rounded-md border border-brand text-brand hover:bg-brand/10 transition-colors focus:outline-none focus:ring-1 focus:ring-brand focus:ring-offset-1">
+            <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-6 overflow-y-auto min-h-0 flex-1">

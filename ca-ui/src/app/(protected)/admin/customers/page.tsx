@@ -10,8 +10,9 @@ import { Card } from '@/components/primitives/Card';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomersService, Customer } from '@/lib/api/customers';
-import { Loader2, Edit2, Ban, ShieldAlert, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Edit2, Ban, ShieldAlert, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { TablePagination } from '@/components/primitives/TablePagination';
 
 const DEFAULT_FORM = {
   customer_code: '',
@@ -43,8 +44,8 @@ export default function CustomersPage() {
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
   // Drawer form states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -60,7 +61,7 @@ export default function CustomersPage() {
     try {
       const res = await CustomersService.getCustomers({ page, limit, search });
       setCustomers(res.data);
-      setTotalPages(res.meta.totalPages || 1);
+      setTotalItems(res.meta.total || 0);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to load customers');
     } finally {
@@ -225,6 +226,7 @@ export default function CustomersPage() {
         <DataTableShell>
           <TableHead>
             <TableRow>
+              <TableHeader className="text-right"></TableHeader>
               <TableHeader>Customer Code</TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Legal Name</TableHeader>
@@ -233,7 +235,6 @@ export default function CustomersPage() {
               <TableHeader>Industry</TableHeader>
               <TableHeader>Status</TableHeader>
               <TableHeader>Created On</TableHeader>
-              <TableHeader className="text-right"></TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
@@ -261,20 +262,8 @@ export default function CustomersPage() {
             ) : (
               customers.map((cust) => (
                 <TableRow key={cust.id} className={cust.status === 'INACTIVE' ? 'opacity-60' : ''}>
-                  <TableCell className="font-semibold text-text-primary">{cust.customer_code}</TableCell>
-                  <TableCell className="font-semibold text-brand">{cust.name}</TableCell>
-                  <TableCell>{cust.legal_name || '-'}</TableCell>
-                  <TableCell>{cust.primary_contact_name || '-'}</TableCell>
-                  <TableCell>
-                    {cust.primary_contact_email && <div className="text-xs text-text-primary">{cust.primary_contact_email}</div>}
-                    {cust.primary_contact_phone && <div className="text-xs text-text-secondary">{cust.primary_contact_phone}</div>}
-                    {!cust.primary_contact_email && !cust.primary_contact_phone && '-'}
-                  </TableCell>
-                  <TableCell>{cust.industry || '-'}</TableCell>
-                  <TableCell>{getStatusBadge(cust.status)}</TableCell>
-                  <TableCell>{new Date(cust.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-start gap-1">
                       <button
                         onClick={() => handleOpenEditDrawer(cust)}
                         className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
@@ -292,33 +281,33 @@ export default function CustomersPage() {
                       </button>
                     </div>
                   </TableCell>
+                  <TableCell className="font-semibold text-text-primary">{cust.customer_code}</TableCell>
+                  <TableCell className="font-semibold text-brand">{cust.name}</TableCell>
+                  <TableCell>{cust.legal_name || '-'}</TableCell>
+                  <TableCell>{cust.primary_contact_name || '-'}</TableCell>
+                  <TableCell>
+                    {cust.primary_contact_email && <div className="text-xs text-text-primary">{cust.primary_contact_email}</div>}
+                    {cust.primary_contact_phone && <div className="text-xs text-text-secondary">{cust.primary_contact_phone}</div>}
+                    {!cust.primary_contact_email && !cust.primary_contact_phone && '-'}
+                  </TableCell>
+                  <TableCell>{cust.industry || '-'}</TableCell>
+                  <TableCell>{getStatusBadge(cust.status)}</TableCell>
+                  <TableCell>{new Date(cust.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
                 </TableRow>
               ))
             )}
           </tbody>
         </DataTableShell>
 
-        {/* Pagination footer */}
-        {totalPages > 1 && (
-          <div className="px-3 py-2 border border-border bg-surface flex items-center justify-between text-xs rounded-md shadow-sm">
-            <button
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page === 1}
-              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="font-semibold text-text-secondary">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page === totalPages}
-              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Pagination */}
+        {!loading && customers.length > 0 && (
+          <TablePagination 
+            totalItems={totalItems} 
+            page={page} 
+            setPage={setPage} 
+            limit={limit} 
+            setLimit={setLimit} 
+          />
         )}
       </div>
 

@@ -112,7 +112,12 @@ export class RequisitionsService {
     let counter = 1;
 
     // Filter by soft-delete
-    if (query.activeOnly !== 'false') {
+    if (query.activeOnly === 'archived' || query.activeOnly === 'false') {
+      conditions.push(`req.is_deleted = true`);
+    } else if (query.activeOnly === 'all') {
+      // no condition, return both
+    } else {
+      // default: 'active', 'true', undefined
       conditions.push(`req.is_deleted = false`);
     }
 

@@ -3,7 +3,7 @@ import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { Button } from '@/components/primitives/Button';
 import { Requisition, CreateRequisitionRequest, RequisitionPriority, RequisitionStatus } from '@/types/requisitions';
 import { UserLookup } from '@/types/users';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Archive, ArchiveRestore } from 'lucide-react';
 
 interface RequisitionModalProps {
   isOpen: boolean;
@@ -14,9 +14,11 @@ interface RequisitionModalProps {
   saving: boolean;
   error: string | null;
   mode?: 'create' | 'edit' | 'view';
+  onArchive?: () => Promise<void>;
+  onUnarchive?: () => Promise<void>;
 }
 
-export function RequisitionModal({ isOpen, onClose, onSave, requisition, users, saving, error, mode = 'create' }: RequisitionModalProps) {
+export function RequisitionModal({ isOpen, onClose, onSave, onArchive, onUnarchive, requisition, users, saving, error, mode = 'create' }: RequisitionModalProps) {
   const [formData, setFormData] = useState<CreateRequisitionRequest>({
     code: '',
     title: '',
@@ -97,7 +99,7 @@ export function RequisitionModal({ isOpen, onClose, onSave, requisition, users, 
             {renderViewField('Department', requisition?.department)}
           </div>
           
-          {renderViewField('Job Title', requisition?.title)}
+          {renderViewField('Job Requisition', requisition?.title)}
 
           <div className="grid grid-cols-2 gap-4">
             {renderViewField('Hiring Manager', managerName)}
@@ -175,7 +177,7 @@ export function RequisitionModal({ isOpen, onClose, onSave, requisition, users, 
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-primary">Job Title <span className="text-danger">*</span></label>
+          <label className="text-sm font-medium text-text-primary">Job Requisition <span className="text-danger">*</span></label>
           <input
             type="text"
             required
@@ -262,6 +264,16 @@ export function RequisitionModal({ isOpen, onClose, onSave, requisition, users, 
         </div>
 
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-border">
+          {mode === 'edit' && requisition && !requisition.is_deleted && onArchive && (
+            <Button type="button" variant="secondary" onClick={onArchive} disabled={saving} className="mr-auto text-danger border-danger/30 hover:bg-danger/10">
+              <Archive className="w-4 h-4 mr-2 inline" /> Archive
+            </Button>
+          )}
+          {mode === 'edit' && requisition && requisition.is_deleted && onUnarchive && (
+            <Button type="button" variant="secondary" onClick={onUnarchive} disabled={saving} className="mr-auto text-brand border-brand/30 hover:bg-brand/10">
+              <ArchiveRestore className="w-4 h-4 mr-2 inline" /> Unarchive
+            </Button>
+          )}
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
           </Button>

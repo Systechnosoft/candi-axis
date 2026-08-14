@@ -38,6 +38,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     }
   }, [isAccessDenied, hasAccess, pathname, router]);
 
+  const isAuthRoute = pathname === '/login' || pathname === '/signup';
+
+  useEffect(() => {
+    if (!loading && !session && !isAuthRoute) {
+      router.replace('/login');
+    }
+  }, [loading, session, isAuthRoute, router]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-text-primary">
@@ -47,12 +55,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  const isAuthRoute = pathname === '/login' || pathname === '/signup';
-
   if (!session) {
-    if (typeof window !== 'undefined' && !isAuthRoute) {
-      window.location.href = '/login';
-    }
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-text-primary">
         <Loader2 className="w-8 h-8 animate-spin text-brand" />

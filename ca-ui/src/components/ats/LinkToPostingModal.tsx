@@ -77,7 +77,7 @@ export function LinkToPostingModal({ candidateId, candidateName, onClose }: Link
               <p className="text-sm text-text-secondary mt-1">Select a posting for <span className="font-semibold text-brand">{candidateName}</span></p>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-subtle rounded-full transition-colors">
-              <X className="w-5 h-5 text-text-muted" />
+              <X className="w-4 h-4 text-text-muted" />
             </button>
           </div>
 

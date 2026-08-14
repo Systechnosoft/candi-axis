@@ -15,10 +15,11 @@ import { JobDescription, RequisitionOption, CreateJobDescriptionRequest } from '
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Edit2, Archive, Loader2, Search, Eye, Download, FilterX, RefreshCw } from 'lucide-react';
-import { JobDescriptionDetailModal } from './components/JobDescriptionDetailModal';
-import { DrawerShell80 } from '@/components/primitives/ModalShell';
+import { Plus, Edit2, Archive, Loader2, Search, Download, FilterX, RefreshCw, Check } from 'lucide-react';
+import { DrawerShell80, ModalShell } from '@/components/primitives/ModalShell';
+import { MultiSelect } from '@/components/primitives/MultiSelect';
 import { JobDescriptionForm } from './components/JobDescriptionForm';
+import { TablePagination } from '@/components/primitives/TablePagination';
 
 export default function JobDescriptionsPage() {
   const router = useRouter();
@@ -33,11 +34,13 @@ export default function JobDescriptionsPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [reqFilter, setReqFilter] = useState('');
+  const [reqFilter, setReqFilter] = useState<string[]>([]);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Modals
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedJd, setSelectedJd] = useState<JobDescription | null>(null);
 
   // Drawers
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
@@ -48,6 +51,10 @@ export default function JobDescriptionsPage() {
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const [drawerSelectedTags, setDrawerSelectedTags] = useState<Tag[]>([]);
 
+  const [jdToArchive, setJdToArchive] = useState<JobDescription | null>(null);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -56,7 +63,7 @@ export default function JobDescriptionsPage() {
         jobDescriptionsApi.getJobDescriptions({
           search: search || undefined,
           status: statusFilter || undefined,
-          requisition_id: reqFilter || undefined,
+          requisition_id: reqFilter.length > 0 ? reqFilter.join(',') : undefined,
         }),
         jobDescriptionsApi.getRequisitionOptions(),
         usersApi.getLookups()
@@ -64,6 +71,7 @@ export default function JobDescriptionsPage() {
       setJobDescriptions(jdData);
       setRequisitions(reqOptions);
       setUsers(userData);
+      setPage(1); // Reset page on filter changes
     } catch (err) {
       const errorStr = err as { response?: { data?: { message?: string } } };
       setError(errorStr.response?.data?.message || 'Failed to load Job Descriptions');
@@ -119,6 +127,7 @@ export default function JobDescriptionsPage() {
       }
       setIsCreateDrawerOpen(false);
       fetchData();
+      setSuccessMessage('Job description created successfully!');
     } catch (err) {
       const errorStr = err as { response?: { data?: { message?: string } } };
       setDrawerError(errorStr.response?.data?.message || 'Failed to create job description');
@@ -145,30 +154,58 @@ export default function JobDescriptionsPage() {
     }
   };
 
-  const openDetailModal = (jd: JobDescription) => {
-    setSelectedJd(jd);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleStatusUpdate = async (id: string, newStatus: string) => {
+  const handleExport = async () => {
     try {
-      await jobDescriptionsApi.updateJobDescriptionStatus(id, { status: newStatus });
-      fetchData();
-      setIsDetailModalOpen(false);
+      const jdData = await jobDescriptionsApi.getJobDescriptions({
+        status: statusFilter || undefined,
+        requisition_id: reqFilter.length > 0 ? reqFilter.join(',') : undefined,
+      });
+      const pageData = jdData.slice((page - 1) * limit, page * limit);
+      
+      exportToCSV(
+        pageData,
+        [
+          { header: 'JD Id', accessor: j => j.code || '-' },
+          { header: 'Job Title', accessor: j => j.title },
+          { header: 'Work Mode', accessor: j => toTitleCase(j.work_mode) || '-' },
+          { header: 'Emp Type', accessor: j => toTitleCase(j.employment_type) || '-' },
+          { header: 'Owner', accessor: j => getUserName(j.owner_user_id) },
+          { header: 'Updated By', accessor: j => j.updated_by_name || '-' },
+          { header: 'Updated On', accessor: j => j.updated_at ? formatDate(j.updated_at) : (j.created_at ? formatDate(j.created_at) : '-') },
+          { header: 'Status', accessor: j => toTitleCase(j.status) }
+        ],
+        `job-descriptions-page-${page}.csv`
+      );
     } catch (err) {
-      const errorStr = err as { response?: { data?: { message?: string } } };
-      setError(errorStr.response?.data?.message || 'Failed to update status');
+      console.error('Export failed', err);
     }
   };
 
   const archiveJd = async (jd: JobDescription) => {
-    if (!window.confirm(`Are you sure you want to archive "${jd.title}"?`)) return;
+    setJdToArchive(jd);
+    setIsArchiveModalOpen(true);
+  };
+
+  const confirmArchive = async () => {
+    if (!jdToArchive) return;
+    setDrawerSaving(true);
+    setDrawerError(null);
     try {
-      await jobDescriptionsApi.deleteJobDescription(jd.id);
+      await jobDescriptionsApi.deleteJobDescription(jdToArchive.id);
+      setIsEditDrawerOpen(false);
+      setEditingJd(null);
+      setIsArchiveModalOpen(false);
+      setJdToArchive(null);
       fetchData();
     } catch (err) {
       const errorStr = err as { response?: { data?: { message?: string } } };
-      setError(errorStr.response?.data?.message || 'Failed to archive job description');
+      if (isEditDrawerOpen) {
+        setDrawerError(errorStr.response?.data?.message || 'Failed to archive job description');
+      } else {
+        setError(errorStr.response?.data?.message || 'Failed to archive job description');
+      }
+    } finally {
+      setDrawerSaving(false);
     }
   };
 
@@ -193,7 +230,7 @@ export default function JobDescriptionsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full pb-12">
+    <div className="flex flex-col gap-4 w-full pb-8">
       <PageHeader 
         title="Job Descriptions" 
         actions={
@@ -207,14 +244,14 @@ export default function JobDescriptionsPage() {
       />
       
       <Card>
-        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-surface">
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
+          <div className="flex items-center gap-2 col-span-1">
+            <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input 
                 type="text" 
                 placeholder="search here..." 
-                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-48 bg-surface"
+                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -224,48 +261,42 @@ export default function JobDescriptionsPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 flex-1">
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-3 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center">
-                Requisition
-              </div>
-              <select 
-                className="pl-3 pr-8 h-full text-sm bg-transparent outline-none appearance-none cursor-pointer max-w-48 truncate text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={reqFilter}
-                onChange={(e) => setReqFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                {requisitions.map(req => (
-                  <option key={req.id} value={req.id}>{req.title} {req.code ? `(${req.code})` : ''}</option>
-                ))}
-              </select>
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+              Requisition
             </div>
-
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-3 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center">
-                Status
-              </div>
-              <select 
-                className="pl-3 pr-8 h-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="draft">Draft</option>
-                <option value="open">Open</option>
-                <option value="on_hold">On Hold</option>
-                <option value="closed">Closed</option>
-              </select>
+            <div className="flex-1 h-full min-w-0 [&>div>button]:border-none [&>div>button]:bg-transparent [&>div>button]:shadow-none [&>div>button]:h-full [&>div>button]:min-h-[34px]">
+              <MultiSelect 
+                options={requisitions.map(req => ({ id: req.id, name: `${req.title} ${req.code ? `(${req.code})` : ''}` }))}
+                selectedIds={reqFilter}
+                onChange={setReqFilter}
+                placeholder="All"
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-1 ml-auto">
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+              Status
+            </div>
+            <select 
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1 justify-end col-span-1">
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
               <Download className="w-4 h-4" />
             </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); setReqFilter(''); }}>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setReqFilter(''); setStatusFilter(''); }}>
               <FilterX className="w-4 h-4" />
             </button>
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
@@ -293,6 +324,7 @@ export default function JobDescriptionsPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
+                  <TableHeader className="text-right"></TableHeader>
                   <TableHeader>JD Id</TableHeader>
                   <TableHeader>Job Title</TableHeader>
                   <TableHeader>Work Mode</TableHeader>
@@ -301,41 +333,13 @@ export default function JobDescriptionsPage() {
                   <TableHeader>Updated By</TableHeader>
                   <TableHeader>Updated On</TableHeader>
                   <TableHeader>Status</TableHeader>
-                  <TableHeader className="text-right"></TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>
-                {jobDescriptions.map(jd => (
+                {jobDescriptions.slice((page - 1) * limit, page * limit).map(jd => (
                   <TableRow key={jd.id}>
-                    <TableCell>
-                       <div 
-                         className="flex flex-col cursor-pointer hover:opacity-80 group"
-                         onClick={() => router.push(`/job-descriptions/${jd.id}`)}
-                       >
-                          <span className="font-bold text-brand group-hover:underline text-xs">{jd.code || '-'}</span>
-                       </div>
-                    </TableCell>
-                    <TableCell>
-                       <div className="flex flex-col">
-                          <span className="font-medium text-text-primary">{jd.title}</span>
-                          {/* {jd.code && <span className="text-xs text-text-muted">Code: {jd.code}</span>} */}
-                       </div>
-                    </TableCell>
-                    <TableCell>{toTitleCase(jd.work_mode) || '-'}</TableCell>
-                    <TableCell>{toTitleCase(jd.employment_type) || '-'}</TableCell>
-                    <TableCell>{getUserName(jd.owner_user_id)}</TableCell>
-                    <TableCell className="text-text-secondary">{jd.updated_by_name || '-'}</TableCell>
-                    <TableCell className="text-text-secondary">{formatDate(jd.updated_at)}</TableCell>
-                    <TableCell>{getStatusBadge(jd.status)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button 
-                          onClick={() => openDetailModal(jd)}
-                          className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center justify-start gap-1">
                         {canEdit && (
                           <>
                             <button 
@@ -345,31 +349,41 @@ export default function JobDescriptionsPage() {
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button 
-                              onClick={() => archiveJd(jd)}
-                              className="p-1.5 text-text-secondary hover:text-danger hover:bg-danger/10 rounded-md transition-colors"
-                              title="Archive"
-                            >
-                              <Archive className="w-4 h-4" />
-                            </button>
                           </>
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>{jd.code || '-'}</TableCell>
+                    <TableCell>
+                       <div 
+                         className="flex flex-col cursor-pointer hover:opacity-80 group"
+                         onClick={() => router.push(`/job-descriptions/${jd.id}`)}
+                       >
+                          <span className="font-semibold text-brand group-hover:underline">{jd.title}</span>
+                       </div>
+                    </TableCell>
+                    <TableCell>{toTitleCase(jd.work_mode) || '-'}</TableCell>
+                    <TableCell>{toTitleCase(jd.employment_type) || '-'}</TableCell>
+                    <TableCell>{getUserName(jd.owner_user_id)}</TableCell>
+                    <TableCell className="text-text-secondary">{jd.updated_by_name || '-'}</TableCell>
+                    <TableCell className="text-text-secondary">{formatDate(jd.updated_at)}</TableCell>
+                    <TableCell>{getStatusBadge(jd.status)}</TableCell>
                   </TableRow>
                 ))}
               </tbody>
             </DataTableShell>
           )}
         </div>
+        {!loading && jobDescriptions.length > 0 && (
+          <TablePagination 
+            totalItems={jobDescriptions.length} 
+            page={page} 
+            setPage={setPage} 
+            limit={limit} 
+            setLimit={setLimit} 
+          />
+        )}
       </Card>
-
-      <JobDescriptionDetailModal 
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        jobDescription={selectedJd}
-        onUpdateStatus={handleStatusUpdate}
-      />
 
       {/* Create Job Description Drawer */}
       {isCreateDrawerOpen && (
@@ -419,9 +433,59 @@ export default function JobDescriptionsPage() {
               }}
               saving={drawerSaving}
               error={drawerError}
+              onArchive={editingJd ? () => archiveJd(editingJd) : undefined}
             />
           )}
         </DrawerShell80>
+      )}
+
+      {/* Archive Modal */}
+      {isArchiveModalOpen && jdToArchive && (
+        <ModalShell
+          title="Archive Job Description"
+          onClose={() => setIsArchiveModalOpen(false)}
+          className="max-w-md"
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setIsArchiveModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" className="bg-danger hover:bg-danger/90 border-danger text-white" onClick={confirmArchive} disabled={drawerSaving}>
+                {drawerSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Archive'}
+              </Button>
+            </>
+          }
+        >
+          <div className="text-sm text-text-primary">
+            Are you sure you want to archive &quot;{jdToArchive.title}&quot;?
+          </div>
+          {drawerError && (
+            <div className="mt-4 p-2 bg-danger/10 border border-danger/20 text-danger text-sm rounded-md">
+              {drawerError}
+            </div>
+          )}
+        </ModalShell>
+      )}
+
+      {/* Success Modal */}
+      {successMessage && (
+        <ModalShell
+          title="Success"
+          onClose={() => setSuccessMessage(null)}
+          className="max-w-sm"
+          footer={
+            <Button variant="primary" onClick={() => setSuccessMessage(null)}>
+              OK
+            </Button>
+          }
+        >
+          <div className="text-sm text-text-primary flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center text-success shrink-0">
+              <Check className="w-5 h-5" />
+            </div>
+            {successMessage}
+          </div>
+        </ModalShell>
       )}
     </div>
   );

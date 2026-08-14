@@ -142,7 +142,7 @@ export const CandidateMatchesList: React.FC<CandidateMatchesListProps> = ({
                   onClick={() => toggleSkill(skill)}
                   className="hover:bg-brand/10 rounded-full p-0.5"
                 >
-                  <X className="w-2.5 h-2.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </Badge>
             ))}

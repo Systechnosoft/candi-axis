@@ -70,11 +70,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         const data = await res.json();
-        setSession(data);
+        setSession((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+          return data;
+        });
       } else {
+        await supabase.auth.signOut();
         setSession(null);
       }
     } catch {
+      await supabase.auth.signOut();
       setSession(null);
     } finally {
       if (showLoader) setLoading(false);

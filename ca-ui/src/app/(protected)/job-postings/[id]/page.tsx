@@ -24,8 +24,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowLeft, Search, Mail, Phone, MapPin, Briefcase, 
   User, Loader2, ExternalLink, Calendar, CheckCircle,
-  Edit2, ChevronUp, ChevronDown, X, ArrowRight, Check, Video, RefreshCw, Link
+  Edit2, ChevronUp, ChevronDown, X, ArrowRight, Check, Video, RefreshCw, Link, Download, FilterX
 } from 'lucide-react';
+import { TablePagination } from '@/components/primitives/TablePagination';
+import { exportToCSV } from '@/lib/utils';
 
 const PIPELINE_ORDER = ['new', 'screening', 'interviewing', 'shortlisted', 'offered', 'accepted', 'joined', 'closed'];
 
@@ -88,6 +90,14 @@ export default function JobPostingDetailPage() {
 
   // Dashboard card stage filter state
   const [selectedStageFilter, setSelectedStageFilter] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, selectedStageFilter]);
 
   // Edit Stage Drawer States
   const [selectedAppForStage, setSelectedAppForStage] = useState<any | null>(null);
@@ -365,6 +375,33 @@ export default function JobPostingDetailPage() {
         console.error('Failed to refresh applications list', err);
       }
     }
+  };
+
+  const handleExport = () => {
+    const exportData = applications.filter(app => {
+      if (selectedStageFilter) {
+        const cat = mapStageToCategory(app.stage);
+        if (cat !== selectedStageFilter) return false;
+      }
+      return true;
+    });
+
+    const pageData = exportData.slice((page - 1) * limit, page * limit);
+    
+    exportToCSV(
+      pageData,
+      [
+        { header: 'Fit Score', accessor: a => a.ai_score != null ? (a.ai_score / 10).toFixed(1) : 'N/A' },
+        { header: 'Candidate Name', accessor: a => a.candidate_name },
+        { header: 'Role', accessor: a => a.candidate_designation || 'Candidate' },
+        { header: 'Email', accessor: a => a.candidate_email || '-' },
+        { header: 'Mobile', accessor: a => a.candidate_phone || '-' },
+        { header: 'Stage', accessor: a => mapStageToCategory(a.stage) },
+        { header: 'Sub Stage', accessor: a => a.sub_stage ? (a.sub_stage === 'interview_to_be_scheduled' ? 'Interview to be scheduled' : a.sub_stage.replace(/_/g, ' ')) : '-' },
+        { header: 'Experience', accessor: a => formatExperience(a.candidate_experience) }
+      ],
+      `applied-candidates-page-${page}.csv`
+    );
   };
 
   // Client-side filtered candidates (supports both Stage Card filter and search bar queries)
@@ -744,70 +781,87 @@ export default function JobPostingDetailPage() {
         })}
       </div>
 
-      {/* Search Bar section */}
-      <Card className="p-4 shadow-sm border border-border bg-subtle/30">
-        <div className="relative max-w-md w-full">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input 
-            type="text" 
-            placeholder="Search here..." 
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-border focus:ring-1 focus:ring-brand outline-none bg-surface text-text-primary"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </Card>
-
       {/* Tabular view of Candidates */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center px-1">
-          <h2 className="text-base font-bold text-text-primary">
-            Applied Candidates ({filteredCandidates.length})
-            {selectedStageFilter && (
-              <Badge variant="default" className="ml-2 py-0.5 px-2 bg-brand/15 text-brand border-brand/25 text-xs font-semibold capitalize">
-                Stage: {selectedStageFilter}
-              </Badge>
-            )}
-          </h2>
-          {selectedStageFilter && (
-            <button 
-              onClick={() => setSelectedStageFilter(null)}
-              className="text-xs text-brand hover:underline font-bold"
-            >
-              Clear filter
+      <Card>
+        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
+          <div className="flex items-center gap-2 col-span-1">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input 
+                type="text" 
+                placeholder="search here..." 
+                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button className="h-[34px] px-4 text-sm font-medium rounded-md bg-[#eaf4f4] text-brand hover:bg-brand/10 transition-colors">
+              Search
             </button>
-          )}
+          </div>
+
+          <div className="flex items-center gap-2 col-span-1 border border-transparent h-[34px]">
+            <div className="flex items-center text-sm font-bold text-text-primary ml-2">
+              Applied Candidates ({filteredCandidates.length})
+              {selectedStageFilter && (
+                <Badge variant="default" className="ml-2 py-0.5 px-2 bg-brand/15 text-brand border-brand/25 text-xs font-semibold capitalize">
+                  Stage: {selectedStageFilter}
+                </Badge>
+              )}
+            </div>
+            {selectedStageFilter && (
+              <button 
+                onClick={() => setSelectedStageFilter(null)}
+                className="text-xs text-brand hover:underline font-bold"
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
+          
+          <div className="col-span-1"></div>
+
+          <div className="flex items-center gap-1 justify-end col-span-1">
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
+              <Download className="w-4 h-4" />
+            </button>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearchQuery(''); setSelectedStageFilter(null); }}>
+              <FilterX className="w-4 h-4" />
+            </button>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchApplicationsOnly}>
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {applications.length === 0 ? (
-          <div className="text-center p-12 border-2 border-dashed border-border rounded-xl bg-surface">
-            <User className="w-12 h-12 text-text-muted mx-auto mb-3" />
-            <p className="text-text-secondary font-medium">No candidates added to this job posting</p>
-            <p className="text-xs text-text-muted mt-1">Add candidates to this posting from the job description workspace.</p>
-          </div>
-        ) : filteredCandidates.length === 0 ? (
-          <div className="text-center p-12 border-2 border-dashed border-border rounded-xl bg-surface">
-            <User className="w-12 h-12 text-text-muted mx-auto mb-3" />
-            <p className="text-text-secondary font-medium">No candidates match your filters.</p>
-            <p className="text-xs text-text-muted mt-1">Try refining your search query or stage selections.</p>
-          </div>
-        ) : (
-          <DataTableShell className="w-full text-sm">
-            <TableHead>
-              <TableRow>
-                <TableHeader className="w-20 text-center"></TableHeader>
-                <TableHeader className="w-20">Fit Score</TableHeader>
-                <TableHeader className="min-w-[140px]">Candidate Name</TableHeader>
-                <TableHeader className="min-w-[120px]">Role</TableHeader>
-                <TableHeader className="min-w-[160px]">Email</TableHeader>
-                <TableHeader className="min-w-[110px]">Mobile</TableHeader>
-                <TableHeader className="w-28">Stage</TableHeader>
-                <TableHeader className="w-28">Sub Stage</TableHeader>
-                <TableHeader className="w-24">Experience</TableHeader>
-              </TableRow>
-            </TableHead>
+        <div className="overflow-x-auto">
+          {applications.length === 0 ? (
+            <div className="text-center p-12 border border-dashed border-border rounded-lg bg-subtle/30 m-4">
+              <p className="text-text-secondary">No candidates added to this job posting.</p>
+              <p className="text-xs text-text-muted mt-1">Add candidates to this posting from the job description workspace.</p>
+            </div>
+          ) : filteredCandidates.length === 0 ? (
+            <div className="text-center p-12 border border-dashed border-border rounded-lg bg-subtle/30 m-4">
+              <p className="text-text-secondary">No candidates match your filters.</p>
+              <p className="text-xs text-text-muted mt-1">Try refining your search query or stage selections.</p>
+            </div>
+          ) : (
+            <DataTableShell className="w-full text-sm">
+              <TableHead>
+                <TableRow>
+                  <TableHeader className="w-20 text-center"></TableHeader>
+                  <TableHeader className="w-20">Fit Score</TableHeader>
+                  <TableHeader className="min-w-[140px]">Candidate Name</TableHeader>
+                  <TableHeader className="min-w-[120px]">Role</TableHeader>
+                  <TableHeader className="min-w-[160px]">Email</TableHeader>
+                  <TableHeader className="min-w-[110px]">Mobile</TableHeader>
+                  <TableHeader className="w-28">Stage</TableHeader>
+                  <TableHeader className="w-28">Sub Stage</TableHeader>
+                  <TableHeader className="w-24">Experience</TableHeader>
+                </TableRow>
+              </TableHead>
             <tbody>
-              {filteredCandidates.map((app) => (
+              {filteredCandidates.slice((page - 1) * limit, page * limit).map((app) => (
                 <TableRow key={app.id}>
                   <TableCell className="w-20 text-center">
                     <div className="flex items-center justify-center gap-1">
@@ -886,6 +940,16 @@ export default function JobPostingDetailPage() {
           </DataTableShell>
         )}
       </div>
+      {!loading && filteredCandidates.length > 0 && (
+        <TablePagination 
+          totalItems={filteredCandidates.length} 
+          page={page} 
+          setPage={setPage} 
+          limit={limit} 
+          setLimit={setLimit} 
+        />
+      )}
+      </Card>
 
       {/* Edit Posting Modal */}
       {isModalOpen && (
@@ -1029,7 +1093,7 @@ export default function JobPostingDetailPage() {
                 className="p-1.5 hover:bg-subtle rounded-lg text-text-muted hover:text-text-primary transition-colors"
                 title="Close panel"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 

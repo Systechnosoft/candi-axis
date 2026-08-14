@@ -8,6 +8,7 @@ import { Badge } from '@/components/primitives/Badge';
 import { OfferStatusCard } from '@/components/ats/OfferStatusCard';
 import { OffersService } from '@/lib/api/offers';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { TablePagination } from '@/components/primitives/TablePagination';
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<any[]>([]);
@@ -16,6 +17,10 @@ export default function OffersPage() {
   const [search, setSearch] = useState('');
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true);
@@ -23,6 +28,7 @@ export default function OffersPage() {
       try {
         const data = await OffersService.getOffers({ search });
         setOffers(data || []);
+        setPage(1); // Reset page on filter changes
         if (data && data.length > 0) {
           setSelectedOffer(data[0]);
         } else {
@@ -87,25 +93,19 @@ export default function OffersPage() {
             <span className="text-error text-sm">{error}</span>
           </div>
         ) : (
-          <DataTableShell>
-            <TableHead>
-              <TableRow>
-                <TableHeader>Candidate</TableHeader>
-                <TableHeader>Requisition / Job</TableHeader>
-                <TableHeader>Offered CTC</TableHeader>
-                <TableHeader>Status</TableHeader>
-                <TableHeader>Joining Date</TableHeader>
-              </TableRow>
-            </TableHead>
-            <tbody>
-              {offers.length === 0 ? (
+          <div className="flex flex-col gap-4">
+            <DataTableShell>
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-text-muted">
-                    No offers found.
-                  </TableCell>
+                  <TableHeader>Candidate</TableHeader>
+                  <TableHeader>Requisition / Job</TableHeader>
+                  <TableHeader>Offered CTC</TableHeader>
+                  <TableHeader>Status</TableHeader>
+                  <TableHeader>Joining Date</TableHeader>
                 </TableRow>
-              ) : (
-                offers.map((offer) => (
+              </TableHead>
+              <tbody>
+                {offers.slice((page - 1) * limit, page * limit).map((offer) => (
                   <TableRow 
                     key={offer.id}
                     onClick={() => setSelectedOffer(offer)}

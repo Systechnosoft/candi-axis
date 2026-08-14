@@ -17,6 +17,7 @@ export interface User {
   org_id?: string;
   created_at: string;
   updated_at?: string;
+  updated_by_name?: string;
 }
 
 export interface CreateUserRequest {

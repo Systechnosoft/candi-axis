@@ -98,30 +98,30 @@ export class TagsService {
     );
     const orgId = userRes.rows[0]?.org_id;
 
-    const conditions: string[] = ['is_deleted = false'];
+    const conditions: string[] = ['t.is_deleted = false'];
     const values: any[] = [];
     let counter = 1;
 
     if (orgId) {
-      conditions.push(`org_id = $${counter++}`);
+      conditions.push(`t.org_id = $${counter++}`);
       values.push(orgId);
     }
 
     if (query.active !== undefined && query.active !== null) {
-      conditions.push(`active = $${counter++}`);
+      conditions.push(`t.active = $${counter++}`);
       const activeStr = String(query.active).trim().toLowerCase();
       values.push(activeStr === 'true' || activeStr === '1');
     }
 
     if (query.type) {
-      conditions.push(`type = $${counter++}`);
+      conditions.push(`t.type = $${counter++}`);
       values.push(query.type);
     }
 
     if (query.search) {
       const cleanedSearch = this.cleanText(query.search);
       if (cleanedSearch) {
-        conditions.push(`name ILIKE $${counter++}`);
+        conditions.push(`t.name ILIKE $${counter++}`);
         values.push(`%${cleanedSearch}%`);
       }
     }
@@ -130,10 +130,11 @@ export class TagsService {
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const result = await this.pool.query(
-      `SELECT id, name, type, description, active, created_at, updated_at 
-       FROM ca_tags 
+      `SELECT t.id, t.name, t.type, t.description, t.active, t.created_at, t.updated_at, u.full_name as updated_by_name 
+       FROM ca_tags t
+       LEFT JOIN ca_users u ON t.updated_by = u.id
        ${whereClause} 
-       ORDER BY name ASC`,
+       ORDER BY t.name ASC`,
       values,
     );
 

@@ -11,7 +11,8 @@ import {
   Tag, 
   Shield, 
   Settings, 
-  LogOut 
+  LogOut,
+  Menu
 } from 'lucide-react';
 
 export function Topbar() {
@@ -35,17 +36,23 @@ export function Topbar() {
   return (
     <header className="h-16 flex-shrink-0 bg-surface border-b border-border flex items-center justify-between px-6 z-40 relative">
       {/* Left: Logo Text */}
-      <div className="flex items-center h-16 pointer-events-none">
-        <div className="flex items-center rounded-sm -ml-5 pointer-events-none">
-          <Image 
-            src="/logo.png" 
-            alt="CandiAxis" 
-            width={200}
-            height={80}
-            priority
-            className="object-contain object-left pointer-events-none"
-          />
-        </div>
+      <div className="flex items-center h-16 mr-0 gap-0.5">
+        <button
+          onClick={() => window.dispatchEvent(new Event('sidebar-toggle'))}
+          className="p-1.5 -ml-1.5 rounded-md hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
+          title="Toggle Sidebar"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <Image 
+          src="/logo.png" 
+          alt="CandiAxis" 
+          width={200}
+          height={80}
+          priority
+          className="object-contain object-left pointer-events-none"
+        />
       </div>
 
       {/* Middle: Search bar */}
@@ -95,26 +102,8 @@ export function Topbar() {
                 <span>Notifications</span>
               </Link>
               
-              <Link 
-                href="/admin/tags" 
-                onClick={() => setIsDropdownOpen(false)}
-                className="flex items-center gap-3 px-4 py-2 hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors"
-              >
-                <Tag className="w-4 h-4" />
-                <span>Tags Dictionary</span>
-              </Link>
 
               {/* Admin Section */}
-              {hasAccess('users') && (
-                <Link 
-                  href="/admin/usermanagement" 
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors"
-                >
-                  <Shield className="w-4 h-4" />
-                  <span>Admin Console</span>
-                </Link>
-              )}
 
               <Link 
                 href="/admin/site-configuration" 

@@ -11,8 +11,9 @@ import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { cn, formatDate, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { OrganisationsService, Organisation } from '@/lib/api/organisations';
-import { Loader2, Edit2, Ban, ShieldAlert, Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Loader2, Edit2, ShieldAlert, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { TablePagination } from '@/components/primitives/TablePagination';
 
 const DEFAULT_FORM = {
   org_code: '',
@@ -44,8 +45,8 @@ export default function OrganisationsPage() {
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
   // Drawer form states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -61,7 +62,7 @@ export default function OrganisationsPage() {
     try {
       const res = await OrganisationsService.getOrganisations({ page, limit, search });
       setOrganisations(res.data);
-      setTotalPages(res.meta.totalPages || 1);
+      setTotalItems(res.meta.total || 0);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to load organisations');
     } finally {
@@ -166,33 +167,6 @@ export default function OrganisationsPage() {
     }
   };
 
-  const handleDeactivate = async (org: Organisation) => {
-    if (!confirm(`Are you sure you want to deactivate the organisation "${org.name}"? It will remain accessible but marked as inactive.`)) {
-      return;
-    }
-
-    try {
-      await OrganisationsService.updateOrganisation(org.id, { status: 'INACTIVE' });
-      toast.success('Organisation deactivated successfully.');
-      fetchOrganisations();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to deactivate organisation.');
-    }
-  };
-
-  const handleDelete = async (org: Organisation) => {
-    if (!confirm(`Are you sure you want to delete the organisation "${org.name}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      await OrganisationsService.deactivateOrganisation(org.id);
-      toast.success('Organisation deleted successfully.');
-      fetchOrganisations();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to delete organisation.');
-    }
-  };
 
   if (!isSuperAdmin) {
     return (
@@ -241,6 +215,7 @@ export default function OrganisationsPage() {
             <DataTableShell>
           <TableHead>
             <TableRow>
+              <TableHeader className="text-right"></TableHeader>
               <TableHeader>Org Code</TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Legal Name</TableHeader>
@@ -249,7 +224,6 @@ export default function OrganisationsPage() {
               <TableHeader>Industry</TableHeader>
               <TableHeader>Status</TableHeader>
               <TableHeader>Created On</TableHeader>
-              <TableHeader className="text-right"></TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
@@ -277,6 +251,17 @@ export default function OrganisationsPage() {
             ) : (
               organisations.map((org) => (
                 <TableRow key={org.id} className={org.status === 'INACTIVE' ? 'opacity-60' : ''}>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-start gap-1">
+                      <button
+                        onClick={() => handleOpenEditDrawer(org)}
+                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
+                        title="Edit Organisation"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-semibold text-text-primary">{org.org_code}</TableCell>
                   <TableCell className="font-semibold text-brand">{org.name}</TableCell>
                   <TableCell>{org.legal_name || '-'}</TableCell>
@@ -289,32 +274,6 @@ export default function OrganisationsPage() {
                   <TableCell>{toTitleCase(org.industry) || '-'}</TableCell>
                   <TableCell>{getStatusBadge(org.status)}</TableCell>
                   <TableCell>{formatDate(org.created_at)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleOpenEditDrawer(org)}
-                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
-                        title="Edit Organisation"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeactivate(org)}
-                        className="p-1.5 text-text-secondary hover:text-status-warning hover:bg-status-warning/10 rounded-md transition-colors"
-                        title={org.status === 'INACTIVE' ? 'Already Inactive' : 'Deactivate Organisation'}
-                        disabled={org.status === 'INACTIVE'}
-                      >
-                        <Ban className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(org)}
-                        className="p-1.5 text-text-secondary hover:text-status-error hover:bg-status-error/10 rounded-md transition-colors"
-                        title="Delete Organisation"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -322,27 +281,15 @@ export default function OrganisationsPage() {
         </DataTableShell>
         </div>
 
-        {/* Pagination footer */}
-        {totalPages > 1 && (
-          <div className="px-3 py-2 border-t border-border bg-surface flex items-center justify-between text-xs rounded-b-md">
-            <button
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page === 1}
-              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="font-semibold text-text-secondary">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page === totalPages}
-              className="p-1 rounded-md border border-border bg-surface text-text-secondary hover:bg-subtle disabled:opacity-50 disabled:pointer-events-none transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Pagination */}
+        {!loading && organisations.length > 0 && (
+          <TablePagination 
+            totalItems={totalItems} 
+            page={page} 
+            setPage={setPage} 
+            limit={limit} 
+            setLimit={setLimit} 
+          />
         )}
         </Card>
       </div>

@@ -6,7 +6,7 @@ import { Button } from '@/components/primitives/Button';
 import { JobDescription, CreateJobDescriptionRequest, RequisitionOption } from '@/types/job-descriptions';
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Archive, ArchiveRestore } from 'lucide-react';
 import { cleanText } from '@/lib/utils';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { TagSelector } from '@/components/ats/TagSelector';
@@ -22,6 +22,8 @@ interface JobDescriptionFormProps {
   onCancel: () => void;
   saving: boolean;
   error: string | null;
+  onArchive?: () => Promise<void>;
+  onUnarchive?: () => Promise<void>;
 }
 
 export function JobDescriptionForm({
@@ -35,6 +37,8 @@ export function JobDescriptionForm({
   onCancel,
   saving,
   error,
+  onArchive,
+  onUnarchive,
 }: JobDescriptionFormProps) {
   const [formData, setFormData] = useState<CreateJobDescriptionRequest>({
     requisition_id: '',
@@ -319,11 +323,21 @@ export function JobDescriptionForm({
       </Card>
 
       <div className="flex justify-end gap-4 pb-24">
+        {mode === 'edit' && jobDescription && jobDescription.status !== 'closed' && onArchive && (
+          <Button type="button" variant="secondary" onClick={onArchive} disabled={saving} className="mr-auto text-danger border-danger/30 hover:bg-danger/10">
+            <Archive className="w-4 h-4 mr-2 inline" /> Archive
+          </Button>
+        )}
+        {mode === 'edit' && jobDescription && jobDescription.status === 'closed' && onUnarchive && (
+          <Button type="button" variant="secondary" onClick={onUnarchive} disabled={saving} className="mr-auto text-brand border-brand/30 hover:bg-brand/10">
+            <ArchiveRestore className="w-4 h-4 mr-2 inline" /> Unarchive
+          </Button>
+        )}
         <Button variant="secondary" onClick={onCancel} disabled={saving} type="button" className="px-6">
           Cancel
         </Button>
         <Button variant="primary" type="submit" disabled={saving} className="px-6">
-          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />}
           Save Job Description
         </Button>
       </div>

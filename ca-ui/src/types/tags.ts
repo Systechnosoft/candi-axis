@@ -8,6 +8,7 @@ export interface Tag {
   active: boolean;
   created_at?: string;
   updated_at?: string;
+  updated_by_name?: string;
   is_starred?: boolean;
 }
 

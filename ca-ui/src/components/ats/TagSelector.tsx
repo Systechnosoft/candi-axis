@@ -106,7 +106,7 @@ export function TagSelector({ typeFilter, selectedTags = [], onChange, placehold
                 onClick={(e) => handleRemove(tag.id, e)}
                 className="hover:bg-black/10 rounded-full p-0.5"
               >
-                <X className="w-3 h-3 text-text-secondary group-hover:text-text-primary" />
+                <X className="w-4 h-4 text-text-secondary group-hover:text-text-primary" />
               </button>
             )}
           </Badge>

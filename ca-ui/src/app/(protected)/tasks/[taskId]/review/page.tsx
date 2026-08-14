@@ -611,7 +611,7 @@ export default function CandidateReviewPage() {
                           : 'bg-surface border-border hover:bg-brand/5 hover:border-brand hover:text-brand text-text-muted'
                       }`}
                     >
-                      <XCircle className="w-5 h-5" />
+                      <XCircle className="w-4 h-4" />
                       Reject Profile
                     </button>
                   </div>

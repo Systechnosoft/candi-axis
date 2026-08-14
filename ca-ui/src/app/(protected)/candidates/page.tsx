@@ -12,10 +12,11 @@ import { CandidateSummaryCard } from '@/components/ats/CandidateSummaryCard';
 import Link from 'next/link';
 import { CandidatesService } from '@/lib/api/candidates';
 import { Candidate } from '@/types/candidates';
-import { Loader2, Edit2, Eye } from 'lucide-react';
+import { Loader2, Edit2 } from 'lucide-react';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { CandidateForm } from './intake/components/CandidateForm';
 import { ApplicationsService } from '@/lib/api/applications';
+import { TablePagination } from '@/components/primitives/TablePagination';
 import { CandidateFormValues } from '@/types/candidates';
 
 export default function CandidatesPage() {
@@ -23,8 +24,10 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [page] = useState(1);
-  const limit = 20;
+  
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
     const fetchCandidates = async () => {
@@ -33,6 +36,7 @@ export default function CandidatesPage() {
       try {
         const res = await CandidatesService.getCandidates({ page, limit, search });
         setCandidates(res.data);
+        setTotalItems(res.meta.total || 0);
       } catch {
         setError('Failed to load candidates.');
       } finally {
@@ -156,19 +160,19 @@ export default function CandidatesPage() {
             <DataTableShell className="w-full text-sm">
           <TableHead>
             <TableRow>
+              <TableHeader className="text-right"></TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Role</TableHeader>
               <TableHeader>Stage</TableHeader>
               <TableHeader>Updated By</TableHeader>
               <TableHeader>Updated On</TableHeader>
               <TableHeader>Date</TableHeader>
-              <TableHeader className="text-right"></TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-text-muted">
+                <TableCell colSpan={7} className="text-center py-8 text-text-muted">
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin text-brand" />
                     <span>Loading candidates...</span>
@@ -193,6 +197,18 @@ export default function CandidatesPage() {
                   key={candidate.id} 
                   className="cursor-pointer hover:bg-subtle"
                 >
+                  <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <div className="flex items-center justify-start gap-1">
+
+                      <button 
+                        onClick={() => handleOpenEditDrawer(candidate)}
+                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
+                        title="Edit Profile"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-semibold text-brand">
                     <Link href={`/candidates/${candidate.id}`} className="hover:underline" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                       {candidate.full_name}
@@ -203,30 +219,22 @@ export default function CandidatesPage() {
                   <TableCell className="text-text-secondary">{candidate.updated_by_name || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{formatDate(candidate.updated_at)}</TableCell>
                   <TableCell>{formatDate(candidate.created_at)}</TableCell>
-                  <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-1">
-                      <Link 
-                        href={`/candidates/${candidate.id}`}
-                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors inline-block"
-                        title="View Profile"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      <button 
-                        onClick={() => handleOpenEditDrawer(candidate)}
-                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
-                        title="Edit Profile"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </TableCell>
                 </TableRow>
               ))
             )}
           </tbody>
         </DataTableShell>
           </div>
+        {/* Pagination */}
+        {!loading && candidates.length > 0 && (
+          <TablePagination 
+            totalItems={totalItems} 
+            page={page} 
+            setPage={setPage} 
+            limit={limit} 
+            setLimit={setLimit} 
+          />
+        )}
         </Card>
       </div>
       {isEditDrawerOpen && (

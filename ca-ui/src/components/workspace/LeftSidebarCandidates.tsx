@@ -177,7 +177,7 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
                   onClick={() => onSelectedTagsChange(selectedTags.filter((t) => t !== tagName))}
                   className="hover:bg-brand/20 rounded p-0.5 text-brand"
                 >
-                  <X className="w-2.5 h-2.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </span>
             ))}
@@ -208,7 +208,7 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
               className="absolute right-2.5 top-2.5 hover:text-text-primary text-text-muted p-0.5 rounded"
               title="Clear all filters"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>

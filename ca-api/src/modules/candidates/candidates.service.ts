@@ -1115,7 +1115,7 @@ export class CandidatesService {
   async findAll(page: number = 1, limit: number = 20, search?: string) {
     const offset = (page - 1) * limit;
 
-    let baseQuery = `FROM ca_candidates c WHERE c.is_deleted = false`;
+    let baseQuery = `FROM ca_candidates c LEFT JOIN ca_users u ON c.updated_by = u.id WHERE c.is_deleted = false`;
     const params: any[] = [];
 
     if (search && search.trim() !== '') {
@@ -1132,7 +1132,6 @@ export class CandidatesService {
              c.source, c.current_company, c.current_designation, c.created_at, c.last_resume_uploaded_at, c.profile_score,
              c.updated_at, u.full_name as updated_by_name
       ${baseQuery}
-      LEFT JOIN ca_users u ON c.updated_by = u.id
       ORDER BY c.updated_at DESC 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;

@@ -145,3 +145,28 @@ export function toTitleCase(str?: string | null): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
+
+export function exportToCSV<T>(
+  data: T[],
+  columns: { header: string; accessor: (row: T) => string | number | undefined | null }[],
+  filename: string
+) {
+  if (!data || data.length === 0) return;
+  const headers = columns.map(c => `"${c.header.replace(/"/g, '""')}"`).join(',');
+  const rows = data.map(row => {
+    return columns.map(c => {
+      const val = c.accessor(row);
+      const str = val === null || val === undefined ? '' : String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    }).join(',');
+  });
+  const csvContent = [headers, ...rows].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}

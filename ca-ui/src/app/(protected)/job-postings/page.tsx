@@ -7,7 +7,7 @@ import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Badge } from '@/components/primitives/Badge';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { jobPostingsApi } from '@/lib/api/job-postings';
 import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
@@ -19,6 +19,7 @@ import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { usersApi } from '@/lib/api/users';
 import { MultiSelect } from '@/components/primitives/MultiSelect';
 import { SingleSelect } from '@/components/primitives/SingleSelect';
+import { TablePagination } from '@/components/primitives/TablePagination';
 
 const stripHtml = (html: string | null) => {
   if (!html) return '';
@@ -38,6 +39,11 @@ export default function JobPostingsPage() {
 
   // Filters
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,6 +75,7 @@ export default function JobPostingsPage() {
       setJobDescriptions(jdsData);
       setHiringManagers(managersData);
       setInterviewers(interviewersData);
+      setPage(1); // Reset page when filters change
     } catch (err) {
       console.error(err);
       setError('Failed to load Job Postings data');
@@ -193,6 +200,41 @@ export default function JobPostingsPage() {
 
 
 
+  const filteredPostings = jobPostings.filter(posting => {
+    if (statusFilter === 'open') return posting.is_active;
+    if (statusFilter === 'closed') return !posting.is_active;
+    return true;
+  });
+
+  const handleExport = async () => {
+    try {
+      const postingsData = await jobPostingsApi.getJobPostings();
+      
+      const filtered = postingsData.filter(posting => {
+        if (statusFilter === 'open') return posting.is_active;
+        if (statusFilter === 'closed') return !posting.is_active;
+        return true;
+      });
+
+      const pageData = filtered.slice((page - 1) * limit, page * limit);
+      
+      exportToCSV(
+        pageData,
+        [
+          { header: 'ID', accessor: p => p.code || '' },
+          { header: 'Name', accessor: p => p.name },
+          { header: 'JD', accessor: p => p.jd_title || '-' },
+          { header: 'Updated By', accessor: p => p.updated_by_name || '-' },
+          { header: 'Updated On', accessor: p => p.updated_at ? formatDate(p.updated_at) : (p.created_at ? formatDate(p.created_at) : '-') },
+          { header: 'Status', accessor: p => p.is_active ? 'Open' : 'Closed' }
+        ],
+        `job-postings-page-${page}.csv`
+      );
+    } catch (err) {
+      console.error('Export failed', err);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full pb-8">
       <PageHeader 
@@ -208,14 +250,14 @@ export default function JobPostingsPage() {
       />
       
       <Card>
-        <div className="flex flex-wrap items-center gap-2 p-2 border-b border-border bg-surface rounded-t-md">
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
+          <div className="flex items-center gap-2 col-span-1">
+            <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input 
                 type="text" 
                 placeholder="search here..." 
-                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-48 bg-surface"
+                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -225,13 +267,32 @@ export default function JobPostingsPage() {
             </button>
           </div>
           
-          <div className="flex-1"></div>
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+              Status
+            </div>
+            <select 
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All</option>
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
 
-          <div className="flex items-center gap-1 ml-auto">
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
+          <div className="col-span-1"></div>
+
+          <div className="flex items-center gap-1 justify-end col-span-1">
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
               <Download className="w-4 h-4" />
             </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); }}>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); }}>
               <FilterX className="w-4 h-4" />
             </button>
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
@@ -251,7 +312,7 @@ export default function JobPostingsPage() {
             <div className="flex items-center justify-center p-12 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin" />
             </div>
-          ) : jobPostings.length === 0 ? (
+          ) : filteredPostings.length === 0 ? (
             <div className="text-center p-12 border border-dashed border-border rounded-lg bg-subtle/30">
               <p className="text-text-secondary">No job postings found.</p>
             </div>
@@ -259,7 +320,7 @@ export default function JobPostingsPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  {canEdit && <TableHeader className="w-10">{""}</TableHeader>}
+                  {canEdit && <TableHeader className="text-right w-10"></TableHeader>}
                   <TableHeader className="w-24">ID</TableHeader>
                   <TableHeader>Name</TableHeader>
                   <TableHeader>JD</TableHeader>
@@ -269,17 +330,19 @@ export default function JobPostingsPage() {
                 </TableRow>
               </TableHead>
               <tbody>
-                {jobPostings.map((posting) => (
+                {filteredPostings.slice((page - 1) * limit, page * limit).map((posting) => (
                   <TableRow key={posting.id}>
                     {canEdit && (
-                      <TableCell>
-                        <button 
-                          onClick={() => openEditModal(posting)}
-                          className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
-                          title="Edit Job Posting"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-start gap-1">
+                          <button 
+                            onClick={() => openEditModal(posting)}
+                            className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
+                            title="Edit Job Posting"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </TableCell>
                     )}
                     <TableCell className="text-text-secondary">
@@ -320,6 +383,15 @@ export default function JobPostingsPage() {
             </DataTableShell>
           )}
         </div>
+        {!loading && filteredPostings.length > 0 && (
+          <TablePagination 
+            totalItems={filteredPostings.length} 
+            page={page} 
+            setPage={setPage} 
+            limit={limit} 
+            setLimit={setLimit} 
+          />
+        )}
       </Card>
 
       {/* Create / Edit Modal */}
