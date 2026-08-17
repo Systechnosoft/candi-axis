@@ -216,10 +216,8 @@ export default function JobPostingsPage() {
         return true;
       });
 
-      const pageData = filtered.slice((page - 1) * limit, page * limit);
-      
       exportToCSV(
-        pageData,
+        filtered,
         [
           { header: 'ID', accessor: p => p.code || '' },
           { header: 'Name', accessor: p => p.name },
@@ -228,7 +226,7 @@ export default function JobPostingsPage() {
           { header: 'Updated On', accessor: p => p.updated_at ? formatDate(p.updated_at) : (p.created_at ? formatDate(p.created_at) : '-') },
           { header: 'Status', accessor: p => p.is_active ? 'Open' : 'Closed' }
         ],
-        `job-postings-page-${page}.csv`
+        `job-postings-export.csv`
       );
     } catch (err) {
       console.error('Export failed', err);
@@ -320,7 +318,7 @@ export default function JobPostingsPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  {canEdit && <TableHeader className="text-right w-10"></TableHeader>}
+                  {canEdit && <TableHeader className="text-right w-10">{" "}</TableHeader>}
                   <TableHeader className="w-24">ID</TableHeader>
                   <TableHeader>Name</TableHeader>
                   <TableHeader>JD</TableHeader>

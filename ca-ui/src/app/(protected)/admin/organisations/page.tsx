@@ -215,12 +215,13 @@ export default function OrganisationsPage() {
             <DataTableShell>
           <TableHead>
             <TableRow>
-              <TableHeader className="text-right"></TableHeader>
+              <TableHeader className="text-right">{" "}</TableHeader>
               <TableHeader>Org Code</TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Legal Name</TableHeader>
               <TableHeader>Primary Contact</TableHeader>
-              <TableHeader>Email / Phone</TableHeader>
+              <TableHeader>Email</TableHeader>
+              <TableHeader>Phone</TableHeader>
               <TableHeader>Industry</TableHeader>
               <TableHeader>Status</TableHeader>
               <TableHeader>Created On</TableHeader>
@@ -229,7 +230,7 @@ export default function OrganisationsPage() {
           <tbody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-text-muted">
+                <TableCell colSpan={10} className="text-center py-12 text-text-muted">
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin text-brand" />
                     <span>Loading organisations list...</span>
@@ -238,13 +239,13 @@ export default function OrganisationsPage() {
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-status-error font-semibold">
+                <TableCell colSpan={10} className="text-center py-12 text-status-error font-semibold">
                   {error}
                 </TableCell>
               </TableRow>
             ) : organisations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-text-secondary">
+                <TableCell colSpan={10} className="text-center py-12 text-text-secondary">
                   No organisations found.
                 </TableCell>
               </TableRow>
@@ -267,9 +268,10 @@ export default function OrganisationsPage() {
                   <TableCell>{org.legal_name || '-'}</TableCell>
                   <TableCell>{org.primary_contact_name || '-'}</TableCell>
                   <TableCell>
-                    {org.primary_contact_email && <div className="text-xs text-text-primary">{org.primary_contact_email}</div>}
-                    {org.primary_contact_phone && <div className="text-xs text-text-secondary">{org.primary_contact_phone}</div>}
-                    {!org.primary_contact_email && !org.primary_contact_phone && '-'}
+                    {org.primary_contact_email ? <span className="text-sm text-text-primary">{org.primary_contact_email}</span> : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {org.primary_contact_phone ? <span className="text-sm text-text-primary">{org.primary_contact_phone}</span> : '-'}
                   </TableCell>
                   <TableCell>{toTitleCase(org.industry) || '-'}</TableCell>
                   <TableCell>{getStatusBadge(org.status)}</TableCell>

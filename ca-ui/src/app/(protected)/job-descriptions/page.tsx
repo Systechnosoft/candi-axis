@@ -11,7 +11,7 @@ import { cn, formatDate, toTitleCase, exportToCSV } from '@/lib/utils';
 import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { usersApi } from '@/lib/api/users';
 import { tagsApi } from '@/lib/api/tags';
-import { JobDescription, RequisitionOption, CreateJobDescriptionRequest } from '@/types/job-descriptions';
+import { JobDescription, CreateJobDescriptionRequest } from '@/types/job-descriptions';
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +28,6 @@ export default function JobDescriptionsPage() {
   const { hasAccess } = useAuth();
   const canEdit = hasAccess('job_descriptions', 'editor');
   const [jobDescriptions, setJobDescriptions] = useState<JobDescription[]>([]);
-  const [requisitions, setRequisitions] = useState<RequisitionOption[]>([]);
   const [users, setUsers] = useState<UserLookup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +35,6 @@ export default function JobDescriptionsPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [reqFilter, setReqFilter] = useState<string[]>([]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -61,17 +59,14 @@ export default function JobDescriptionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [jdData, reqOptions, userData] = await Promise.all([
+      const [jdData, userData] = await Promise.all([
         jobDescriptionsApi.getJobDescriptions({
           search: search || undefined,
           status: statusFilter || undefined,
-          requisition_id: reqFilter.length > 0 ? reqFilter.join(',') : undefined,
         }),
-        jobDescriptionsApi.getRequisitionOptions(),
         usersApi.getLookups()
       ]);
       setJobDescriptions(jdData);
-      setRequisitions(reqOptions);
       setUsers(userData);
       setPage(1); // Reset page on filter changes
     } catch (err) {
@@ -81,7 +76,7 @@ export default function JobDescriptionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, reqFilter]);
+  }, [search, statusFilter]);
 
   useEffect(() => {
     fetchData();
@@ -160,12 +155,9 @@ export default function JobDescriptionsPage() {
     try {
       const jdData = await jobDescriptionsApi.getJobDescriptions({
         status: statusFilter || undefined,
-        requisition_id: reqFilter.length > 0 ? reqFilter.join(',') : undefined,
       });
-      const pageData = jdData.slice((page - 1) * limit, page * limit);
-      
       exportToCSV(
-        pageData,
+        jdData,
         [
           { header: 'JD Id', accessor: (j: JobDescription) => j.code || '-' },
           { header: 'Job Title', accessor: (j: JobDescription) => j.title },
@@ -176,7 +168,7 @@ export default function JobDescriptionsPage() {
           { header: 'Updated On', accessor: (j: JobDescription) => j.updated_at ? formatDate(j.updated_at) : (j.created_at ? formatDate(j.created_at) : '-') },
           { header: 'Status', accessor: (j: JobDescription) => toTitleCase(j.status) }
         ],
-        `job-descriptions-page-${page}.csv`
+        `job-descriptions-export.csv`
       );
     } catch (err) {
       console.error('Export failed', err);
@@ -265,20 +257,6 @@ export default function JobDescriptionsPage() {
 
           <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
             <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
-              Requisition
-            </div>
-            <div className="flex-1 h-full min-w-0 [&>div>button]:border-none [&>div>button]:bg-transparent [&>div>button]:shadow-none [&>div>button]:h-full [&>div>button]:min-h-[34px]">
-              <MultiSelect 
-                options={requisitions.map(req => ({ id: req.id, name: `${req.title} ${req.code ? `(${req.code})` : ''}` }))}
-                selectedIds={reqFilter}
-                onChange={setReqFilter}
-                placeholder="All"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
-            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
               Status
             </div>
             <select 
@@ -298,7 +276,7 @@ export default function JobDescriptionsPage() {
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
               <Download className="w-4 h-4" />
             </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setReqFilter([]); setStatusFilter(''); }}>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); }}>
               <FilterX className="w-4 h-4" />
             </button>
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
@@ -395,7 +373,6 @@ export default function JobDescriptionsPage() {
         >
           <JobDescriptionForm
             mode="create"
-            requisitions={requisitions}
             users={users}
             selectedTags={drawerSelectedTags}
             onTagsChange={setDrawerSelectedTags}
@@ -424,7 +401,6 @@ export default function JobDescriptionsPage() {
             <JobDescriptionForm
               mode="edit"
               jobDescription={editingJd}
-              requisitions={requisitions}
               users={users}
               selectedTags={drawerSelectedTags}
               onTagsChange={setDrawerSelectedTags}

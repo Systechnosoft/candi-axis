@@ -386,10 +386,8 @@ export default function JobPostingDetailPage() {
       return true;
     });
 
-    const pageData = exportData.slice((page - 1) * limit, page * limit);
-    
     exportToCSV(
-      pageData,
+      exportData,
       [
         { header: 'Fit Score', accessor: a => a.ai_score != null ? (a.ai_score / 10).toFixed(1) : 'N/A' },
         { header: 'Candidate Name', accessor: a => a.candidate_name },
@@ -400,7 +398,7 @@ export default function JobPostingDetailPage() {
         { header: 'Sub Stage', accessor: a => a.sub_stage ? (a.sub_stage === 'interview_to_be_scheduled' ? 'Interview to be scheduled' : a.sub_stage.replace(/_/g, ' ')) : '-' },
         { header: 'Experience', accessor: a => formatExperience(a.candidate_experience) }
       ],
-      `applied-candidates-page-${page}.csv`
+      `job-applicants-export.csv`
     );
   };
 

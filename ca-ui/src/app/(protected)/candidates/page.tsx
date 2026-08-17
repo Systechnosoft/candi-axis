@@ -46,7 +46,7 @@ export default function CandidatesPage() {
 
     const timer = setTimeout(fetchCandidates, 300);
     return () => clearTimeout(timer);
-  }, [page, search]);
+  }, [page, search, limit]);
 
   // Edit Drawer States
   const [editingCandidate, setEditingCandidate] = useState<any | null>(null);
@@ -160,7 +160,7 @@ export default function CandidatesPage() {
             <DataTableShell className="w-full text-sm">
           <TableHead>
             <TableRow>
-              <TableHeader className="text-right"></TableHeader>
+              <TableHeader className="text-right">{" "}</TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Role</TableHeader>
               <TableHeader>Stage</TableHeader>

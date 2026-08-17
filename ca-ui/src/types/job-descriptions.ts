@@ -1,6 +1,6 @@
 export interface JobDescription {
   id: string;
-  requisition_id: string;
+  requisition_id?: string;
   requisition_title?: string;
   requisition_code?: string;
   title: string;
@@ -23,7 +23,7 @@ export interface JobDescription {
 }
 
 export interface CreateJobDescriptionRequest {
-  requisition_id: string;
+  requisition_id?: string;
   title: string;
   code?: string;
   location?: string;

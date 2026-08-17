@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
-import { JobDescription, CreateJobDescriptionRequest, RequisitionOption } from '@/types/job-descriptions';
+import { JobDescription, CreateJobDescriptionRequest } from '@/types/job-descriptions';
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
 import { Loader2, Archive, ArchiveRestore, X } from 'lucide-react';
@@ -14,7 +14,7 @@ import { TagSelector } from '@/components/ats/TagSelector';
 interface JobDescriptionFormProps {
   mode: 'create' | 'edit';
   jobDescription?: JobDescription | null;
-  requisitions: RequisitionOption[];
+
   users: UserLookup[];
   selectedTags: Tag[];
   onTagsChange: (tags: Tag[]) => void;
@@ -29,7 +29,7 @@ interface JobDescriptionFormProps {
 export function JobDescriptionForm({
   mode,
   jobDescription,
-  requisitions,
+
   users,
   selectedTags,
   onTagsChange,
@@ -41,7 +41,7 @@ export function JobDescriptionForm({
   onUnarchive,
 }: JobDescriptionFormProps) {
   const [formData, setFormData] = useState<CreateJobDescriptionRequest>({
-    requisition_id: '',
+
     title: '',
     code: '',
     location: '',
@@ -60,7 +60,7 @@ export function JobDescriptionForm({
   useEffect(() => {
     if (mode === 'edit' && jobDescription) {
       setFormData({
-        requisition_id: jobDescription.requisition_id,
+
         title: jobDescription.title,
         code: jobDescription.code || '',
         location: jobDescription.location || '',
@@ -124,22 +124,7 @@ export function JobDescriptionForm({
       <Card className="p-6 shadow-sm border border-border">
         <h3 className="text-lg font-semibold text-text-primary mb-6 pb-2 border-b border-border/50">Core Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-1.5 md:col-span-2 lg:col-span-3">
-            <label className="text-sm font-medium text-text-primary">Requisition <span className="text-danger">*</span></label>
-            <select
-              required
-              className="w-full px-3 py-2 border border-border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm max-w-2xl"
-              value={formData.requisition_id}
-              onChange={e => setFormData({ ...formData, requisition_id: e.target.value })}
-            >
-              <option value="" disabled>Select Requisition</option>
-              {requisitions.map(req => (
-                <option key={req.id} value={req.id}>{req.title} {req.code ? `(${req.code})` : ''}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className={`flex flex-col gap-1.5 md:col-span-2 ${mode === 'create' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
+          <div className={`flex flex-col gap-1.5 md:col-span-2 lg:col-span-3`}>
             <label className="text-sm font-medium text-text-primary">Job Title <span className="text-danger">*</span></label>
             <input
               type="text"

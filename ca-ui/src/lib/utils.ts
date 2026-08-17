@@ -152,6 +152,10 @@ export function exportToCSV<T>(
   filename: string
 ) {
   if (!data || data.length === 0) return;
+  if (data.length > 100000) {
+    alert("The maximum Excel download limit is 1 lakh (100,000) rows only.");
+    return;
+  }
   const headers = columns.map(c => `"${c.header.replace(/"/g, '""')}"`).join(',');
   const rows = data.map(row => {
     return columns.map(c => {

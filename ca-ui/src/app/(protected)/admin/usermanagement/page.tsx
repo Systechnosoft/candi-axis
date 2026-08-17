@@ -95,19 +95,18 @@ export default function UsersManagementPage() {
       return true;
     });
 
-    const pageData = exportData.slice((page - 1) * limit, page * limit);
-
     exportToCSV(
-      pageData,
+      exportData,
       [
-        { header: 'Name / Email', accessor: u => `${u.full_name} (${u.email})` },
+        { header: 'Name', accessor: u => u.full_name },
+        { header: 'Email', accessor: u => u.email },
         { header: 'Department', accessor: u => u.department || '-' },
         { header: 'Role', accessor: u => u.role_code.replace('_', ' ') },
         { header: 'Status', accessor: u => u.status },
         { header: 'Updated On', accessor: u => u.updated_at ? formatDate(u.updated_at) : (u.created_at ? formatDate(u.created_at) : '-') },
         { header: 'Updated By', accessor: u => u.updated_by_name || '-' }
       ],
-      `users-page-${page}.csv`
+      `users-export.csv`
     );
   };
 
@@ -190,8 +189,9 @@ export default function UsersManagementPage() {
           <DataTableShell className="w-full text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader className="text-right"></TableHeader>
-                <TableHeader>Name / Email</TableHeader>
+                <TableHeader className="text-right">{" "}</TableHeader>
+                <TableHeader>Name</TableHeader>
+                <TableHeader>Email</TableHeader>
                 <TableHeader>Department</TableHeader>
                 <TableHeader>Role</TableHeader>
                 <TableHeader>Status</TableHeader>
@@ -203,7 +203,7 @@ export default function UsersManagementPage() {
               {filteredUsers.slice((page - 1) * limit, page * limit).map((user) => (
                 <TableRow key={user.id} className={user.status === 'inactive' ? 'opacity-60 bg-subtle/20' : ''}>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-start gap-1">
+                    <div className="flex items-center justify-end gap-1">
                       <button 
                         onClick={() => handleEdit(user)}
                         className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
@@ -211,23 +211,13 @@ export default function UsersManagementPage() {
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs ml-2"
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to ${user.status === 'active' ? 'deactivate' : 'activate'} "${user.full_name}"?`)) {
-                            handleToggleStatus(user);
-                          }
-                        }}
-                      >
-                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                      </Button>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium text-text-primary">{user.full_name}</div>
-                    <div className="text-xs text-text-secondary">{user.email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-text-secondary">{user.email}</div>
                   </TableCell>
                   <TableCell>{user.department || '-'}</TableCell>
                   <TableCell className="capitalize">{user.role_code.replace('_', ' ')}</TableCell>
@@ -242,7 +232,7 @@ export default function UsersManagementPage() {
               ))}
               {filteredUsers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-text-muted">
+                  <TableCell colSpan={8} className="text-center py-6 text-text-muted">
                     No users match your filters.
                   </TableCell>
                 </TableRow>

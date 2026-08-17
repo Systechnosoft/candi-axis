@@ -32,7 +32,7 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
     full_name: '',
     department: '',
     employee_code: '',
-    role_code: 'hiring_manager',
+    role_code: '',
     org_id: '',
     status: 'active' as 'active' | 'inactive',
   });
@@ -59,7 +59,7 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
           full_name: '',
           department: '',
           employee_code: '',
-          role_code: 'hiring_manager',
+          role_code: '',
           org_id: !isSuperAdmin ? (session?.user?.org_id || '') : '',
           status: 'active',
         });
@@ -228,8 +228,8 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
               onChange={(e) => setFormData(prev => ({ ...prev, role_code: e.target.value }))}
               disabled={saving}
             >
-              <option value="" disabled>Select Role</option>
-              {ROLES.map(r => (
+              <option value="" disabled>--Please Select--</option>
+              {ROLES.filter(r => r.value !== 'super_admin').map(r => (
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
@@ -260,7 +260,7 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
                 onChange={(e) => setFormData(prev => ({ ...prev, org_id: e.target.value }))}
                 disabled={saving}
               >
-                <option value="">— None (Super Admin) —</option>
+                <option value="">-- Please Select --</option>
                 {organisations.map(o => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}
@@ -273,7 +273,7 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
                 value={organisations.find(o => o.id === formData.org_id)?.name || formData.org_id || 'Loading...'}
               />
             )}
-            {formData.role_code !== 'super_admin' && !formData.org_id && (
+            {formData.role_code && formData.role_code !== 'super_admin' && !formData.org_id && (
               <span className="text-xs text-status-error">Organisation is required for this role.</span>
             )}
           </div>

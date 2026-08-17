@@ -9,8 +9,9 @@ import {
 } from 'class-validator';
 
 export class CreateJobDescriptionDto {
+  @IsOptional()
   @IsUUID()
-  requisition_id: string;
+  requisition_id?: string;
 
   @IsString()
   @MaxLength(200)

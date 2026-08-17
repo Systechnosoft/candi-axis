@@ -188,10 +188,9 @@ export default function RequisitionsPage() {
         department: departmentFilter || undefined,
         activeOnly: activeFilter
       });
-      const pageData = reqData.slice((page - 1) * limit, page * limit);
       
       exportToCSV(
-        pageData,
+        reqData,
         [
           { header: 'Requisition ID', accessor: r => r.code },
           { header: 'Title', accessor: r => r.title },
@@ -201,7 +200,7 @@ export default function RequisitionsPage() {
           { header: 'Updated On', accessor: r => formatDate(r.updated_at) },
           { header: 'Status', accessor: r => r.is_deleted ? 'Archived' : toTitleCase(r.status) }
         ],
-        `requisitions-page-${page}.csv`
+        `requisitions-export.csv`
       );
     } catch (err) {
       console.error('Export failed', err);

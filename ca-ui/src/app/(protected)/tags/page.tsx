@@ -125,10 +125,8 @@ export default function TagsManagementPage() {
         type: (typeFilter as TagType) || undefined,
         active: activeFilter === 'all' ? undefined : activeFilter === 'true'
       });
-      const pageData = tagsData.slice((page - 1) * limit, page * limit);
-      
       exportToCSV(
-        pageData,
+        tagsData,
         [
           { header: 'Name', accessor: t => t.name },
           { header: 'Type', accessor: t => t.type },
@@ -137,7 +135,7 @@ export default function TagsManagementPage() {
           { header: 'Updated On', accessor: t => t.updated_at ? formatDate(t.updated_at) : (t.created_at ? formatDate(t.created_at) : '-') },
           { header: 'Status', accessor: t => t.active ? 'Active' : 'Disabled' }
         ],
-        `tags-page-${page}.csv`
+        `tags-export.csv`
       );
     } catch (err) {
       console.error('Export failed', err);

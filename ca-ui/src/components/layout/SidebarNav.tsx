@@ -31,7 +31,6 @@ const NAV_ITEMS = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart },
   { name: 'Tasks', href: '/tasks', icon: ClipboardList },
   { name: 'Tags', href: '/tags', icon: Tag },
-  { name: 'Requisitions', href: '/requisitions', icon: Briefcase },
   { name: 'Job Descriptions', href: '/job-descriptions', icon: FileText },
   { name: 'Job Postings', href: '/job-postings', icon: Globe },
   { name: 'Candidates', href: '/candidates', icon: Users },

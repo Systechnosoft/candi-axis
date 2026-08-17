@@ -13,7 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { UpdateAiConfigDto } from './dto/update-ai-config.dto';
 import { CandidatesService } from '../candidates/candidates.service';
 
-interface ProviderConfig {
+export interface ProviderConfig {
   has_custom_key: boolean;
   base_url: string | null;
   model: string | null;
@@ -21,7 +21,7 @@ interface ProviderConfig {
   api_key?: string | null;
 }
 
-interface AiConfig {
+export interface AiConfig {
   provider: string;
   providers: Record<string, ProviderConfig>;
   has_custom_key?: boolean;
