@@ -65,6 +65,20 @@ export class AdminSettingsController {
     );
   }
 
+  @Post('ai/models')
+  @RequireModule('admin', 'editor')
+  @ApiOperation({ summary: 'Fetch available models for an AI provider' })
+  async fetchAvailableModels(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: { provider: string; api_key?: string },
+  ) {
+    return this.adminService.fetchAvailableModels(
+      dto.provider,
+      dto.api_key || '',
+      req.user.email,
+    );
+  }
+
   @Get('ai/active')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get active AI provider status for resume parsing' })

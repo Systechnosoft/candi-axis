@@ -18,6 +18,10 @@ export const AdminService = {
     const { data } = await apiClient.delete<any>(`/admin/settings/ai/key/${provider}`);
     return data;
   },
+  fetchModels: async (payload: { provider: string; api_key?: string }) => {
+    const { data } = await apiClient.post<string[]>('/admin/settings/ai/models', payload);
+    return data;
+  },
   getActiveAiProvider: async () => {
     const { data } = await apiClient.get<any>('/admin/settings/ai/active');
     return data;

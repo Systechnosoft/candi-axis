@@ -93,26 +93,17 @@ export class AdminSettingsService {
     // Log validation check (without printing key)
     this.logger.log(`Validating format of API key for provider ${provider}`);
 
-    if (provider === 'gemini') {
-      return trimmed.startsWith('AIzaSy');
-    }
-    if (provider === 'openai') {
-      return trimmed.startsWith('sk-');
-    }
-    if (provider === 'anthropic') {
-      return trimmed.startsWith('sk-ant-');
-    }
-    if (provider === 'groq') {
-      return trimmed.startsWith('gsk_');
-    }
-    return true;
+    // To future-proof the configuration and avoid static format issues,
+    // we only perform a length check instead of enforcing strict vendor prefixes
+    // since providers occasionally change their API key formats.
+    return trimmed.length > 15;
   }
 
   private getProviderDefaultModel(provider: string): string {
-    if (provider === 'gemini') return 'gemini-2.5-flash';
+    if (provider === 'gemini') return 'gemini-3.6-flash';
     if (provider === 'openai') return 'gpt-4o-mini';
     if (provider === 'anthropic') return 'claude-3-5-sonnet-20241022';
-    if (provider === 'groq') return 'llama-3.3-70b-versatile';
+    if (provider === 'groq') return 'llama-3.1-70b-versatile';
     return '';
   }
 
@@ -341,6 +332,61 @@ export class AdminSettingsService {
       throw err;
     } finally {
       client.release();
+    }
+  }
+
+  async fetchAvailableModels(provider: string, apiKey: string, email: string): Promise<string[]> {
+    let actualKey = apiKey;
+    if (!actualKey || actualKey.includes('*')) {
+      const orgPrefix = this.getOrgPrefix(email);
+      const query = `SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1`;
+      const res = await this.pool.query(query, [`${orgPrefix}ai_parsing_api_key_${provider}`]);
+      if (res.rows.length === 0 || !res.rows[0].setting_value) {
+        throw new BadRequestException(`No valid API key configured for ${provider}`);
+      }
+      let val = String(res.rows[0].setting_value);
+      if (val.startsWith('"') && val.endsWith('"')) {
+        val = val.slice(1, -1);
+      }
+      actualKey = this.decrypt(val);
+      if (!actualKey) {
+        throw new BadRequestException(`Invalid or unreadable saved API key for ${provider}`);
+      }
+    }
+
+    try {
+      if (provider === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { Authorization: `Bearer ${actualKey}` }
+        });
+        if (!res.ok) throw new Error(`OpenAI API error: ${res.statusText}`);
+        const data = (await res.json()) as any;
+        return data.data.map((m: any) => m.id).sort();
+      } else if (provider === 'groq') {
+        const res = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { Authorization: `Bearer ${actualKey}` }
+        });
+        if (!res.ok) throw new Error(`Groq API error: ${res.statusText}`);
+        const data = (await res.json()) as any;
+        return data.data.map((m: any) => m.id).sort();
+      } else if (provider === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${actualKey}`);
+        if (!res.ok) throw new Error(`Gemini API error: ${res.statusText}`);
+        const data = (await res.json()) as any;
+        return (data.models || []).map((m: any) => m.name.replace('models/', '')).sort();
+      } else if (provider === 'anthropic') {
+        return [
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-haiku-20241022',
+          'claude-3-opus-20240229',
+          'claude-3-sonnet-20240229',
+          'claude-3-haiku-20240307'
+        ];
+      }
+      return [];
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch models for ${provider}: ${err.message}`);
+      throw new BadRequestException(`Failed to fetch models: ${err.message}`);
     }
   }
 

@@ -1189,11 +1189,26 @@ export class CandidatesService {
     }
 
     if (stage && stage.trim() !== '') {
-      if (stage.trim().toLowerCase() === 'active') {
+      const s = stage.trim().toLowerCase();
+      if (s === 'active') {
         baseQuery += ` AND a.stage IS NULL`;
       } else {
-        params.push(`%${stage.trim()}%`);
-        baseQuery += ` AND COALESCE(a.stage, c.status, 'Applied') ILIKE $${params.length}`;
+        const stageMap: Record<string, string[]> = {
+          'new': ['new', 'applied'],
+          'screening': ['screening', 'screened'],
+          'interviewing': ['interview', 'interviewing', 'engaged'],
+          'shortlisted': ['shortlisted'],
+          'offered': ['offered', 'offer'],
+          'accepted': ['accepted'],
+          'joined': ['joined', 'hired'],
+          'rejected': ['rejected', 'archived'],
+          'closed': ['closed']
+        };
+
+        const mapped = stageMap[s] || [s];
+        const clauses = mapped.map((_, i) => `COALESCE(a.stage, c.status, 'Applied') ILIKE $${params.length + i + 1}`);
+        mapped.forEach(val => params.push(`%${val}%`));
+        baseQuery += ` AND (${clauses.join(' OR ')})`;
       }
     }
 

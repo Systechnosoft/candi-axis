@@ -372,7 +372,7 @@ export default function ParsedIntakePage() {
 
   return (
     <div className="flex flex-col bg-surface">
-      <div className="p-6 border-b border-border bg-surface sticky top-0 z-10">
+      <div className="p-6 border-b border-border bg-surface">
         <h1 className="text-2xl font-semibold text-text-primary">
           {step === 'review' ? 'Review Parsed Candidate' : 'Upload Resume'}
         </h1>

@@ -18,7 +18,8 @@ import {
   Sparkles,
   Lock,
   Globe,
-  Cpu
+  Cpu,
+  RefreshCw
 } from 'lucide-react';
 
 const PROVIDER_DEFAULTS: Record<string, { model: string; baseUrl: string; label: string }> = {
@@ -65,6 +66,10 @@ export default function SiteConfigurationPage() {
   
   const [showKey, setShowKey] = useState(false);
   const [isForgetModalOpen, setIsForgetModalOpen] = useState(false);
+  
+  const [availableModels, setAvailableModels] = useState<string[] | null>(null);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [fetchModelsError, setFetchModelsError] = useState<string | null>(null);
 
   const fetchConfig = async () => {
     try {
@@ -114,6 +119,29 @@ export default function SiteConfigurationPage() {
       setApiKey(dbProvDetails.maskedKey || '');
     } else {
       setApiKey('');
+    }
+    setAvailableModels(null);
+    setFetchModelsError(null);
+  };
+
+  const handleFetchModels = async () => {
+    setIsFetchingModels(true);
+    setFetchModelsError(null);
+    try {
+      const models = await AdminService.fetchModels({
+        provider: selectedProvider,
+        api_key: apiKey === '' || apiKey.includes('*') ? undefined : apiKey
+      });
+      setAvailableModels(models);
+      if (models.length === 0) {
+        setFetchModelsError('No models returned. Feature may not be fully supported for this provider yet.');
+      } else {
+        setSuccessMsg(`Successfully fetched ${models.length} models from ${selectedProvider}.`);
+      }
+    } catch (err: any) {
+      setFetchModelsError(err.data?.message || err.message || 'Failed to fetch models from provider.');
+    } finally {
+      setIsFetchingModels(false);
     }
   };
 
@@ -292,14 +320,39 @@ export default function SiteConfigurationPage() {
                   <p className="text-xs text-text-secondary">Specify the custom model name or identifier to utilize.</p>
                 </div>
                 <div className="md:col-span-2">
-                  <input 
-                    type="text"
-                    required
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder="e.g. gemini-2.5-flash"
-                    className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
-                  />
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        required
+                        list="available-models"
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        placeholder="e.g. gemini-3.6-flash"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleFetchModels}
+                        disabled={isFetchingModels || (!apiKey && !isKeyConfigured)}
+                        className="whitespace-nowrap flex items-center gap-1.5"
+                      >
+                        {isFetchingModels ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        Fetch Models
+                      </Button>
+                    </div>
+                    {fetchModelsError && (
+                      <p className="text-xs text-status-error">{fetchModelsError}</p>
+                    )}
+                    {availableModels && availableModels.length > 0 && (
+                      <datalist id="available-models">
+                        {availableModels.map(m => (
+                          <option key={m} value={m} />
+                        ))}
+                      </datalist>
+                    )}
+                  </div>
                 </div>
               </div>
 
