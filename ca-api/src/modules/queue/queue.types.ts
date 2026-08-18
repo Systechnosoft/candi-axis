@@ -42,4 +42,5 @@ export interface SendCalendarInviteJobPayload extends BaseJobPayload {
   note?: string;
   actorUserId: string;
   ccUserIds?: string[];
+  candidateEmailOverride?: string;
 }

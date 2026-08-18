@@ -110,7 +110,7 @@ export class GoogleCalendarService {
 
     // Fetch user's org_id for user_calendar_integrations table constraint
     const userRes = await this.pool.query(
-      `SELECT org_id FROM public.users WHERE id = $1 LIMIT 1`,
+      `SELECT org_id FROM public.ca_users WHERE id = $1 LIMIT 1`,
       [atsUserId],
     );
     let orgId = userRes.rows[0]?.org_id || null;
@@ -178,7 +178,8 @@ export class GoogleCalendarService {
     atsUserId: string,
   ): Promise<{ meetingLink: string; externalEventId: string }> {
     const integrationRes = await this.pool.query(
-      `SELECT refresh_token FROM ca_user_calendar_integrations WHERE provider = 'GOOGLE' AND is_active = true LIMIT 1`,
+      `SELECT refresh_token FROM ca_user_calendar_integrations WHERE user_id = $1 AND provider = 'GOOGLE' AND is_active = true LIMIT 1`,
+      [atsUserId]
     );
 
     if (integrationRes.rows.length === 0) {

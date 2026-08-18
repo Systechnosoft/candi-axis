@@ -44,6 +44,8 @@ export const semanticColors = {
   }
 };
 
+export const PIPELINE_ORDER = ['new', 'screening', 'interviewing', 'shortlisted', 'offered', 'accepted', 'joined', 'closed'];
+
 export function cleanText(text: string | null | undefined): string {
   if (!text) return '';
   return text.trim().replace(/ +/g, ' ');

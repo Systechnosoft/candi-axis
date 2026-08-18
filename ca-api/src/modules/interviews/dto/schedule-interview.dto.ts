@@ -75,4 +75,9 @@ export class ScheduleInterviewDto {
   @IsString()
   @IsOptional()
   externalCalendarEventId?: string;
+
+  @ApiProperty({ description: 'Override candidate email for this interview only' })
+  @IsString()
+  @IsOptional()
+  candidateEmailOverride?: string;
 }

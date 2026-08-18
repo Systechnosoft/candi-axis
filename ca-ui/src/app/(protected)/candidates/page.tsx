@@ -19,6 +19,37 @@ import { ApplicationsService } from '@/lib/api/applications';
 import { TablePagination } from '@/components/primitives/TablePagination';
 import { CandidateFormValues } from '@/types/candidates';
 
+const getStageBadge = (stage: string) => {
+  const s = (stage || '').toLowerCase();
+  switch (s) {
+    case 'applied':
+    case 'new':
+      return <Badge className="bg-slate-50 text-slate-700 border-slate-200 font-medium">New</Badge>;
+    case 'screening':
+    case 'screened':
+      return <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-medium">Screening</Badge>;
+    case 'shortlisted':
+      return <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 font-medium">Shortlisted</Badge>;
+    case 'interview':
+    case 'interviewing':
+    case 'engaged':
+      return <Badge className="bg-purple-50 text-purple-700 border-purple-200 font-medium">Interviewing</Badge>;
+    case 'offered':
+    case 'offer':
+      return <Badge className="bg-orange-50 text-orange-700 border-orange-200 font-medium">Offered</Badge>;
+    case 'hired':
+    case 'joined':
+      return <Badge className="bg-green-50 text-green-700 border-green-200 font-medium">Joined</Badge>;
+    case 'rejected':
+    case 'archived':
+      return <Badge className="bg-red-50 text-red-700 border-red-200 font-medium">Rejected</Badge>;
+    case 'active':
+      return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-medium">Active</Badge>;
+    default:
+      return <Badge className="bg-slate-50 text-slate-700 border-slate-200 font-medium">{toTitleCase(stage)}</Badge>;
+  }
+};
+
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,7 +225,7 @@ export default function CandidatesPage() {
             ) : (
               candidates.map((candidate) => (
                 <TableRow 
-                  key={candidate.id} 
+                  key={(candidate as any).application_id || candidate.id} 
                   className="cursor-pointer hover:bg-subtle"
                 >
                   <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -214,8 +245,8 @@ export default function CandidatesPage() {
                       {candidate.full_name}
                     </Link>
                   </TableCell>
-                  <TableCell>{candidate.current_designation || candidate.source || 'N/A'}</TableCell>
-                  <TableCell><Badge variant="info">{toTitleCase(candidate.status || 'Applied')}</Badge></TableCell>
+                  <TableCell>{(candidate as any).applied_role || candidate.current_designation || candidate.source || 'N/A'}</TableCell>
+                  <TableCell>{getStageBadge((candidate as any).application_stage || candidate.status || 'Applied')}</TableCell>
                   <TableCell className="text-text-secondary">{candidate.updated_by_name || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{formatDate(candidate.updated_at)}</TableCell>
                   <TableCell>{formatDate(candidate.created_at)}</TableCell>

@@ -5,9 +5,11 @@ interface FilterBarProps {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   onRefresh?: () => void;
+  onClearFilters?: () => void;
+  children?: React.ReactNode;
 }
 
-export function FilterBar({ searchValue = '', onSearchChange, onRefresh }: FilterBarProps) {
+export function FilterBar({ searchValue = '', onSearchChange, onRefresh, onClearFilters, children }: FilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-2">
@@ -26,13 +28,18 @@ export function FilterBar({ searchValue = '', onSearchChange, onRefresh }: Filte
         </button>
       </div>
       
+      {children}
+      
       <div className="flex-1"></div>
 
       <div className="flex items-center gap-1 ml-auto">
         <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
           <Download className="w-4 h-4" />
         </button>
-        <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => onSearchChange?.('')}>
+        <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => {
+          onSearchChange?.('');
+          if (onClearFilters) onClearFilters();
+        }}>
           <FilterX className="w-4 h-4" />
         </button>
         <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={onRefresh}>

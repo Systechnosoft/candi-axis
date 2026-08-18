@@ -177,6 +177,7 @@ export class InterviewsService {
             note: dto.note || undefined,
             actorUserId,
             ccUserIds: dto.ccUserIds || [],
+            candidateEmailOverride: dto.candidateEmailOverride || undefined,
           },
         );
       } catch (queueErr: any) {

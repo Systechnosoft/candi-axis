@@ -1173,7 +1173,14 @@ export class CandidatesService {
   async findAll(page: number = 1, limit: number = 20, search?: string) {
     const offset = (page - 1) * limit;
 
-    let baseQuery = `FROM ca_candidates c LEFT JOIN ca_users u ON c.updated_by = u.id WHERE c.is_deleted = false`;
+    let baseQuery = `
+      FROM ca_candidates c 
+      LEFT JOIN ca_users u ON c.updated_by = u.id 
+      LEFT JOIN ca_candidate_job_stages a ON a.candidate_id = c.id AND a.deleted_at IS NULL
+      LEFT JOIN ca_job_postings jp ON a.job_posting_id = jp.id
+      LEFT JOIN ca_job_descriptions jd ON jp.jd_id = jd.id
+      WHERE c.is_deleted = false
+    `;
     const params: any[] = [];
 
     if (search && search.trim() !== '') {
@@ -1188,7 +1195,8 @@ export class CandidatesService {
     const dataQuery = `
       SELECT c.id, c.full_name, c.email, c.phone, c.location, c.total_exp_months, c.status, 
              c.source, c.current_company, c.current_designation, c.created_at, c.last_resume_uploaded_at, c.profile_score,
-             c.updated_at, u.full_name as updated_by_name
+             c.updated_at, u.full_name as updated_by_name,
+             a.id as application_id, a.stage as application_stage, jd.title as applied_role
       ${baseQuery}
       ORDER BY c.updated_at DESC 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}

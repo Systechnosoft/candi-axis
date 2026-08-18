@@ -27,9 +27,9 @@ import {
   Edit2, ChevronUp, ChevronDown, X, ArrowRight, Check, Video, RefreshCw, Link, Download, FilterX
 } from 'lucide-react';
 import { TablePagination } from '@/components/primitives/TablePagination';
-import { exportToCSV } from '@/lib/utils';
+import { exportToCSV, PIPELINE_ORDER } from '@/lib/utils';
 
-const PIPELINE_ORDER = ['new', 'screening', 'interviewing', 'shortlisted', 'offered', 'accepted', 'joined', 'closed'];
+
 
 const mapStageToCategory = (stage: string): string => {
   const s = (stage || '').toLowerCase();
@@ -143,7 +143,7 @@ export default function JobPostingDetailPage() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [checkingGoogle, setCheckingGoogle] = useState(false);
-
+  const [candidateEmail, setCandidateEmail] = useState('');
 
   const handleOpenScheduleDrawer = async (app: any) => {
     setTeamsMeetingId('');
@@ -155,6 +155,7 @@ export default function JobPostingDetailPage() {
 
     setSelectedAppForSchedule(app);
     setIsScheduleOpen(true);
+    setCandidateEmail(app.candidate_email || '');
     
     setSubject(`Interview Schedule - ${app.candidate_name}`);
     setNote('');
@@ -299,6 +300,7 @@ export default function JobPostingDetailPage() {
         interviewerIds: selectedInterviewers,
         ccUserIds: selectedCc,
         emailSubject: subject,
+        candidateEmailOverride: candidateEmail !== selectedAppForSchedule.candidate_email ? candidateEmail : undefined,
         note: note || undefined,
       });
 
@@ -879,14 +881,14 @@ export default function JobPostingDetailPage() {
                       </button>
                     </div>
                   </TableCell>
-                  <TableCell className="w-20 whitespace-normal text-text-primary font-bold">
+                  <TableCell className="w-20 text-text-primary font-bold">
                     {app.ai_score != null ? (
                       (app.ai_score / 10).toFixed(1)
                     ) : (
                       <span className="text-text-muted italic">N/A</span>
                     )}
                   </TableCell>
-                  <TableCell className="font-bold whitespace-normal break-words max-w-[180px]">
+                  <TableCell className="font-bold">
                     <span 
                       onClick={() => router.push(`/candidates/${app.candidate_id}`)}
                       className="cursor-pointer text-brand hover:underline font-bold transition-colors"
@@ -895,19 +897,19 @@ export default function JobPostingDetailPage() {
                       {app.candidate_name}
                     </span>
                   </TableCell>
-                  <TableCell className="text-text-primary font-medium whitespace-normal break-words max-w-[150px]">
+                  <TableCell className="text-text-primary font-medium">
                     {app.candidate_designation || 'Candidate'}
                   </TableCell>
-                  <TableCell className="text-text-primary text-xs whitespace-normal break-all max-w-[180px]">
+                  <TableCell className="text-text-primary text-xs">
                     {app.candidate_email || '-'}
                   </TableCell>
-                  <TableCell className="text-text-primary whitespace-normal max-w-[120px]">
+                  <TableCell className="text-text-primary">
                     {app.candidate_phone || '-'}
                   </TableCell>
-                  <TableCell className="whitespace-normal w-28">
+                  <TableCell className="w-28">
                     {getStageBadge(app.stage)}
                   </TableCell>
-                  <TableCell className="whitespace-normal w-28 text-text-primary text-xs font-semibold capitalize">
+                  <TableCell className="w-28 text-text-primary text-xs font-semibold capitalize">
                     {app.sub_stage ? (
                       app.sub_stage === 'interview_to_be_scheduled' ? (
                         <button
@@ -929,7 +931,7 @@ export default function JobPostingDetailPage() {
                       '-'
                     )}
                   </TableCell>
-                  <TableCell className="text-text-primary whitespace-normal w-24">
+                  <TableCell className="text-text-primary w-24">
                     {formatExperience(app.candidate_experience)}
                   </TableCell>
                 </TableRow>
@@ -1304,7 +1306,7 @@ export default function JobPostingDetailPage() {
         </>
       )}
       {isScheduleOpen && selectedAppForSchedule && (
-        <DrawerShell
+        <DrawerShell80
           title="Schedule Interview"
           onClose={() => {
             setIsScheduleOpen(false);
@@ -1333,24 +1335,53 @@ export default function JobPostingDetailPage() {
             </div>
           }
         >
-          <form className="space-y-4 text-text-primary text-left animate-in fade-in duration-200" onSubmit={handleScheduleSubmit}>
-            <div>
-              <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
-                Round Type
-              </label>
-              <select
-                value={roundType}
-                onChange={(e) => setRoundType(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
-              >
-                <option value="tech1">Technical Round 1</option>
-                <option value="tech2">Technical Round 2</option>
-                <option value="hr">HR Round</option>
-              </select>
+          <form className="space-y-6 text-text-primary text-left animate-in fade-in duration-200" onSubmit={handleScheduleSubmit}>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  Candidate Email ID
+                </label>
+                <input
+                  type="email"
+                  value={candidateEmail}
+                  onChange={(e) => setCandidateEmail(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  Round Type
+                </label>
+                <select
+                  value={roundType}
+                  onChange={(e) => setRoundType(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
+                >
+                  <option value="tech1">Technical Round 1</option>
+                  <option value="tech2">Technical Round 2</option>
+                  <option value="hr">HR Round</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  Date & Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
+                  required
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="flex flex-col gap-1.5">
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
                   Mode
                 </label>
@@ -1364,7 +1395,7 @@ export default function JobPostingDetailPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
                   Duration (mins)
                 </label>
@@ -1377,12 +1408,9 @@ export default function JobPostingDetailPage() {
                   step={15}
                 />
               </div>
-            </div>
 
-            {mode === 'online' ? (
-              <div className="text-left space-y-3">
-                {/* 1. Meeting Provider Field */}
-                <div>
+              {mode === 'online' ? (
+                <div className="flex flex-col gap-1.5">
                   <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
                     Meeting Provider
                   </label>
@@ -1420,117 +1448,104 @@ export default function JobPostingDetailPage() {
                   ) : (
                     <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                       <Video className="w-4 h-4 flex-shrink-0" />
-                      <span>No meeting providers configured. Configure one in admin settings.</span>
+                      <span>No meeting providers configured.</span>
                     </div>
                   )}
                 </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                    Location / Room
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Conference Room A"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
+                  />
+                </div>
+              )}
+            </div>
 
-                {/* Google Connection helper if GOOGLE_MEET selected */}
-                {selectedMeetingProvider === 'GOOGLE_MEET' && (
-                  <div className="p-3 border border-border rounded-md bg-slate-50 flex items-center justify-between text-xs">
-                    {checkingGoogle ? (
-                      <div className="flex items-center gap-2 text-text-muted">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Checking Google Calendar connection...</span>
-                      </div>
-                    ) : googleConnected ? (
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex flex-col text-left">
-                          <span className="font-semibold text-emerald-600">Connected to Google Calendar</span>
-                          <span className="text-[10px] text-text-secondary">{googleEmail}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleDisconnectGoogle}
-                          className="text-rose-600 hover:underline font-medium"
-                        >
-                          Disconnect
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-text-secondary">Connect Google Calendar to auto-generate Meet links</span>
-                        <button
-                          type="button"
-                          onClick={handleConnectGoogle}
-                          className="px-2 py-1 bg-brand text-white rounded hover:bg-brand/90 font-medium"
-                        >
-                          Connect Account
-                        </button>
-                      </div>
-                    )}
+            {mode === 'online' && selectedMeetingProvider === 'GOOGLE_MEET' && (
+              <div className="p-3 border border-border rounded-md bg-slate-50 flex items-center justify-between text-xs">
+                {checkingGoogle ? (
+                  <div className="flex items-center gap-2 text-text-muted">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Checking Google Calendar connection...</span>
+                  </div>
+                ) : googleConnected ? (
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold text-emerald-600">Connected to Google Calendar</span>
+                      <span className="text-[10px] text-text-secondary">{googleEmail}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDisconnectGoogle}
+                      className="text-rose-600 hover:underline font-medium"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-text-secondary">Connect Google Calendar to auto-generate Meet links</span>
+                    <button
+                      type="button"
+                      onClick={handleConnectGoogle}
+                      className="px-2 py-1 bg-brand text-white rounded hover:bg-brand/90 font-medium"
+                    >
+                      Connect Account
+                    </button>
                   </div>
                 )}
-
-                {/* 2. Meeting Link Field */}
-                <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
-                    Meeting Link
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={meetingLink}
-                      onChange={(e) => setMeetingLink(e.target.value)}
-                      placeholder="Meeting link will populate here after generation, or type manually..."
-                      className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text-primary"
-                    />
-                  </div>
-                </div>
               </div>
-            ) : (
-              <div className="text-left">
+            )}
+
+            {mode === 'online' && (
+              <div className="flex flex-col gap-1.5">
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
-                  Location / Room
+                  Meeting Link
                 </label>
                 <input
                   type="text"
-                  placeholder="Conference Room A"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
+                  value={meetingLink}
+                  onChange={(e) => setMeetingLink(e.target.value)}
+                  placeholder="Meeting link will populate here after generation, or type manually..."
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text-primary"
                 />
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
-                Date & Time
-              </label>
-              <input
-                type="datetime-local"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  To (Interviewers)
+                </label>
+                <MultiSelect
+                  options={schedInterviewers}
+                  selectedIds={selectedInterviewers}
+                  onChange={setSelectedInterviewers}
+                  placeholder="Select interviewers..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  CC (Hiring Manager / HR)
+                </label>
+                <MultiSelect
+                  options={ccOptions}
+                  selectedIds={selectedCc}
+                  onChange={setSelectedCc}
+                  placeholder="Select CC recipients..."
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
-                To (Interviewers)
-              </label>
-              <MultiSelect
-                options={schedInterviewers}
-                selectedIds={selectedInterviewers}
-                onChange={setSelectedInterviewers}
-                placeholder="Select interviewers..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
-                CC (Hiring Manager / HR)
-              </label>
-              <MultiSelect
-                options={ccOptions}
-                selectedIds={selectedCc}
-                onChange={setSelectedCc}
-                placeholder="Select CC recipients..."
-              />
-            </div>
-
-            <div>
+            <div className="flex flex-col gap-1.5">
               <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
                 Email Subject
               </label>
@@ -1543,7 +1558,7 @@ export default function JobPostingDetailPage() {
               />
             </div>
 
-            <div>
+            <div className="flex flex-col gap-1.5">
               <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
                 Note <span className="font-normal normal-case text-text-muted ml-1">(optional)</span>
               </label>
@@ -1554,7 +1569,7 @@ export default function JobPostingDetailPage() {
               />
             </div>
           </form>
-        </DrawerShell>
+        </DrawerShell80>
       )}
     </div>
   );
