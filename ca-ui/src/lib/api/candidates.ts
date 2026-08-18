@@ -78,11 +78,12 @@ export const CandidatesService = {
     }
   },
 
-  getCandidates: async (params?: { page?: number; limit?: number; search?: string }): Promise<ListResponse<Candidate>> => {
+  getCandidates: async (params?: { page?: number; limit?: number; search?: string; stage?: string }): Promise<ListResponse<Candidate>> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.search) searchParams.append('search', params.search);
+    if (params?.stage) searchParams.append('stage', params.stage);
     
     const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
     const response = await apiClient.get<ListResponse<Candidate>>(`/candidates${queryString}`);

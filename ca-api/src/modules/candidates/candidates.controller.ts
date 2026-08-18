@@ -49,10 +49,11 @@ export class CandidatesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('stage') stage?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    return this.candidatesService.findAll(pageNum, limitNum, search);
+    return this.candidatesService.findAll(pageNum, limitNum, search, stage);
   }
 
   @Get(':id')

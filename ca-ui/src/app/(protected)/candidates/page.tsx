@@ -7,7 +7,7 @@ import { Card } from '@/components/primitives/Card';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
-import { formatDate, toTitleCase } from '@/lib/utils';
+import { formatDate, toTitleCase, PIPELINE_ORDER } from '@/lib/utils';
 import { CandidateSummaryCard } from '@/components/ats/CandidateSummaryCard';
 import Link from 'next/link';
 import { CandidatesService } from '@/lib/api/candidates';
@@ -55,6 +55,7 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [stageFilter, setStageFilter] = useState('');
   
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -65,7 +66,7 @@ export default function CandidatesPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await CandidatesService.getCandidates({ page, limit, search });
+        const res = await CandidatesService.getCandidates({ page, limit, search, stage: stageFilter });
         setCandidates(res.data);
         setTotalItems(res.meta.total || 0);
       } catch {
@@ -77,7 +78,7 @@ export default function CandidatesPage() {
 
     const timer = setTimeout(fetchCandidates, 300);
     return () => clearTimeout(timer);
-  }, [page, search, limit]);
+  }, [page, search, stageFilter, limit]);
 
   // Edit Drawer States
   const [editingCandidate, setEditingCandidate] = useState<any | null>(null);
@@ -185,7 +186,32 @@ export default function CandidatesPage() {
       <div className="flex flex-col gap-6 h-full min-h-0 w-full">
         <Card className="w-full">
           <div className="p-2 border-b border-border bg-surface items-center">
-            <FilterBar searchValue={search} onSearchChange={setSearch} />
+            <FilterBar 
+              searchValue={search} 
+              onSearchChange={(v) => { setSearch(v); setPage(1); }}
+              onClearFilters={() => setStageFilter('')}
+            >
+              <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[90px] justify-center">
+                  Stage
+                </div>
+                <select 
+                  className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary capitalize"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                  value={stageFilter}
+                  onChange={(e) => {
+                    setStageFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All</option>
+                  {PIPELINE_ORDER.map(stage => (
+                    <option key={stage} value={stage}>{stage === 'new' ? 'New / Applied' : toTitleCase(stage)}</option>
+                  ))}
+                  <option value="active">Active (No App)</option>
+                </select>
+              </div>
+            </FilterBar>
           </div>
           <div className="overflow-x-auto">
             <DataTableShell className="w-full text-sm">
@@ -194,16 +220,15 @@ export default function CandidatesPage() {
               <TableHeader className="text-right">{" "}</TableHeader>
               <TableHeader>Name</TableHeader>
               <TableHeader>Role</TableHeader>
-              <TableHeader>Stage</TableHeader>
+              <TableHeader className="text-center w-32">Stage</TableHeader>
               <TableHeader>Updated By</TableHeader>
               <TableHeader>Updated On</TableHeader>
-              <TableHeader>Date</TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-text-muted">
+                <TableCell colSpan={6} className="text-center py-8 text-text-muted">
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin text-brand" />
                     <span>Loading candidates...</span>
@@ -212,13 +237,13 @@ export default function CandidatesPage() {
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-error">
+                <TableCell colSpan={6} className="text-center py-8 text-error">
                   {error}
                 </TableCell>
               </TableRow>
             ) : candidates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-text-muted">
+                <TableCell colSpan={6} className="text-center py-8 text-text-muted">
                   No candidates found.
                 </TableCell>
               </TableRow>
@@ -246,10 +271,9 @@ export default function CandidatesPage() {
                     </Link>
                   </TableCell>
                   <TableCell>{(candidate as any).applied_role || candidate.current_designation || candidate.source || 'N/A'}</TableCell>
-                  <TableCell>{getStageBadge((candidate as any).application_stage || candidate.status || 'Applied')}</TableCell>
+                  <TableCell className="text-center w-32">{getStageBadge((candidate as any).application_stage || candidate.status || 'Applied')}</TableCell>
                   <TableCell className="text-text-secondary">{candidate.updated_by_name || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{formatDate(candidate.updated_at)}</TableCell>
-                  <TableCell>{formatDate(candidate.created_at)}</TableCell>
                 </TableRow>
               ))
             )}

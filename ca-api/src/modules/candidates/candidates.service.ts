@@ -1170,7 +1170,7 @@ export class CandidatesService {
     return { candidate: null, hasMediumMatch: dupResult.hasMediumMatch };
   }
 
-  async findAll(page: number = 1, limit: number = 20, search?: string) {
+  async findAll(page: number = 1, limit: number = 20, search?: string, stage?: string) {
     const offset = (page - 1) * limit;
 
     let baseQuery = `
@@ -1185,7 +1185,16 @@ export class CandidatesService {
 
     if (search && search.trim() !== '') {
       params.push(`%${search}%`);
-      baseQuery += ` AND (c.full_name ILIKE $1 OR c.email ILIKE $1 OR c.phone ILIKE $1)`;
+      baseQuery += ` AND (c.full_name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length})`;
+    }
+
+    if (stage && stage.trim() !== '') {
+      if (stage.trim().toLowerCase() === 'active') {
+        baseQuery += ` AND a.stage IS NULL`;
+      } else {
+        params.push(`%${stage.trim()}%`);
+        baseQuery += ` AND COALESCE(a.stage, c.status, 'Applied') ILIKE $${params.length}`;
+      }
     }
 
     const countQuery = `SELECT count(*) as total ${baseQuery}`;
