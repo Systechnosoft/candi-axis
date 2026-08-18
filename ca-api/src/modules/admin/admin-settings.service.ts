@@ -338,20 +338,11 @@ export class AdminSettingsService {
   async fetchAvailableModels(provider: string, apiKey: string, email: string): Promise<string[]> {
     let actualKey = apiKey;
     if (!actualKey || actualKey.includes('*')) {
-      const orgPrefix = this.getOrgPrefix(email);
-      const query = `SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1`;
-      const res = await this.pool.query(query, [`${orgPrefix}ai_parsing_api_key_${provider}`]);
-      if (res.rows.length === 0 || !res.rows[0].setting_value) {
+      const savedKey = await this.getActiveApiKey(email, provider);
+      if (!savedKey) {
         throw new BadRequestException(`No valid API key configured for ${provider}`);
       }
-      let val = String(res.rows[0].setting_value);
-      if (val.startsWith('"') && val.endsWith('"')) {
-        val = val.slice(1, -1);
-      }
-      actualKey = this.decrypt(val);
-      if (!actualKey) {
-        throw new BadRequestException(`Invalid or unreadable saved API key for ${provider}`);
-      }
+      actualKey = savedKey;
     }
 
     try {
