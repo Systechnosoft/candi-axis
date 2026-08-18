@@ -14,7 +14,8 @@ import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { JobPosting } from '@/types/job-postings';
 import { JobDescription } from '@/types/job-descriptions';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Edit2, Loader2, Search, Download, FilterX, RefreshCw } from 'lucide-react';
+import { Search, Loader2, Plus, Edit2, Trash2, Check, Download } from 'lucide-react';
+import { FilterBar } from '@/components/primitives/FilterBar';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { usersApi } from '@/lib/api/users';
 import { MultiSelect } from '@/components/primitives/MultiSelect';
@@ -248,55 +249,27 @@ export default function JobPostingsPage() {
       />
       
       <Card>
-        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
-          <div className="flex items-center gap-2 col-span-1">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input 
-                type="text" 
-                placeholder="search here..." 
-                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        <div className="border-b border-border p-2 bg-surface">
+          <FilterBar searchValue={search} onSearchChange={(v) => { setSearch(v); setPage(1); }} onRefresh={fetchData} onClearFilters={() => setStatusFilter('')}>
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+                Status
+              </div>
+              <select 
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">All</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+              </select>
             </div>
-            <button onClick={fetchData} className="h-[34px] px-4 text-sm font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors">
-              Search
-            </button>
-          </div>
-          
-          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
-            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
-              Status
-            </div>
-            <select 
-              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All</option>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-
-          <div className="col-span-1"></div>
-
-          <div className="flex items-center gap-1 justify-end col-span-1">
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
-              <Download className="w-4 h-4" />
-            </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); }}>
-              <FilterX className="w-4 h-4" />
-            </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
+          </FilterBar>
         </div>
 
         {error && (

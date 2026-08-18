@@ -6,7 +6,8 @@ import { Card } from '@/components/primitives/Card';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
 import { Badge } from '@/components/primitives/Badge';
 import { Button } from '@/components/primitives/Button';
-import { Plus, Edit2, Loader2, Search, Download, FilterX, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Loader2, Download, FilterX, RefreshCw } from 'lucide-react';
+import { FilterBar } from '@/components/primitives/FilterBar';
 import { UserModal } from '../components/UserModal';
 import { usersApi } from '@/lib/api/users';
 import { User } from '@/types/users';
@@ -123,54 +124,43 @@ export default function UsersManagementPage() {
       <p className="text-text-secondary -mt-2 mb-4">Manage ATS users, roles, and system access.</p>
 
       <Card>
-        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
-          <div className="flex items-center gap-2 col-span-1">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input 
-                type="text" 
-                placeholder="Search here..." 
-                className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        <div className="border-b border-border p-2 bg-surface">
+          <FilterBar searchValue={search} onSearchChange={setSearch} onRefresh={fetchUsers} onClearFilters={() => { setStatusFilter(''); setRoleFilter(''); }}>
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+                Status
+              </div>
+              <select 
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
-          </div>
-          
-          <select 
-            className="px-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface col-span-1"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          
-          <select 
-            className="px-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface col-span-1"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="">All Roles</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="hr_recruiter">HR Recruiter</option>
-            <option value="hiring_manager">Hiring Manager</option>
-            <option value="interviewer">Interviewer</option>
-          </select>
-
-          <div className="flex items-center gap-1 justify-end col-span-1">
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
-              <Download className="w-4 h-4" />
-            </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); setRoleFilter(''); }}>
-              <FilterX className="w-4 h-4" />
-            </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchUsers}>
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
+            
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+                Role
+              </div>
+              <select 
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="">All Roles</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="admin">Admin</option>
+                <option value="hr_recruiter">HR Recruiter</option>
+                <option value="hiring_manager">Hiring Manager</option>
+                <option value="interviewer">Interviewer</option>
+              </select>
+            </div>
+          </FilterBar>
         </div>
 
         {error ? (

@@ -352,19 +352,28 @@ export class AdminSettingsService {
         });
         if (!res.ok) throw new Error(`OpenAI API error: ${res.statusText}`);
         const data = (await res.json()) as any;
-        return data.data.map((m: any) => m.id).sort();
+        return data.data
+          .map((m: any) => m.id)
+          .filter((id: string) => id.startsWith('gpt') && !id.includes('audio') && !id.includes('realtime') && !id.includes('vision'))
+          .sort();
       } else if (provider === 'groq') {
         const res = await fetch('https://api.groq.com/openai/v1/models', {
           headers: { Authorization: `Bearer ${actualKey}` }
         });
         if (!res.ok) throw new Error(`Groq API error: ${res.statusText}`);
         const data = (await res.json()) as any;
-        return data.data.map((m: any) => m.id).sort();
+        return data.data
+          .map((m: any) => m.id)
+          .filter((id: string) => !id.includes('whisper'))
+          .sort();
       } else if (provider === 'gemini') {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${actualKey}`);
         if (!res.ok) throw new Error(`Gemini API error: ${res.statusText}`);
         const data = (await res.json()) as any;
-        return (data.models || []).map((m: any) => m.name.replace('models/', '')).sort();
+        return (data.models || [])
+          .map((m: any) => m.name.replace('models/', ''))
+          .filter((name: string) => name.startsWith('gemini') && !name.includes('vision') && !name.includes('embedding') && !name.includes('aqa'))
+          .sort();
       } else if (provider === 'anthropic') {
         return [
           'claude-3-5-sonnet-20241022',

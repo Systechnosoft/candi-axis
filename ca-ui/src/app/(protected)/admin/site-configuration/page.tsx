@@ -200,7 +200,7 @@ export default function SiteConfigurationPage() {
   }
 
   // Check if API key is configured in DB for selected provider
-  const isKeyConfigured = config?.providers?.[selectedProvider]?.has_custom_key;
+  const isKeyConfigured = config && config.providers && config.providers[selectedProvider] && config.providers[selectedProvider].has_custom_key;
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-10">
@@ -322,15 +322,25 @@ export default function SiteConfigurationPage() {
                 <div className="md:col-span-2">
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
-                      <input 
-                        type="text"
+                      <select 
                         required
-                        list="available-models"
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
-                        placeholder="e.g. gemini-3.6-flash"
                         className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
-                      />
+                      >
+                        {model && availableModels && !availableModels.includes(model) && (
+                          <option value={model}>{model} (Unavailable)</option>
+                        )}
+                        {model && !availableModels && (
+                          <option value={model}>{model}</option>
+                        )}
+                        {availableModels?.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                        {(!availableModels || availableModels.length === 0) && !model && (
+                          <option value="" disabled>Fetch models to select...</option>
+                        )}
+                      </select>
                       <Button
                         type="button"
                         variant="secondary"
@@ -344,13 +354,6 @@ export default function SiteConfigurationPage() {
                     </div>
                     {fetchModelsError && (
                       <p className="text-xs text-status-error">{fetchModelsError}</p>
-                    )}
-                    {availableModels && availableModels.length > 0 && (
-                      <datalist id="available-models">
-                        {availableModels.map(m => (
-                          <option key={m} value={m} />
-                        ))}
-                      </datalist>
                     )}
                   </div>
                 </div>
@@ -390,7 +393,7 @@ export default function SiteConfigurationPage() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                Save Configuration
+                Save
               </Button>
             </div>
           </Card>

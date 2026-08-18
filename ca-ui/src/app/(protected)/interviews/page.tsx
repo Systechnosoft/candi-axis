@@ -7,7 +7,7 @@ import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/c
 import { Badge } from '@/components/primitives/Badge';
 import { FilterBar } from '@/components/primitives/FilterBar';
 import { InterviewsService } from '@/lib/api/interviews';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Search, Download, FilterX, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { TablePagination } from '@/components/primitives/TablePagination';
 
@@ -72,7 +72,7 @@ export default function InterviewsPage() {
       />
       
       <Card>
-        <div className="border-b border-border p-2">
+        <div className="border-b border-border p-2 bg-surface">
           <FilterBar searchValue={search} onSearchChange={setSearch} onRefresh={fetchInterviews} />
         </div>
 
@@ -106,19 +106,19 @@ export default function InterviewsPage() {
               <tbody>
                 {interviews.slice((page - 1) * limit, page * limit).map((item) => (
                   <TableRow key={item.interview_id || item.application_id}>
-                    <TableCell className="font-medium text-text-primary">
+                    <TableCell>
                       {`${item.round_type || 'Interview'} - ${item.candidate_name || 'Candidate'}`}
                     </TableCell>
-                    <TableCell className="text-text-secondary">
+                    <TableCell>
                       {item.interviewer_names || 'Assigned Interviewer'}
                     </TableCell>
-                    <TableCell className="text-text-secondary">
+                    <TableCell>
                       {item.scheduled_by_name || 'System / Auto'}
                     </TableCell>
-                    <TableCell className="text-text-secondary">
+                    <TableCell>
                       {formatDate(item.scheduled_start_utc)}
                     </TableCell>
-                    <TableCell className="text-text-secondary">
+                    <TableCell>
                       {formatTime(item.scheduled_start_utc)}
                     </TableCell>
                     <TableCell>

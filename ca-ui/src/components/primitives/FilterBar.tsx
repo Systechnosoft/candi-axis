@@ -11,14 +11,14 @@ interface FilterBarProps {
 
 export function FilterBar({ searchValue = '', onSearchChange, onRefresh, onClearFilters, children }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-2">
-        <div className="relative">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+      <div className="flex items-center gap-2 md:col-start-1 md:row-start-1">
+        <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input 
             type="text" 
             placeholder="search here..." 
-            className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-48 bg-surface"
+            className="pl-9 pr-3 h-[34px] text-sm rounded-md border border-border focus:ring-1 focus:ring-brand outline-none w-full bg-surface"
             value={searchValue}
             onChange={(e) => onSearchChange?.(e.target.value)}
           />
@@ -29,10 +29,8 @@ export function FilterBar({ searchValue = '', onSearchChange, onRefresh, onClear
       </div>
       
       {children}
-      
-      <div className="flex-1"></div>
 
-      <div className="flex items-center gap-1 ml-auto">
+      <div className="flex items-center gap-1 justify-end md:col-start-4 md:row-start-1">
         <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download">
           <Download className="w-4 h-4" />
         </button>
