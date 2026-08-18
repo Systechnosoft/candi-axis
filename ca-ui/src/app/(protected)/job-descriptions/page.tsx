@@ -35,6 +35,7 @@ export default function JobDescriptionsPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [workModeFilter, setWorkModeFilter] = useState('');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -63,6 +64,7 @@ export default function JobDescriptionsPage() {
         jobDescriptionsApi.getJobDescriptions({
           search: search || undefined,
           status: statusFilter || undefined,
+          work_mode: workModeFilter || undefined,
         }),
         usersApi.getLookups()
       ]);
@@ -76,7 +78,7 @@ export default function JobDescriptionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, workModeFilter]);
 
   useEffect(() => {
     fetchData();
@@ -238,7 +240,7 @@ export default function JobDescriptionsPage() {
       />
       
       <Card>
-        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
+        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
           <div className="flex items-center gap-2 col-span-1">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -272,11 +274,28 @@ export default function JobDescriptionsPage() {
             </select>
           </div>
 
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+              Work Mode
+            </div>
+            <select 
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+              value={workModeFilter}
+              onChange={(e) => setWorkModeFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="Onsite">Onsite</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Remote">Remote</option>
+            </select>
+          </div>
+
           <div className="flex items-center gap-1 justify-end col-span-1">
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
               <Download className="w-4 h-4" />
             </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); }}>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearch(''); setStatusFilter(''); setWorkModeFilter(''); }}>
               <FilterX className="w-4 h-4" />
             </button>
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchData}>

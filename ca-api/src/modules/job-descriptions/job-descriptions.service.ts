@@ -137,6 +137,7 @@ export class JobDescriptionsService {
     requisition_id?: string;
     status?: string;
     search?: string;
+    work_mode?: string;
   }) {
     const conditions: string[] = ['jd.is_deleted = false'];
     const values: any[] = [];
@@ -159,6 +160,10 @@ export class JobDescriptionsService {
       );
       values.push(`%${query.search}%`);
       counter++;
+    }
+    if (query.work_mode) {
+      conditions.push(`jd.work_mode ILIKE $${counter++}`);
+      values.push(query.work_mode);
     }
 
     const whereClause = `WHERE ${conditions.join(' AND ')}`;

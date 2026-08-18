@@ -49,11 +49,13 @@ export class JobDescriptionsController {
     @Query('requisition_id') requisition_id?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('work_mode') work_mode?: string,
   ) {
     return this.jobDescriptionsService.findAll({
       requisition_id,
       status,
       search,
+      work_mode,
     });
   }
 

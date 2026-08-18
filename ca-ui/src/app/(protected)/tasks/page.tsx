@@ -123,7 +123,7 @@ export default function TasksPage() {
         )}
  
         {/* Data Grid Section */}
-        <div className="px-4 pb-4 overflow-x-auto">
+        <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-12 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin text-brand" />
@@ -137,9 +137,9 @@ export default function TasksPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  <TableHeader>Task Name</TableHeader>
-                  <TableHeader>Assignee</TableHeader>
-                  <TableHeader>Assigned On</TableHeader>
+                  <TableHeader className="w-[60%]">Task Name</TableHeader>
+                  <TableHeader className="w-[20%]">Assignee</TableHeader>
+                  <TableHeader className="w-[20%]">Assigned On</TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>

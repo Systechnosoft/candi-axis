@@ -10,7 +10,7 @@ import {
 } from '../../types/job-descriptions';
 
 export const jobDescriptionsApi = {
-  getJobDescriptions: async (params?: { requisition_id?: string; status?: string; search?: string }) => {
+  getJobDescriptions: async (params?: { requisition_id?: string; status?: string; search?: string; work_mode?: string }) => {
     const { data } = await apiClient.get<JobDescription[]>('/job-descriptions', { params });
     return data;
   },
