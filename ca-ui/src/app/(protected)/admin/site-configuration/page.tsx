@@ -39,7 +39,7 @@ const PROVIDER_DEFAULTS: Record<string, { model: string; baseUrl: string; label:
     label: 'Anthropic Claude'
   },
   groq: {
-    model: 'llama-3.3-70b-versatile',
+    model: 'qwen/qwen3.6-27b',
     baseUrl: 'https://api.groq.com/openai/v1',
     label: 'Groq'
   }
@@ -201,6 +201,7 @@ export default function SiteConfigurationPage() {
 
   // Check if API key is configured in DB for selected provider
   const isKeyConfigured = config && config.providers && config.providers[selectedProvider] && config.providers[selectedProvider].has_custom_key;
+  const isSystemDefault = config && config.providers && config.providers[selectedProvider] && config.providers[selectedProvider].is_system_default;
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-10">
@@ -238,10 +239,17 @@ export default function SiteConfigurationPage() {
               {/* API Key validation status badge */}
               <div className="flex-shrink-0">
                 {isKeyConfigured ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success-dark border border-success/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                    API Key is Configured
-                  </span>
+                  isSystemDefault ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand/10 text-brand-dark border border-brand/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+                      System Default Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success-dark border border-success/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                      API Key is Configured
+                    </span>
+                  )
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-warning/10 text-warning-dark border border-warning/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-warning" />

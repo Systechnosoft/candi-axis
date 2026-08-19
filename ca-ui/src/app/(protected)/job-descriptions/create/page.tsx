@@ -7,7 +7,7 @@ import { JobDescriptionForm } from '../components/JobDescriptionForm';
 import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { tagsApi } from '@/lib/api/tags';
 import { usersApi } from '@/lib/api/users';
-import { RequisitionOption, CreateJobDescriptionRequest } from '@/types/job-descriptions';
+import { CreateJobDescriptionRequest } from '@/types/job-descriptions';
 import { UserLookup } from '@/types/users';
 import { Tag } from '@/types/tags';
 import { Loader2, Check } from 'lucide-react';
@@ -16,7 +16,6 @@ import { Button } from '@/components/primitives/Button';
 
 export default function CreateJobDescriptionPage() {
   const router = useRouter();
-  const [requisitions, setRequisitions] = useState<RequisitionOption[]>([]);
   const [users, setUsers] = useState<UserLookup[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,11 +26,7 @@ export default function CreateJobDescriptionPage() {
   useEffect(() => {
     async function loadResources() {
       try {
-        const [reqOptions, userData] = await Promise.all([
-          jobDescriptionsApi.getRequisitionOptions(),
-          usersApi.getLookups()
-        ]);
-        setRequisitions(reqOptions);
+        const userData = await usersApi.getLookups();
         setUsers(userData);
       } catch {
         setError("Failed to load necessary form options.");
@@ -84,7 +79,6 @@ export default function CreateJobDescriptionPage() {
       />
       <JobDescriptionForm 
         mode="create"
-        requisitions={requisitions}
         users={users}
         selectedTags={selectedTags}
         onTagsChange={setSelectedTags}

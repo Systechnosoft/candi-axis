@@ -128,10 +128,15 @@ export default function OffersPage() {
                     </TableCell>
                     <TableCell>{formatDate(offer.joining_date)}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </tbody>
-          </DataTableShell>
+                ))}
+              </tbody>
+            </DataTableShell>
+            {offers.length === 0 && !loading && !error && (
+              <div className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl w-full">
+                <span className="text-text-muted text-sm">No offers found</span>
+              </div>
+            )}
+          </div>
         )}
         
         {selectedOffer && (

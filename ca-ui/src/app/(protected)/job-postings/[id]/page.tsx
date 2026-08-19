@@ -90,6 +90,7 @@ export default function JobPostingDetailPage() {
 
   // Dashboard card stage filter state
   const [selectedStageFilter, setSelectedStageFilter] = useState<string | null>(null);
+  const [selectedSubStageFilter, setSelectedSubStageFilter] = useState<string | null>(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -97,7 +98,7 @@ export default function JobPostingDetailPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedStageFilter]);
+  }, [searchQuery, selectedStageFilter, selectedSubStageFilter]);
 
   // Edit Stage Drawer States
   const [selectedAppForStage, setSelectedAppForStage] = useState<any | null>(null);
@@ -136,6 +137,7 @@ export default function JobPostingDetailPage() {
   const [activeProviders, setActiveProviders] = useState<any[]>([]);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [meetingLinkEditable, setMeetingLinkEditable] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   const [teamsMeetingId, setTeamsMeetingId] = useState('');
   const [teamsPasscode, setTeamsPasscode] = useState('');
@@ -411,6 +413,9 @@ export default function JobPostingDetailPage() {
         const cat = mapStageToCategory(app.stage);
         if (cat !== selectedStageFilter) return false;
       }
+      if (selectedSubStageFilter) {
+        if (app.sub_stage !== selectedSubStageFilter) return false;
+      }
       const q = searchQuery.toLowerCase();
       const nameMatch = app.candidate_name?.toLowerCase().includes(q);
       const designationMatch = app.candidate_designation?.toLowerCase().includes(q);
@@ -418,7 +423,15 @@ export default function JobPostingDetailPage() {
       const emailMatch = app.candidate_email?.toLowerCase().includes(q);
       return nameMatch || designationMatch || locationMatch || emailMatch;
     });
-  }, [applications, searchQuery, selectedStageFilter]);
+  }, [applications, searchQuery, selectedStageFilter, selectedSubStageFilter]);
+
+  const uniqueSubStages = useMemo(() => {
+    const stages = new Set<string>();
+    applications.forEach(a => {
+      if (a.sub_stage) stages.add(a.sub_stage);
+    });
+    return Array.from(stages).sort();
+  }, [applications]);
 
   const getInitials = (name: string) => {
     if (!name) return 'C';
@@ -639,119 +652,117 @@ export default function JobPostingDetailPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-12 w-full px-4 relative">
+    <div className="flex flex-col gap-4 w-full pb-8">
       {/* Header Container */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-surface border border-border rounded-xl shadow-sm">
-        <div className="flex items-start gap-4">
-          <button 
-            onClick={() => router.push('/job-postings')}
-            className="p-2 hover:bg-subtle rounded-lg text-text-secondary transition-colors mt-0.5"
-            title="Back to Job Postings"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          
-          <div className="space-y-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-text-primary">{posting.name}</h1>
-              {posting.is_active ? (
-                <Badge variant="success">Active</Badge>
-              ) : (
-                <Badge variant="default">Closed</Badge>
-              )}
-            </div>
-            <p className="text-sm text-text-secondary font-medium">
-              {posting.code && <span className="mr-2">Posting ID: <strong>{posting.code}</strong> •</span>}
-              {posting.jd_title && (
-                <span>
-                  Linked Job Description: <span className="text-brand font-semibold hover:underline cursor-pointer" onClick={() => router.push(`/job-descriptions/${posting.jd_id}`)}>{posting.jd_title}</span> {posting.jd_code ? `(${posting.jd_code})` : ''}
-                </span>
-              )}
-            </p>
-            {((posting.hr_ids && posting.hr_ids.length > 0) || (posting.interviewer_ids && posting.interviewer_ids.length > 0)) && (
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2 pt-2 border-t border-border/30 text-xs">
-                {posting.hr_ids && posting.hr_ids.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-text-muted uppercase tracking-wider text-[10px]">HR Manager(s):</span>
-                    <div className="flex flex-wrap gap-1">
-                      {hiringManagers
-                        .filter(u => posting.hr_ids?.includes(u.id))
-                        .map(u => (
-                          <Badge key={u.id} variant="default" className="bg-subtle text-text-secondary border-border text-[11px] font-medium px-2 py-0.5">
-                            {u.full_name}
-                          </Badge>
-                        ))}
-                    </div>
-                  </div>
-                )}
-                {posting.interviewer_ids && posting.interviewer_ids.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-text-muted uppercase tracking-wider text-[10px]">Interviewer(s):</span>
-                    <div className="flex flex-wrap gap-1">
-                      {interviewers
-                        .filter(u => posting.interviewer_ids?.includes(u.id))
-                        .map(u => (
-                          <Badge key={u.id} variant="default" className="bg-subtle text-text-secondary border-border text-[11px] font-medium px-2 py-0.5">
-                            {u.full_name}
-                          </Badge>
-                        ))}
-                    </div>
-                  </div>
+      <div className="flex flex-col lg:flex-row bg-surface border border-border rounded-xl shadow-sm">
+        {/* Left Column: Details */}
+        <div className="flex-1 p-3 md:p-4 flex flex-col md:items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <button 
+              onClick={() => router.push('/job-postings')}
+              className="p-2 hover:bg-subtle rounded-lg text-text-secondary transition-colors mt-0.5 shrink-0"
+              title="Back to Job Postings"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-xl font-bold text-text-primary">{posting.name}</h1>
+                {posting.code && (
+                  <span className="text-base font-medium text-text-secondary tracking-wide">#{posting.code}</span>
                 )}
               </div>
-            )}
+              
+              <div className="border border-brand/20 rounded-lg p-4 bg-brand/5 shadow-sm">
+                <h3 className="text-[13px] font-bold text-brand uppercase tracking-wider mb-4">Posting Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
+                  {posting.jd_title && (
+                    <div>
+                      <div className="text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">Job Description</div>
+                      <div className="text-sm font-semibold text-text-primary">
+                        <span className="hover:underline cursor-pointer transition-colors" onClick={() => router.push(`/job-descriptions/${posting.jd_id}`)}>
+                          {posting.jd_title} {posting.jd_code ? `(${posting.jd_code})` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {posting.hr_ids && posting.hr_ids.length > 0 && (
+                    <div>
+                      <div className="text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">HR Manager(s)</div>
+                      <div className="text-sm font-semibold text-text-primary">
+                        {hiringManagers
+                          .filter(u => posting.hr_ids?.includes(u.id))
+                          .map(u => u.full_name).join(', ') || '-'}
+                      </div>
+                    </div>
+                  )}
+
+                  {posting.interviewer_ids && posting.interviewer_ids.length > 0 && (
+                    <div>
+                      <div className="text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">Interviewer(s)</div>
+                      <div className="text-sm font-semibold text-text-primary">
+                        {interviewers
+                          .filter(u => posting.interviewer_ids?.includes(u.id))
+                          .map(u => u.full_name).join(', ') || '-'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {canEdit && (
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="secondary" 
-              onClick={openEditModal} 
-              className="gap-2 bg-surface hover:bg-subtle text-sm border-border"
-            >
-              <Edit2 className="w-4 h-4" /> Edit Posting
-            </Button>
+        {/* Right Column: Job Description & Actions */}
+        <div className={`border-t lg:border-t-0 lg:border-l border-border/50 p-3 md:p-4 bg-subtle/20 rounded-b-xl lg:rounded-bl-none lg:rounded-r-xl flex flex-col ${posting.description ? 'lg:w-2/5' : 'lg:w-auto shrink-0'}`}>
+          <div className="flex items-center justify-between gap-4 mb-2">
+            {posting.description ? (
+              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Description Summary</h3>
+            ) : (
+              <div />
+            )}
+            
+            {canEdit && (
+              <Button 
+                variant="secondary" 
+                onClick={openEditModal} 
+                className="gap-2 bg-surface hover:bg-subtle text-xs border-border py-1.5 px-3 h-auto shadow-sm"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit Posting
+              </Button>
+            )}
           </div>
-        )}
+
+          {posting.description && (
+            <>
+              <div className="relative">
+                <div 
+                  className={`text-sm text-text-secondary leading-relaxed prose max-w-none overflow-hidden transition-all duration-300 ${showFullDescription ? '' : 'max-h-[72px]'}`} 
+                  dangerouslySetInnerHTML={{ __html: posting.description }} 
+                />
+                {!showFullDescription && (
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[rgb(var(--color-subtle))] to-transparent" />
+                )}
+              </div>
+              <button 
+                onClick={() => setShowFullDescription(!showFullDescription)}
+                className="mt-3 text-xs font-bold text-brand hover:text-brand-dark self-start flex items-center gap-1 uppercase tracking-wider transition-colors"
+              >
+                {showFullDescription ? (
+                  <>Less <ChevronUp className="w-3.5 h-3.5" /></>
+                ) : (
+                  <>More <ChevronDown className="w-3.5 h-3.5" /></>
+                )}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Collapsible Description Preview */}
-      {posting.description && (
-        <Card className="border border-border shadow-sm bg-surface transition-all duration-300 hover:shadow-md">
-          <div 
-            className="flex items-center justify-between p-4 cursor-pointer select-none"
-            onClick={() => setIsDescExpanded(!isDescExpanded)}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-base font-semibold text-text-primary">Job Posting Description</span>
-            </div>
-            <div className="p-1 rounded-full hover:bg-subtle text-text-secondary transition-colors">
-              {isDescExpanded ? (
-                <ChevronUp className="w-5 h-5 text-brand" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-text-muted" />
-              )}
-            </div>
-          </div>
-          
-          <div 
-            className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              isDescExpanded ? 'max-h-[1000px] border-t border-border opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
-            }`}
-          >
-            <CardContent className="p-6">
-              <div 
-                className="text-sm text-text-secondary leading-relaxed prose max-w-none" 
-                dangerouslySetInnerHTML={{ __html: posting.description }} 
-              />
-            </CardContent>
-          </div>
-        </Card>
-      )}
-
       {/* Dashboard Stage Counts */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
         {[
           { label: 'New', count: counts.New },
           { label: 'Screening', count: counts.Screening },
@@ -768,14 +779,14 @@ export default function JobPostingDetailPage() {
             <Card 
               key={stat.label} 
               onClick={() => setSelectedStageFilter(prev => prev === stat.label ? null : stat.label)}
-              className={`border p-4 text-center rounded-xl cursor-pointer transition-all duration-300 hover:-translate-y-0.5 select-none ${
+              className={`border p-2 text-center rounded-lg cursor-pointer transition-all duration-300 hover:-translate-y-0.5 select-none ${
                 isSelected 
-                  ? 'bg-brand/10 border-brand text-brand ring-2 ring-brand/20 shadow-md' 
+                  ? 'bg-brand/10 border-brand text-brand ring-1 ring-brand/20 shadow-sm' 
                   : 'bg-surface border-border text-text-secondary hover:border-text-secondary/50 shadow-sm'
               }`}
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider opacity-85">{stat.label}</div>
-              <div className="text-2xl font-black mt-1 leading-none">{stat.count}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider opacity-85 truncate" title={stat.label}>{stat.label}</div>
+              <div className="text-xl font-black mt-0.5 leading-none">{stat.count}</div>
             </Card>
           );
         })}
@@ -800,32 +811,45 @@ export default function JobPostingDetailPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 col-span-1 border border-transparent h-[34px]">
-            <div className="flex items-center text-sm font-bold text-text-primary ml-2">
-              Applied Candidates ({filteredCandidates.length})
-              {selectedStageFilter && (
-                <Badge variant="default" className="ml-2 py-0.5 px-2 bg-brand/15 text-brand border-brand/25 text-xs font-semibold capitalize">
-                  Stage: {selectedStageFilter}
-                </Badge>
-              )}
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center">
+              Stage
             </div>
-            {selectedStageFilter && (
-              <button 
-                onClick={() => setSelectedStageFilter(null)}
-                className="text-xs text-brand hover:underline font-bold"
-              >
-                Clear filter
-              </button>
-            )}
+            <select 
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+              value={selectedStageFilter || ''}
+              onChange={(e) => setSelectedStageFilter(e.target.value || null)}
+            >
+              <option value="">All Stages</option>
+              {PIPELINE_STAGES.map(s => <option key={s.key} value={s.label}>{s.label}</option>)}
+            </select>
           </div>
           
-          <div className="col-span-1"></div>
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[90px] justify-center whitespace-nowrap">
+              Sub Stage
+            </div>
+            <select 
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+              value={selectedSubStageFilter || ''}
+              onChange={(e) => setSelectedSubStageFilter(e.target.value || null)}
+            >
+              <option value="">All Sub Stages</option>
+              {uniqueSubStages.map(sub => (
+                <option key={sub} value={sub}>
+                  {sub === 'interview_to_be_scheduled' ? 'Interview to be scheduled' : sub.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="flex items-center gap-1 justify-end col-span-1">
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Download" onClick={handleExport}>
               <Download className="w-4 h-4" />
             </button>
-            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearchQuery(''); setSelectedStageFilter(null); }}>
+            <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Clear Filters" onClick={() => { setSearchQuery(''); setSelectedStageFilter(null); setSelectedSubStageFilter(null); }}>
               <FilterX className="w-4 h-4" />
             </button>
             <button className="h-[34px] w-[34px] flex items-center justify-center border border-border rounded-md text-text-secondary hover:text-brand bg-surface transition-colors" title="Refresh" onClick={fetchApplicationsOnly}>
@@ -849,67 +873,52 @@ export default function JobPostingDetailPage() {
             <DataTableShell className="w-full text-sm">
               <TableHead>
                 <TableRow>
-                  <TableHeader className="w-20 text-center">{""}</TableHeader>
-                  <TableHeader className="w-20">Fit Score</TableHeader>
-                  <TableHeader className="min-w-[140px]">Candidate Name</TableHeader>
-                  <TableHeader className="min-w-[120px]">Role</TableHeader>
-                  <TableHeader className="min-w-[160px]">Email</TableHeader>
-                  <TableHeader className="min-w-[110px]">Mobile</TableHeader>
-                  <TableHeader className="w-28">Stage</TableHeader>
-                  <TableHeader className="w-28">Sub Stage</TableHeader>
-                  <TableHeader className="w-24">Experience</TableHeader>
+                  <TableHeader className="w-10 text-center py-2">{""}</TableHeader>
+                  <TableHeader className="py-2">Score</TableHeader>
+                  <TableHeader className="py-2">Candidate Name</TableHeader>
+                  <TableHeader className="py-2">Email</TableHeader>
+                  <TableHeader className="py-2">Stage</TableHeader>
+                  <TableHeader className="py-2">Sub Stage</TableHeader>
+                  <TableHeader className="py-2">Experience</TableHeader>
                 </TableRow>
               </TableHead>
             <tbody>
               {filteredCandidates.slice((page - 1) * limit, page * limit).map((app) => (
                 <TableRow key={app.id}>
-                  <TableCell className="w-20 text-center">
+                  <TableCell className="text-center py-2">
                     <div className="flex items-center justify-center gap-1">
                       <button 
                         onClick={() => handleOpenEditDrawer(app)}
-                        className="p-1 hover:bg-subtle rounded text-text-secondary hover:text-brand transition-colors"
+                        className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
                         title="Edit Stage"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={() => router.push(`/candidates/${app.candidate_id}`)}
-                        className="p-1 hover:bg-subtle rounded text-text-secondary hover:text-brand transition-colors"
-                        title="View Candidate Profile"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
                     </div>
                   </TableCell>
-                  <TableCell className="w-20 text-text-primary font-bold">
+                  <TableCell className="text-text-primary font-bold py-2">
                     {app.ai_score != null ? (
                       (app.ai_score / 10).toFixed(1)
                     ) : (
                       <span className="text-text-muted italic">N/A</span>
                     )}
                   </TableCell>
-                  <TableCell className="font-bold">
+                  <TableCell className="py-2">
                     <span 
                       onClick={() => router.push(`/candidates/${app.candidate_id}`)}
-                      className="cursor-pointer text-brand hover:underline font-bold transition-colors"
-                      title="View Full Profile"
+                      className="cursor-pointer text-brand hover:underline font-bold transition-colors truncate block max-w-[200px]"
+                      title={app.candidate_name}
                     >
                       {app.candidate_name}
                     </span>
                   </TableCell>
-                  <TableCell className="text-text-primary font-medium">
-                    {app.candidate_designation || 'Candidate'}
-                  </TableCell>
-                  <TableCell className="text-text-primary text-xs">
+                  <TableCell className="text-text-primary text-xs py-2 truncate max-w-[200px]" title={app.candidate_email || ''}>
                     {app.candidate_email || '-'}
                   </TableCell>
-                  <TableCell className="text-text-primary">
-                    {app.candidate_phone || '-'}
-                  </TableCell>
-                  <TableCell className="w-28">
+                  <TableCell className="py-2">
                     {getStageBadge(app.stage)}
                   </TableCell>
-                  <TableCell className="w-28 text-text-primary text-xs font-semibold capitalize">
+                  <TableCell className="text-text-primary text-xs font-semibold capitalize py-2">
                     {app.sub_stage ? (
                       app.sub_stage === 'interview_to_be_scheduled' ? (
                         <button
@@ -931,7 +940,7 @@ export default function JobPostingDetailPage() {
                       '-'
                     )}
                   </TableCell>
-                  <TableCell className="text-text-primary w-24">
+                  <TableCell className="text-text-secondary text-xs font-medium py-2">
                     {formatExperience(app.candidate_experience)}
                   </TableCell>
                 </TableRow>

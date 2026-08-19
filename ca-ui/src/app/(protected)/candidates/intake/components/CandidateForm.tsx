@@ -5,7 +5,7 @@ import { Button } from '@/components/primitives/Button';
 import { Card } from '@/components/primitives/Card';
 import { cleanText, formatToHtmlBullets } from '@/lib/utils';
 import { CandidateFormValues, DuplicateMatchResponse, CandidateEducation, CandidateEmployment, CandidateCertification, CandidateSocialLink } from '@/types/candidates';
-import { AlertCircle, CheckCircle2, Plus, Trash2, X } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { TagSelector } from '@/components/ats/TagSelector';
 import { Tag } from '@/types/tags';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
@@ -20,6 +20,7 @@ interface CandidateFormProps {
   submitError?: string | null;
   duplicateData?: DuplicateMatchResponse | null;
   hasApplications?: boolean;
+  onClearError?: () => void;
 }
 
 const formatMonthYear = (dateStr?: string | null): string => {
@@ -55,7 +56,9 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
   submitError,
   duplicateData,
   hasApplications = false,
+  onClearError,
 }) => {
+  const [showSuccessBanner, setShowSuccessBanner] = useState(true);
   const [formData, setFormData] = useState<CandidateFormValues>({
     full_name: '',
     first_name: '',
@@ -82,6 +85,13 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
   });
 
   const isBasicReadOnly = readOnly || hasApplications;
+
+  useEffect(() => {
+    if (mode === 'parsed' && showSuccessBanner) {
+      const timer = setTimeout(() => setShowSuccessBanner(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [mode, showSuccessBanner]);
 
   useEffect(() => {
     if (initialValues) {
@@ -298,19 +308,26 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
 
   return (
     <form onSubmit={handleFormSubmit} className="flex flex-col gap-8 pb-12 w-full max-w-4xl mx-auto relative">
-      {mode === 'parsed' && (
-        <div className="bg-brand-50 border border-brand/20 p-4 rounded-lg flex items-start gap-3">
+      {mode === 'parsed' && showSuccessBanner && (!submitError || !submitError.startsWith('AI Parsing failed')) && (
+        <div className="bg-brand-50 border border-brand/20 p-4 rounded-lg flex items-start gap-3 relative transition-opacity duration-300">
           <CheckCircle2 className="w-5 h-5 text-brand mt-0.5" />
-          <div>
+          <div className="flex-1 pr-6">
             <h4 className="text-sm font-medium text-brand-dark">Resume Parsed Successfully</h4>
           </div>
+          <button 
+            type="button" 
+            onClick={() => setShowSuccessBanner(false)}
+            className="absolute top-4 right-4 text-brand hover:text-brand-dark transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {submitError && (
-        <div className="bg-error-50 border border-error p-4 rounded-lg flex items-start gap-3">
+        <div className="bg-error-50 border border-error p-4 rounded-lg flex items-start gap-3 relative">
           <AlertCircle className="w-5 h-5 text-error mt-0.5" />
-          <div className="flex-1">
+          <div className="flex-1 pr-6">
             <h4 className="text-sm font-medium text-error-dark">{submitError}</h4>
             {duplicateData?.duplicates && (
               <div className="mt-2 space-y-2">
@@ -325,6 +342,15 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
               </div>
             )}
           </div>
+          {onClearError && (
+            <button 
+              type="button" 
+              onClick={onClearError}
+              className="absolute top-4 right-4 text-error hover:text-error-dark transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
       )}
 

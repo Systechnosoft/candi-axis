@@ -57,7 +57,8 @@ export const CandidatesService = {
         return status;
       }
       if (status.parse_status === 'failed') {
-        throw new Error(status.parse_error || 'Resume parsing failed on the server.');
+        // Fallback gracefully instead of throwing, so the user can continue with a blank form
+        return status;
       }
     }
 

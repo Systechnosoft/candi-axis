@@ -15,7 +15,9 @@
 import { Client } from 'pg';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import * as dns from 'dns';
 
+dns.setDefaultResultOrder('ipv4first');
 dotenv.config();
 
 const CA_MODULES = [

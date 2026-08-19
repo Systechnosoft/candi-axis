@@ -281,10 +281,10 @@ export default function ParsedIntakePage() {
       setDocumentId(docResult.id);
 
       // docResult.parsed_json is the raw ParsedResume JSON from backend
-      const parsed = docResult.parsed_json as Record<string, any>;
-      if (!parsed || Object.keys(parsed).length === 0) {
-        throw new Error('The AI parser returned empty results. Please check your AI configuration and try again.');
-      }
+      const parsed = (docResult.parsed_json || {}) as Record<string, any>;
+      
+      // Check if AI parsing failed or returned empty results
+      const isParseFailure = docResult.parse_status === 'failed' || Object.keys(parsed).length === 0;
 
       setRawParsedJson(parsed);
 
@@ -304,6 +304,12 @@ export default function ParsedIntakePage() {
       formValues.tags = matchedTags;
 
       setParsedFormValues(formValues);
+      
+      if (isParseFailure) {
+        setError(`AI Parsing failed: ${docResult.parse_error || 'Unknown error'}. Falling back to manual entry mode with resume attached.`);
+        // We do not throw here so that they can proceed to review step
+      }
+      
       setStep('review');
     } catch (err: any) {
       setError(err.data?.message || err.message || 'Failed to upload or parse document. Please try again.');
@@ -514,6 +520,7 @@ export default function ParsedIntakePage() {
             isSubmitting={isSubmitting}
             submitError={error}
             duplicateData={duplicateData}
+            onClearError={() => setError(null)}
           />
         )}
       </div>

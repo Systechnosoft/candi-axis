@@ -273,11 +273,11 @@ export default function TagsManagementPage() {
           <div className="flex flex-col gap-4 py-4">
             {modalError && <div className="p-3 bg-red-50 text-red-600 rounded-md text-sm">{modalError}</div>}
             
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary">Name <span className="text-red-500">*</span></label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-text-primary">Name <span className="text-danger">*</span></label>
               <input 
                 type="text" 
-                className="input-base border border-border" 
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm" 
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 onBlur={(e) => setFormData({...formData, name: e.target.value.trim().replace(/\s+/g, ' ')})}
@@ -285,10 +285,10 @@ export default function TagsManagementPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary">Type <span className="text-red-500">*</span></label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-text-primary">Type <span className="text-danger">*</span></label>
               <select 
-                className="input-base border border-border"
+                className="w-full px-3 py-2 border border-border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value as TagType})}
                 disabled={!!editingTag}
@@ -297,10 +297,10 @@ export default function TagsManagementPage() {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-text-primary">Description</label>
               <textarea 
-                className="input-base border border-border h-24 resize-none" 
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm h-24 resize-none" 
                 value={formData.description || ''}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 onBlur={(e) => setFormData({...formData, description: (e.target.value || '').trim().replace(/\s+/g, ' ')})}

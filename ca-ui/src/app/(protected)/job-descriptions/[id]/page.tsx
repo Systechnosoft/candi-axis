@@ -9,7 +9,7 @@ import { jobDescriptionsApi, getJobMatches, rematchJob } from '@/lib/api/job-des
 import { jobPostingsApi } from '@/lib/api/job-postings';
 import { tagsApi } from '@/lib/api/tags';
 import { usersApi } from '@/lib/api/users';
-import { JobDescription, CandidateMatch, RequisitionOption, CreateJobDescriptionRequest } from '@/types/job-descriptions';
+import { JobDescription, CandidateMatch, CreateJobDescriptionRequest } from '@/types/job-descriptions';
 import { JobPosting } from '@/types/job-postings';
 import { Tag } from '@/types/tags';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,7 +51,6 @@ export default function JobDescriptionDetailPage() {
   const [drawerSaving, setDrawerSaving] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
   const [drawerSelectedTags, setDrawerSelectedTags] = useState<Tag[]>([]);
-  const [requisitions, setRequisitions] = useState<RequisitionOption[]>([]);
   const [users, setUsers] = useState<UserLookup[]>([]);
 
   // Collapse states for sidebars
@@ -165,13 +164,11 @@ export default function JobDescriptionDetailPage() {
     setDrawerLoading(true);
     setIsEditDrawerOpen(true);
     try {
-      const [reqOptions, userData, entityTags, updatedJd] = await Promise.all([
-        jobDescriptionsApi.getRequisitionOptions(),
+      const [userData, entityTags, updatedJd] = await Promise.all([
         usersApi.getLookups(),
         tagsApi.getEntityTags('job_description', id),
         jobDescriptionsApi.getJobDescription(id),
       ]);
-      setRequisitions(reqOptions);
       setUsers(userData);
       setJd(updatedJd);
       setDrawerSelectedTags(
@@ -464,7 +461,6 @@ export default function JobDescriptionDetailPage() {
             <JobDescriptionForm
               mode="edit"
               jobDescription={jd}
-              requisitions={requisitions}
               users={users}
               selectedTags={drawerSelectedTags}
               onTagsChange={setDrawerSelectedTags}

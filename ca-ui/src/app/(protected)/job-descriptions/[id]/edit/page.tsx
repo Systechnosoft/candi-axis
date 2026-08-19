@@ -18,7 +18,6 @@ export default function EditJobDescriptionPage() {
   const id = params.id as string;
 
   const [jobDescription, setJobDescription] = useState<JobDescription | null>(null);
-  const [requisitions, setRequisitions] = useState<RequisitionOption[]>([]);
   const [users, setUsers] = useState<UserLookup[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,14 +28,12 @@ export default function EditJobDescriptionPage() {
     async function loadData() {
       if (!id) return;
       try {
-        const [jd, reqOptions, userData, entityTags] = await Promise.all([
+        const [jd, userData, entityTags] = await Promise.all([
           jobDescriptionsApi.getJobDescription(id),
-          jobDescriptionsApi.getRequisitionOptions(),
           usersApi.getLookups(),
           tagsApi.getEntityTags('job_description', id),
         ]);
         setJobDescription(jd);
-        setRequisitions(reqOptions);
         setUsers(userData);
         // Map entity tags to Tag shape for the selector
         setSelectedTags(
@@ -104,7 +101,6 @@ export default function EditJobDescriptionPage() {
       <JobDescriptionForm
         mode="edit"
         jobDescription={jobDescription}
-        requisitions={requisitions}
         users={users}
         selectedTags={selectedTags}
         onTagsChange={setSelectedTags}

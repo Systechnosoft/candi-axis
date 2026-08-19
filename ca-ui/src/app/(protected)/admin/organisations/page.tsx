@@ -44,6 +44,8 @@ export default function OrganisationsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [createdOnFilter, setCreatedOnFilter] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
@@ -197,6 +199,14 @@ export default function OrganisationsPage() {
     }
   };
 
+  const filteredOrganisations = React.useMemo(() => {
+    return organisations.filter(org => {
+      if (statusFilter && org.status !== statusFilter) return false;
+      if (createdOnFilter && !org.created_at.startsWith(createdOnFilter)) return false;
+      return true;
+    });
+  }, [organisations, statusFilter, createdOnFilter]);
+
   return (
     <ListPage
       title="Organisations"
@@ -208,8 +218,47 @@ export default function OrganisationsPage() {
     >
       <div className="flex flex-col gap-4 h-full min-h-0 w-full">
         <Card className="w-full flex flex-col min-h-0">
-          <div className="p-2 border-b border-border bg-surface rounded-t-md">
-            <FilterBar searchValue={search} onSearchChange={(val) => { setSearch(val); setPage(1); }} onRefresh={fetchOrganisations} />
+            <FilterBar 
+              searchValue={search} 
+              onSearchChange={(val) => { setSearch(val); setPage(1); }} 
+              onRefresh={fetchOrganisations}
+              onClearFilters={() => { setStatusFilter(''); setCreatedOnFilter(''); }}
+            >
+              <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+                  Status
+                </div>
+                <select 
+                  className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                  <option value="SUSPENDED">Suspended</option>
+                </select>
+              </div>
+
+              <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
+                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+                  Created On
+                </div>
+                <input 
+                  type="date"
+                  className="pl-3 pr-3 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+                  value={createdOnFilter}
+                  onChange={(e) => {
+                    setCreatedOnFilter(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </FilterBar>
           </div>
           <div className="overflow-x-auto">
             <DataTableShell>
@@ -243,14 +292,14 @@ export default function OrganisationsPage() {
                   {error}
                 </TableCell>
               </TableRow>
-            ) : organisations.length === 0 ? (
+            ) : filteredOrganisations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-12 text-text-secondary">
                   No organisations found.
                 </TableCell>
               </TableRow>
             ) : (
-              organisations.map((org) => (
+              filteredOrganisations.map((org) => (
                 <TableRow key={org.id} className={org.status === 'INACTIVE' ? 'opacity-60' : ''}>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-start gap-1">

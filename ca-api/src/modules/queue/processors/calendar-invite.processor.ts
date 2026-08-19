@@ -527,7 +527,8 @@ export class CalendarInviteProcessor extends WorkerHost {
 
       const icsContent = icsLines.map(foldIcsLine).join('\r\n');
 
-      const finalCandidateEmail = job.data.candidateEmailOverride || appData.candidate_email;
+      const finalCandidateEmail =
+        job.data.candidateEmailOverride || appData.candidate_email;
 
       // 10a. Send Candidate email — with ICS calendar invite, NO resume attachment
       if (finalCandidateEmail) {
@@ -543,9 +544,7 @@ export class CalendarInviteProcessor extends WorkerHost {
               content: icsContent,
             },
           });
-          this.logger.log(
-            `Candidate email sent to: ${finalCandidateEmail}`,
-          );
+          this.logger.log(`Candidate email sent to: ${finalCandidateEmail}`);
         } catch (candidateEmailErr: unknown) {
           const errMsg =
             candidateEmailErr instanceof Error

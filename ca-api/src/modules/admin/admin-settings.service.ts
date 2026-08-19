@@ -103,7 +103,7 @@ export class AdminSettingsService {
     if (provider === 'gemini') return 'gemini-3.6-flash';
     if (provider === 'openai') return 'gpt-4o-mini';
     if (provider === 'anthropic') return 'claude-3-5-sonnet-20241022';
-    if (provider === 'groq') return 'llama-3.1-70b-versatile';
+    if (provider === 'groq') return 'qwen/qwen3.6-27b';
     return '';
   }
 
@@ -168,6 +168,7 @@ export class AdminSettingsService {
     providersList.forEach((p) => {
       config.providers[p] = {
         has_custom_key: false,
+        is_system_default: false,
         base_url: this.getProviderDefaultBaseUrl(p),
         model: this.getProviderDefaultModel(p),
         maskedKey: null,
@@ -209,6 +210,18 @@ export class AdminSettingsService {
         const prov = key.replace('ai_parsing_model_', '');
         if (config.providers[prov]) {
           config.providers[prov].model = val;
+        }
+      }
+    });
+
+    // Fallback to environment variables
+    providersList.forEach((prov) => {
+      if (!config.providers[prov].has_custom_key) {
+        const envKey = process.env[`${prov.toUpperCase()}_API_KEY`];
+        if (envKey && envKey.trim().length > 0) {
+          config.providers[prov].has_custom_key = true;
+          config.providers[prov].is_system_default = true;
+          config.providers[prov].maskedKey = this.maskApiKey(envKey.trim());
         }
       }
     });
@@ -468,6 +481,13 @@ export class AdminSettingsService {
         return decrypted;
       }
     }
+
+    // Fallback to environment variable
+    const envKey = process.env[`${provider.toUpperCase()}_API_KEY`];
+    if (envKey && this.validateApiKey(envKey, provider)) {
+      return envKey.trim();
+    }
+
     return null;
   }
 
@@ -542,6 +562,13 @@ export class AdminSettingsService {
         }
       }
     });
+
+    if (!config.api_key) {
+      const envKeyName = `${provider.toUpperCase()}_API_KEY`;
+      if (process.env[envKeyName]) {
+        config.api_key = process.env[envKeyName].trim();
+      }
+    }
 
     return config;
   }

@@ -21,7 +21,7 @@ export default function InterviewsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  const fetchInterviews = async () => {
+  const fetchInterviews = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -34,12 +34,12 @@ export default function InterviewsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
 
   useEffect(() => {
     const timer = setTimeout(fetchInterviews, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [fetchInterviews]);
 
   const formatTime = (dateStr?: string | null) => {
     if (!dateStr) return '-';
