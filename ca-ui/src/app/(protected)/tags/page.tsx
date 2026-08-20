@@ -10,7 +10,7 @@ import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import { tagsApi } from '@/lib/api/tags';
 import { Tag, TagType, CreateTagRequest } from '@/types/tags';
 import { Plus, Edit2, Loader2, FilterX, RefreshCw } from 'lucide-react';
-import { ModalShell } from '@/components/primitives/ModalShell';
+import { ModalShell, DrawerShell } from '@/components/primitives/ModalShell';
 import { TablePagination } from '@/components/primitives/TablePagination';
 import { FilterBar } from '@/components/primitives/FilterBar';
 
@@ -39,6 +39,7 @@ export default function TagsManagementPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [viewingTag, setViewingTag] = useState<Tag | null>(null);
   const [modalSaving, setModalSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -164,7 +165,7 @@ export default function TagsManagementPage() {
                 Type
               </div>
               <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary capitalize"
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary capitalize"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -179,7 +180,7 @@ export default function TagsManagementPage() {
                 Status
               </div>
               <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
                 value={activeFilter}
                 onChange={(e) => setActiveFilter(e.target.value)}
@@ -213,11 +214,11 @@ export default function TagsManagementPage() {
               <TableRow>
                 <TableHeader className="w-[50px]"></TableHeader>
                 <TableHeader className="w-[35%]">Name</TableHeader>
-                <TableHeader className="w-[15%]">Type</TableHeader>
+                <TableHeader className="w-[15%] text-center">Type</TableHeader>
                 <TableHeader>Description</TableHeader>
                 <TableHeader>Updated By</TableHeader>
                 <TableHeader>Updated On</TableHeader>
-                <TableHeader className="w-[100px]">Status</TableHeader>
+                <TableHeader className="w-[100px] text-center">Status</TableHeader>
               </TableRow>
             </TableHead>
             <tbody>
@@ -234,12 +235,19 @@ export default function TagsManagementPage() {
                       </button>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{tag.name}</TableCell>
-                  <TableCell><Badge variant="default" className="uppercase text-[10px] tracking-wider">{tag.type}</Badge></TableCell>
+                  <TableCell className="font-medium">
+                    <button 
+                      onClick={() => setViewingTag(tag)} 
+                      className="text-brand hover:underline font-medium focus:outline-none text-left"
+                    >
+                      {tag.name}
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-center"><Badge variant="default" className="uppercase text-[10px] tracking-wider">{tag.type}</Badge></TableCell>
                   <TableCell className="text-sm text-text-secondary truncate max-w-xs">{tag.description || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{tag.updated_by_name || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{formatDate(tag.updated_at)}</TableCell>
-                  <TableCell><Badge variant={tag.active ? 'success' : 'error'}>{tag.active ? 'Active' : 'Disabled'}</Badge></TableCell>
+                  <TableCell className="text-center"><Badge variant={tag.active ? 'success' : 'error'}>{tag.active ? 'Active' : 'Disabled'}</Badge></TableCell>
                 </TableRow>
               ))}
             </tbody>
@@ -321,6 +329,59 @@ export default function TagsManagementPage() {
             )}
           </div>
         </ModalShell>
+      )}
+
+      {/* Summary Drawer */}
+      {viewingTag && (
+        <DrawerShell
+          title="Tag Summary"
+          onClose={() => setViewingTag(null)}
+          footer={
+            <div className="w-full flex justify-end">
+              <Button variant="secondary" onClick={() => setViewingTag(null)}>Close</Button>
+            </div>
+          }
+        >
+          <div className="p-6 flex flex-col gap-6">
+            <div>
+              <h3 className="text-sm font-medium text-text-muted mb-1">Name</h3>
+              <p className="text-sm text-text-primary font-medium">{viewingTag.name}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-text-muted mb-1">Type</h3>
+                <p className="text-sm text-text-primary uppercase tracking-wider">{viewingTag.type}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-text-muted mb-1">Status</h3>
+                <div>
+                  {viewingTag.active ? (
+                    <Badge variant="default" className="bg-success/10 text-success border-success/20 hover:bg-success/20">Active</Badge>
+                  ) : (
+                    <Badge variant="secondary">Disabled</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-text-muted mb-1">Updated By</h3>
+                <p className="text-sm text-text-primary">{viewingTag.updated_by_name || '-'}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-text-muted mb-1">Updated On</h3>
+                <p className="text-sm text-text-primary">{formatDate(viewingTag.updated_at)}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-text-muted mb-1">Description</h3>
+              <p className="text-sm text-text-primary whitespace-pre-wrap">{viewingTag.description || '-'}</p>
+            </div>
+          </div>
+        </DrawerShell>
       )}
     </div>
   );

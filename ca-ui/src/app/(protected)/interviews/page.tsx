@@ -94,18 +94,18 @@ export default function InterviewsPage() {
           ) : (
             <DataTableShell className="w-full text-sm">
               <TableHead>
-                <TableRow>
+                <TableRow className="h-7">
                   <TableHeader>Interview Details</TableHeader>
                   <TableHeader>Interviewer</TableHeader>
                   <TableHeader>Scheduled By</TableHeader>
                   <TableHeader>Date</TableHeader>
                   <TableHeader>Time</TableHeader>
-                  <TableHeader>Status</TableHeader>
+                  <TableHeader className="text-center">Status</TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>
                 {interviews.slice((page - 1) * limit, page * limit).map((item) => (
-                  <TableRow key={item.interview_id || item.application_id}>
+                  <TableRow key={item.interview_id || item.application_id} className="h-8">
                     <TableCell>
                       {`${item.round_type || 'Interview'} - ${item.candidate_name || 'Candidate'}`}
                     </TableCell>
@@ -121,7 +121,7 @@ export default function InterviewsPage() {
                     <TableCell>
                       {formatTime(item.scheduled_start_utc)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {getStatusBadge(item.interview_status)}
                     </TableCell>
                   </TableRow>

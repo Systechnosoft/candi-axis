@@ -131,7 +131,7 @@ export default function UsersManagementPage() {
                 Status
               </div>
               <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -147,7 +147,7 @@ export default function UsersManagementPage() {
                 Role
               </div>
               <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
@@ -184,7 +184,7 @@ export default function UsersManagementPage() {
                 <TableHeader>Email</TableHeader>
                 <TableHeader>Department</TableHeader>
                 <TableHeader>Role</TableHeader>
-                <TableHeader>Status</TableHeader>
+                <TableHeader className="text-center">Status</TableHeader>
                 <TableHeader>Updated On</TableHeader>
                 <TableHeader>Updated By</TableHeader>
               </TableRow>
@@ -211,7 +211,7 @@ export default function UsersManagementPage() {
                   </TableCell>
                   <TableCell>{user.department || '-'}</TableCell>
                   <TableCell className="capitalize">{user.role_code.replace('_', ' ')}</TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
+                  <TableCell className="text-center">{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     {user.updated_at ? formatDate(user.updated_at) : (user.created_at ? formatDate(user.created_at) : '-')}
                   </TableCell>

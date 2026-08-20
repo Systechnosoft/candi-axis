@@ -22,6 +22,32 @@ const formatAssignee = (roleNames?: string | null): string => {
   if (lower.includes('hiring manager')) return 'Hiring Manger';
   return roleNames;
 };
+
+const getTaskType = (taskName: string, candidateName?: string, taskId?: number) => {
+  if (!taskName) return 'Task';
+  if (candidateName && taskId) {
+    const suffix = `-${candidateName}(#${taskId})`;
+    if (taskName.endsWith(suffix)) {
+      return taskName.replace(suffix, '');
+    }
+  }
+  return taskName.split('-')[0] || taskName;
+};
+
+const getStatusBadge = (status?: string) => {
+  const s = (status || 'new').toLowerCase();
+  switch (s) {
+    case 'completed':
+    case 'submitted':
+      return <Badge variant="success">Completed</Badge>;
+    case 'in_progress':
+    case 'pending':
+      return <Badge variant="warning">In Progress</Badge>;
+    case 'new':
+    default:
+      return <Badge variant="info">New</Badge>;
+  }
+};
  
 export default function TasksPage() {
   const router = useRouter();
@@ -88,7 +114,7 @@ export default function TasksPage() {
                 Position
               </div>
               <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
                 value={positionFilter}
                 onChange={(e) => setPositionFilter(e.target.value)}
@@ -122,40 +148,57 @@ export default function TasksPage() {
           ) : (
             <DataTableShell className="w-full text-sm">
               <TableHead>
-                <TableRow>
-                  <TableHeader className="w-[60%]">Task Name</TableHeader>
-                  <TableHeader className="w-[20%]">Assignee</TableHeader>
-                  <TableHeader className="w-[20%]">Assigned On</TableHeader>
+                <TableRow className="h-7">
+                  <TableHeader className="w-[50px]"></TableHeader>
+                  <TableHeader>Task Type</TableHeader>
+                  <TableHeader>Candidate</TableHeader>
+                  <TableHeader>Position</TableHeader>
+                  <TableHeader>Assignee</TableHeader>
+                  <TableHeader>Assigned On</TableHeader>
+                  <TableHeader>Status</TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>
-                {filteredTasks.slice((page - 1) * limit, page * limit).map((task) => (
-                  <TableRow key={task.task_id}>
-                    {/* Task Name */}
-                    <TableCell>
-                      <button
-                        onClick={() => router.push(`/tasks/${task.task_id}/review`)}
-                        className="font-bold text-brand hover:underline text-xs text-left"
-                      >
-                        {task.name}
-                      </button>
-                    </TableCell>
-                    
-                    {/* Assignee */}
-                    <TableCell>
-                      <span className="text-xs text-text-secondary font-medium">
-                        {formatAssignee(task.assignee_role_names)}
-                      </span>
-                    </TableCell>
-                    
-                    {/* Assigned On */}
-                    <TableCell>
-                      <span className="text-xs text-text-muted font-medium">
-                        {formatDate(task.assigned_on)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredTasks.slice((page - 1) * limit, page * limit).map((task) => {
+                  const taskType = getTaskType(task.name, task.candidate_name, task.task_id);
+                  return (
+                    <TableRow key={task.task_id} className="h-8">
+                      <TableCell>
+                        <div className="flex items-center justify-start">
+                          <button
+                            className="p-1.5 text-text-secondary hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
+                            onClick={() => router.push(`/tasks/${task.task_id}/review`)}
+                            title="Review"
+                          >
+                            <ClipboardList className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium text-text-primary">
+                        {taskType}
+                      </TableCell>
+                      <TableCell className="font-bold text-text-primary">
+                        {task.candidate_name || '-'}
+                      </TableCell>
+                      <TableCell className="text-text-secondary">
+                        {task.job_title || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-[13px] text-text-secondary font-medium">
+                          {formatAssignee(task.assignee_role_names)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-[13px] text-text-muted font-medium">
+                          {formatDate(task.assigned_on)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(task.status)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </tbody>
             </DataTableShell>
           )}

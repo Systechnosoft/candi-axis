@@ -19,6 +19,7 @@ export interface ProviderConfig {
   model: string | null;
   maskedKey: string | null;
   api_key?: string | null;
+  is_system_default?: boolean;
 }
 
 export interface AiConfig {
@@ -834,7 +835,7 @@ export class AdminSettingsService {
     // Provider configurations are platform-wide (not org-scoped).
     // Resolve org_id from user or fall back to the first organisation.
     const userRes = await this.pool.query<{ org_id: string }>(
-      `SELECT org_id FROM public.users WHERE id = $1 LIMIT 1`,
+      `SELECT org_id FROM public.ca_users WHERE id = $1 LIMIT 1`,
       [userId],
     );
     let orgId: string | null = userRes.rows[0]?.org_id || null;
@@ -885,7 +886,7 @@ export class AdminSettingsService {
        WHERE id = $2`,
       [userId, id],
     );
-    return { success: true };
+    return { success: true, message: 'Credentials connection test succeeded.' };
   }
 
   async activateProviderConfig(userId: string, id: string) {

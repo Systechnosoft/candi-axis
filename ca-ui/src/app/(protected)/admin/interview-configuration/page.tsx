@@ -81,6 +81,17 @@ export default function InterviewConfigurationPage() {
     }
   }, [isSuperAdmin]);
 
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (successMsg || errorMsg) {
+      timeoutId = setTimeout(() => {
+        setSuccessMsg(null);
+        setErrorMsg(null);
+      }, 3000);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [successMsg, errorMsg]);
+
   const selectProviderCard = async (provider: string) => {
     setSelectedProvider(provider);
     setSuccessMsg(null);
@@ -100,11 +111,18 @@ export default function InterviewConfigurationPage() {
 
       if (existing) {
         // Merge saved config + secrets
-        setFormFields({
-          ...defaults,
-          ...existing.config,
-          ...existing.credentials
+        const savedConfig = existing.config || existing.config_json || {};
+        const savedCreds = existing.credentials || existing.credentials_json || {};
+        const newFormFields: Record<string, any> = { ...defaults };
+        
+        schema.fields.forEach((f: any) => {
+          if (f.isSecret) {
+            newFormFields[f.key] = savedCreds[f.key] ? savedCreds[f.key] : '********';
+          } else {
+            newFormFields[f.key] = savedConfig[f.key] !== undefined ? savedConfig[f.key] : defaults[f.key];
+          }
         });
+        setFormFields(newFormFields);
       } else {
         setFormFields(defaults);
       }
@@ -135,7 +153,9 @@ export default function InterviewConfigurationPage() {
     activeSchema.fields.forEach((field: any) => {
       const val = formFields[field.key];
       if (field.isSecret) {
-        credentialsPayload[field.key] = val;
+        if (val !== '********') {
+          credentialsPayload[field.key] = val;
+        }
       } else {
         configPayload[field.key] = val;
       }
@@ -155,11 +175,20 @@ export default function InterviewConfigurationPage() {
       const updatedConfigs = await AdminService.getConfigurations();
       const updatedRow = updatedConfigs.find((c: any) => c.provider === selectedProvider);
       if (updatedRow) {
-        setFormFields((prev) => ({
-          ...prev,
-          ...updatedRow.config,
-          ...updatedRow.credentials
-        }));
+        const savedConfig = updatedRow.config || updatedRow.config_json || {};
+        const savedCreds = updatedRow.credentials || updatedRow.credentials_json || {};
+        
+        setFormFields((prev) => {
+          const next = { ...prev };
+          activeSchema.fields.forEach((f: any) => {
+            if (f.isSecret) {
+              next[f.key] = savedCreds[f.key] ? savedCreds[f.key] : '********';
+            } else {
+              next[f.key] = savedConfig[f.key] !== undefined ? savedConfig[f.key] : next[f.key];
+            }
+          });
+          return next;
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.data?.message || err.message || 'Failed to save configuration settings.');
@@ -263,16 +292,30 @@ export default function InterviewConfigurationPage() {
       </p>
 
       {successMsg && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-lg flex items-center gap-3 text-sm animate-in fade-in duration-200">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
-          <span>{successMsg}</span>
+        <div className={`border px-4 py-3 rounded-lg flex items-center justify-between gap-3 text-sm animate-in fade-in duration-200 ${successMsg.includes('deactivated') ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+          <div className="flex items-center gap-3">
+            {successMsg.includes('deactivated') ? (
+              <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+            )}
+            <span>{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="text-current opacity-70 hover:opacity-100 transition-opacity">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-lg flex items-center gap-3 text-sm animate-in fade-in duration-200">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
-          <span>{errorMsg}</span>
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-lg flex items-center justify-between gap-3 text-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
+            <span>{errorMsg}</span>
+          </div>
+          <button onClick={() => setErrorMsg(null)} className="text-rose-800 opacity-70 hover:opacity-100 transition-opacity">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 

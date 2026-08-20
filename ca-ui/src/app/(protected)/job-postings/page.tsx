@@ -256,7 +256,7 @@ export default function JobPostingsPage() {
                 Status
               </div>
               <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
                 value={statusFilter}
                 onChange={(e) => {
@@ -297,7 +297,7 @@ export default function JobPostingsPage() {
                   <TableHeader>JD</TableHeader>
                   <TableHeader>Updated By</TableHeader>
                   <TableHeader>Updated On</TableHeader>
-                  <TableHeader>Status</TableHeader>
+                  <TableHeader className="text-center">Status</TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>
@@ -340,7 +340,7 @@ export default function JobPostingsPage() {
                     <TableCell className="text-text-secondary">
                       {formatDate(posting.updated_at)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {posting.is_active ? (
                         <Badge variant="success">Open</Badge>
                       ) : (
@@ -426,6 +426,45 @@ export default function JobPostingsPage() {
               </div>
             )}
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-text-primary">
+                  Job Description <span className="text-danger">*</span>
+                </label>
+                <SingleSelect
+                  options={jobDescriptions.map(jd => ({ id: jd.id, name: jd.title }))}
+                  selectedId={formJdId}
+                  onChange={setFormJdId}
+                  placeholder="Select a Job Description..."
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-text-primary">
+                  HR Manager <span className="text-danger">*</span>
+                </label>
+                <MultiSelect
+                  options={hiringManagers.map(u => ({ id: u.id, name: u.full_name }))}
+                  selectedIds={formHrIds}
+                  onChange={setFormHrIds}
+                  placeholder="Assign HR managers..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-text-primary">
+                  Interviewers <span className="text-danger">*</span>
+                </label>
+                <MultiSelect
+                  options={interviewers.map(u => ({ id: u.id, name: u.full_name }))}
+                  selectedIds={formInterviewerIds}
+                  onChange={setFormInterviewerIds}
+                  placeholder="Assign interviewers..."
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="font-semibold text-text-primary">
                 Description
@@ -434,43 +473,6 @@ export default function JobPostingsPage() {
                 value={formDescription}
                 onChange={setFormDescription}
                 placeholder="Describe this posting......"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="font-semibold text-text-primary">
-                Job Description <span className="text-danger">*</span>
-              </label>
-              <SingleSelect
-                options={jobDescriptions.map(jd => ({ id: jd.id, name: jd.title }))}
-                selectedId={formJdId}
-                onChange={setFormJdId}
-                placeholder="Select a Job Description..."
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="font-semibold text-text-primary">
-                HR Manager <span className="text-danger">*</span>
-              </label>
-              <MultiSelect
-                options={hiringManagers.map(u => ({ id: u.id, name: u.full_name }))}
-                selectedIds={formHrIds}
-                onChange={setFormHrIds}
-                placeholder="Assign HR managers..."
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="font-semibold text-text-primary">
-                Interviewers <span className="text-danger">*</span>
-              </label>
-              <MultiSelect
-                options={interviewers.map(u => ({ id: u.id, name: u.full_name }))}
-                selectedIds={formInterviewerIds}
-                onChange={setFormInterviewerIds}
-                placeholder="Assign interviewers..."
               />
             </div>
 

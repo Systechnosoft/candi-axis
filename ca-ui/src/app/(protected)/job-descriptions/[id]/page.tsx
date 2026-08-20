@@ -263,7 +263,7 @@ export default function JobDescriptionDetailPage() {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => router.push('/job-descriptions')}
-            className="p-2 hover:bg-subtle rounded-lg text-text-secondary transition-colors"
+            className="-ml-1.5 md:-ml-2 p-2 hover:bg-subtle rounded-lg text-text-secondary transition-colors shrink-0"
             title="Back to Job Descriptions"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -276,11 +276,8 @@ export default function JobDescriptionDetailPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-text-primary">{jd.title}</h1>
-              {getStatusBadge(jd.status)}
             </div>
             <p className="text-xs text-text-muted flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
-              <span>Req. No.: <strong>{jd.requisition_code || 'REQ-000'}</strong></span>
-              <span>•</span>
               <span>Code: <strong>{jd.code || 'N/A'}</strong></span>
               <span>•</span>
               <span>{jd.location || 'Remote'}</span>

@@ -8,8 +8,8 @@ export class DashboardService {
 
   async getStats() {
     const queries = {
-      openRequisitions:
-        "SELECT COUNT(*) FROM ca_job_requisitions WHERE status = 'open' AND is_deleted = false",
+      openJobPostings:
+        "SELECT COUNT(*) FROM ca_job_postings WHERE is_active = true",
       totalCandidates:
         'SELECT COUNT(*) FROM ca_candidates WHERE is_deleted = false',
       draftOffers:
@@ -19,14 +19,14 @@ export class DashboardService {
     };
 
     const results = await Promise.all([
-      this.pool.query(queries.openRequisitions),
+      this.pool.query(queries.openJobPostings),
       this.pool.query(queries.totalCandidates),
       this.pool.query(queries.draftOffers),
       this.pool.query(queries.interviewing),
     ]);
 
     return {
-      openRequisitions: parseInt(results[0].rows[0].count, 10),
+      openJobPostings: parseInt(results[0].rows[0].count, 10),
       totalCandidates: parseInt(results[1].rows[0].count, 10),
       draftOffers: parseInt(results[2].rows[0].count, 10),
       interviewing: parseInt(results[3].rows[0].count, 10),

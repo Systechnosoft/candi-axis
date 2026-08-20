@@ -218,6 +218,7 @@ export default function OrganisationsPage() {
     >
       <div className="flex flex-col gap-4 h-full min-h-0 w-full">
         <Card className="w-full flex flex-col min-h-0">
+          <div className="border-b border-border p-2 bg-surface">
             <FilterBar 
               searchValue={search} 
               onSearchChange={(val) => { setSearch(val); setPage(1); }} 
@@ -272,7 +273,7 @@ export default function OrganisationsPage() {
               <TableHeader>Email</TableHeader>
               <TableHeader>Phone</TableHeader>
               <TableHeader>Industry</TableHeader>
-              <TableHeader>Status</TableHeader>
+              <TableHeader className="text-center">Status</TableHeader>
               <TableHeader>Created On</TableHeader>
             </TableRow>
           </TableHead>
@@ -323,7 +324,7 @@ export default function OrganisationsPage() {
                     {org.primary_contact_phone ? <span className="text-sm text-text-primary">{org.primary_contact_phone}</span> : '-'}
                   </TableCell>
                   <TableCell>{toTitleCase(org.industry) || '-'}</TableCell>
-                  <TableCell>{getStatusBadge(org.status)}</TableCell>
+                  <TableCell className="text-center">{getStatusBadge(org.status)}</TableCell>
                   <TableCell>{formatDate(org.created_at)}</TableCell>
                 </TableRow>
               ))

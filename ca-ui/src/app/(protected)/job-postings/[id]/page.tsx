@@ -12,6 +12,7 @@ import { InterviewsService } from '@/lib/api/interviews';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { jobPostingsApi } from '@/lib/api/job-postings';
 import { GoogleCalendarService } from '@/lib/api/google-calendar';
+import { MeetingIntegrationsService } from '@/lib/api/meeting-integrations';
 import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { usersApi } from '@/lib/api/users';
 import { MultiSelect } from '@/components/primitives/MultiSelect';
@@ -210,11 +211,14 @@ export default function JobPostingDetailPage() {
         setMeetingLink(res.meetingLink);
         setExternalEventId(res.externalEventId);
       } else {
-        // For other providers, open a prompt to enter the link manually
+        const res = await MeetingIntegrationsService.generateMeetingLink(selectedMeetingProvider);
+        setMeetingLink(res.meetingLink);
+        setExternalEventId(res.externalEventId);
         setMeetingLinkEditable(true);
       }
     } catch (err: any) {
       console.error('Failed to generate meeting link:', err);
+      alert(err.data?.message || err.message || 'Automatic link generation is not yet supported for this provider. Please enter the link manually.');
       // Fallback: allow manual entry
       setMeetingLinkEditable(true);
     } finally {
@@ -654,110 +658,133 @@ export default function JobPostingDetailPage() {
   return (
     <div className="flex flex-col gap-4 w-full pb-8">
       {/* Header Container */}
-      <div className="flex flex-col lg:flex-row bg-surface border border-border rounded-xl shadow-sm">
-        {/* Left Column: Details */}
-        <div className="flex-1 p-3 md:p-4 flex flex-col md:items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <button 
-              onClick={() => router.push('/job-postings')}
-              className="p-2 hover:bg-subtle rounded-lg text-text-secondary transition-colors mt-0.5 shrink-0"
-              title="Back to Job Postings"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-xl font-bold text-text-primary">{posting.name}</h1>
-                {posting.code && (
-                  <span className="text-base font-medium text-text-secondary tracking-wide">#{posting.code}</span>
-                )}
-              </div>
-              
-              <div className="border border-brand/20 rounded-lg p-4 bg-brand/5 shadow-sm">
-                <h3 className="text-[13px] font-bold text-brand uppercase tracking-wider mb-4">Posting Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
-                  {posting.jd_title && (
-                    <div>
-                      <div className="text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">Job Description</div>
-                      <div className="text-sm font-semibold text-text-primary">
-                        <span className="hover:underline cursor-pointer transition-colors" onClick={() => router.push(`/job-descriptions/${posting.jd_id}`)}>
-                          {posting.jd_title} {posting.jd_code ? `(${posting.jd_code})` : ''}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {posting.hr_ids && posting.hr_ids.length > 0 && (
-                    <div>
-                      <div className="text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">HR Manager(s)</div>
-                      <div className="text-sm font-semibold text-text-primary">
-                        {hiringManagers
-                          .filter(u => posting.hr_ids?.includes(u.id))
-                          .map(u => u.full_name).join(', ') || '-'}
-                      </div>
-                    </div>
-                  )}
-
-                  {posting.interviewer_ids && posting.interviewer_ids.length > 0 && (
-                    <div>
-                      <div className="text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">Interviewer(s)</div>
-                      <div className="text-sm font-semibold text-text-primary">
-                        {interviewers
-                          .filter(u => posting.interviewer_ids?.includes(u.id))
-                          .map(u => u.full_name).join(', ') || '-'}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+      <div className="flex flex-col bg-surface border border-border rounded-xl shadow-sm">
+        {/* Top Header: Title & Back Button */}
+        <div className="flex items-center gap-2.5 p-3 md:p-4 pb-0 md:pb-2">
+          <button 
+            onClick={() => router.push('/job-postings')}
+            className="-ml-1.5 md:-ml-2 p-2 hover:bg-subtle rounded-lg text-text-secondary transition-colors shrink-0"
+            title="Back to Job Postings"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          
+          <div className="flex items-center flex-wrap">
+            <h1 className="text-xl font-bold text-text-primary leading-tight">
+              {posting.name}
+              {posting.code && (
+                <span>#{posting.code}</span>
+              )}
+            </h1>
           </div>
         </div>
 
-        {/* Right Column: Job Description & Actions */}
-        <div className={`border-t lg:border-t-0 lg:border-l border-border/50 p-3 md:p-4 bg-subtle/20 rounded-b-xl lg:rounded-bl-none lg:rounded-r-xl flex flex-col ${posting.description ? 'lg:w-2/5' : 'lg:w-auto shrink-0'}`}>
-          <div className="flex items-center justify-between gap-4 mb-2">
-            {posting.description ? (
-              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Description Summary</h3>
-            ) : (
-              <div />
-            )}
+        {/* Content Columns Below Title */}
+        <div className="flex flex-col lg:flex-row relative">
+          {/* Left Column: Details */}
+          <div className="p-3 md:p-4 lg:pl-[4.5rem] flex flex-col gap-4 w-full lg:w-max lg:max-w-[55%] xl:max-w-[60%]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+              {posting.hr_ids && posting.hr_ids.length > 0 && (
+                <div>
+                  <div className="text-[12px] font-bold text-text-muted mb-1 tracking-wider">HR Manager(s)</div>
+                  <div className="text-[13px] text-text-primary">
+                    {hiringManagers
+                      .filter(u => posting.hr_ids?.includes(u.id))
+                      .map(u => u.full_name).join(', ') || '-'}
+                  </div>
+                </div>
+              )}
+
+              {posting.interviewer_ids && posting.interviewer_ids.length > 0 && (
+                <div>
+                  <div className="text-[12px] font-bold text-text-muted mb-1  tracking-wider">Interviewer(s)</div>
+                  <div className="text-[13px] text-text-primary">
+                    {interviewers
+                      .filter(u => posting.interviewer_ids?.includes(u.id))
+                      .map(u => u.full_name).join(', ') || '-'}
+                  </div>
+                </div>
+              )}
+            </div>
             
-            {canEdit && (
-              <Button 
-                variant="secondary" 
-                onClick={openEditModal} 
-                className="gap-2 bg-surface hover:bg-subtle text-xs border-border py-1.5 px-3 h-auto shadow-sm"
-              >
-                <Edit2 className="w-3.5 h-3.5" /> Edit Posting
-              </Button>
+            {posting.jd_title && (
+              <div>
+                <div className="text-[12px] font-bold text-text-muted mb-1 tracking-wider">Job Description</div>
+                <div className="text-[13px] text-text-primary">
+                  <span className="hover:underline cursor-pointer transition-colors" onClick={() => router.push(`/job-descriptions/${posting.jd_id}`)}>
+                    {posting.jd_title} {posting.jd_code ? `(${posting.jd_code})` : ''}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
 
-          {posting.description && (
-            <>
-              <div className="relative">
-                <div 
-                  className={`text-sm text-text-secondary leading-relaxed prose max-w-none overflow-hidden transition-all duration-300 ${showFullDescription ? '' : 'max-h-[72px]'}`} 
-                  dangerouslySetInnerHTML={{ __html: posting.description }} 
-                />
-                {!showFullDescription && (
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[rgb(var(--color-subtle))] to-transparent" />
-                )}
-              </div>
-              <button 
-                onClick={() => setShowFullDescription(!showFullDescription)}
-                className="mt-3 text-xs font-bold text-brand hover:text-brand-dark self-start flex items-center gap-1 uppercase tracking-wider transition-colors"
-              >
-                {showFullDescription ? (
-                  <>Less <ChevronUp className="w-3.5 h-3.5" /></>
-                ) : (
-                  <>More <ChevronDown className="w-3.5 h-3.5" /></>
-                )}
-              </button>
-            </>
-          )}
+          {/* Right Column: Job Description & Actions */}
+          <div className={`relative p-3 md:p-4 lg:pt-4 flex flex-col ${posting.description ? 'flex-1' : 'lg:w-auto shrink-0'}`}>
+            {/* Divider for mobile (top) */}
+            <div className="absolute top-0 left-4 right-4 h-[1px] bg-border/50 lg:hidden" />
+            {/* Divider for desktop (left) */}
+            <div className="hidden lg:block absolute left-0 top-4 bottom-4 w-[1px] bg-border/50" />
+
+            <div className="flex items-start justify-between gap-4 mb-2">
+              {posting.description ? (
+                <h3 className="text-[12px] font-bold text-text-muted tracking-wider leading-none pt-[3px]">Description Summary</h3>
+              ) : (
+                <div />
+              )}
+              
+              {canEdit && (
+                <Button 
+                  variant="secondary" 
+                  onClick={openEditModal} 
+                  className="gap-2 bg-surface hover:bg-subtle text-xs border-border py-1 px-3 h-auto shadow-sm"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Posting
+                </Button>
+              )}
+            </div>
+
+            {posting.description && (() => {
+              const plainText = posting.description.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/gi, ' ').trim();
+              const isLong = plainText.length > 140;
+              return (
+                <div className="relative mt-1 text-[13px]">
+                  {!showFullDescription ? (
+                    <div className="text-text-primary leading-relaxed break-words">
+                      {isLong ? (
+                        <>
+                          {plainText.substring(0, 140).trim()}...{' '}
+                          <button 
+                            onClick={() => setShowFullDescription(true)}
+                            className="text-brand hover:underline font-medium whitespace-nowrap"
+                          >
+                            More
+                          </button>
+                        </>
+                      ) : (
+                        plainText
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-text-primary leading-relaxed w-full">
+                      <style>{`.job-desc-expanded > *:last-child { display: inline !important; margin-bottom: 0 !important; }`}</style>
+                      <span 
+                        className="prose max-w-none job-desc-expanded text-[13px]"
+                        dangerouslySetInnerHTML={{ __html: posting.description }} 
+                      />
+                      {' '}
+                      <button 
+                        onClick={() => setShowFullDescription(false)}
+                        className="text-brand hover:underline font-medium whitespace-nowrap ml-1"
+                      >
+                        Less
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
 
@@ -795,7 +822,7 @@ export default function JobPostingDetailPage() {
       {/* Tabular view of Candidates */}
       <Card>
         <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 p-2 border-b border-border bg-surface items-center">
-          <div className="flex items-center gap-2 col-span-1">
+          <div className="flex items-center gap-1 col-span-1">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input 
@@ -816,7 +843,7 @@ export default function JobPostingDetailPage() {
               Stage
             </div>
             <select 
-              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
               value={selectedStageFilter || ''}
               onChange={(e) => setSelectedStageFilter(e.target.value || null)}
@@ -831,7 +858,7 @@ export default function JobPostingDetailPage() {
               Sub Stage
             </div>
             <select 
-              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
+              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
               value={selectedSubStageFilter || ''}
               onChange={(e) => setSelectedSubStageFilter(e.target.value || null)}

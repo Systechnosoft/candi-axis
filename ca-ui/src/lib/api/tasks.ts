@@ -18,6 +18,7 @@ export interface Task {
   feedback_action?: string;
   feedback_reason?: string;
   submitted_by?: string;
+  status?: string;
 }
 
 export const TasksService = {

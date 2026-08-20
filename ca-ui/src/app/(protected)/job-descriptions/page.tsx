@@ -311,7 +311,7 @@ export default function JobDescriptionsPage() {
                   <TableHeader>Owner</TableHeader>
                   <TableHeader>Updated By</TableHeader>
                   <TableHeader>Updated On</TableHeader>
-                  <TableHeader>Status</TableHeader>
+                  <TableHeader className="text-center">Status</TableHeader>
                 </TableRow>
               </TableHead>
               <tbody>
@@ -346,7 +346,7 @@ export default function JobDescriptionsPage() {
                     <TableCell>{getUserName(jd.owner_user_id)}</TableCell>
                     <TableCell className="text-text-secondary">{jd.updated_by_name || '-'}</TableCell>
                     <TableCell className="text-text-secondary">{formatDate(jd.updated_at)}</TableCell>
-                    <TableCell>{getStatusBadge(jd.status)}</TableCell>
+                    <TableCell className="text-center">{getStatusBadge(jd.status)}</TableCell>
                   </TableRow>
                 ))}
               </tbody>

@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/primitives/StatCard';
-import { Users, Briefcase, FileText, Calendar, Loader2, AlertCircle } from 'lucide-react';
+import { Users, Briefcase, FileText, Calendar, Loader2, AlertCircle, UserCheck, CheckCircle2, Bot, Pin, CalendarClock, Rocket } from 'lucide-react';
 import { PageSection } from '@/components/primitives/LayoutPrimitives';
 import { DashboardService } from '@/lib/api/dashboard';
 
 interface DashboardStats {
-  openRequisitions: number;
+  openJobPostings: number;
   totalCandidates: number;
   draftOffers: number;
   interviewing: number;
@@ -54,9 +54,104 @@ function getActivityText(item: ActivityItem) {
   };
 }
 
+type ActivityCategory = 'All' | 'Pipeline' | 'Interviews' | 'Tasks' | 'Jobs';
+
+interface MockActivity {
+  id: string;
+  category: ActivityCategory;
+  icon: any;
+  iconColor: string;
+  iconBg: string;
+  content: React.ReactNode;
+  timestamp: string;
+}
+
+const getMockActivities = (): MockActivity[] => [
+  {
+    id: '1',
+    category: 'Pipeline',
+    icon: UserCheck,
+    iconColor: 'text-status-success',
+    iconBg: 'bg-status-success/10',
+    content: (
+      <span>
+        🎉 <strong className="text-text-primary">Aarti Soni</strong> was moved to the <strong className="text-text-primary">Offer</strong> stage for the <a href="#" className="text-brand hover:underline font-medium">Full Stack Developer</a> role by Kriti Sharma.
+      </span>
+    ),
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: '2',
+    category: 'Interviews',
+    icon: CheckCircle2,
+    iconColor: 'text-brand',
+    iconBg: 'bg-brand/10',
+    content: (
+      <span>
+        ✅ <strong className="text-text-primary">Tejpal Singh</strong> submitted interview feedback for <strong className="text-text-primary">Mahaveer Kumawat</strong> (Decision: Strong Hire).
+      </span>
+    ),
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  },
+  {
+    id: '3',
+    category: 'Pipeline',
+    icon: Bot,
+    iconColor: 'text-purple-600',
+    iconBg: 'bg-purple-100',
+    content: (
+      <span>
+        🤖 Resume scoring completed for <a href="#" className="text-brand hover:underline font-medium">Karan Sejwani</a>. Match score: <strong className="text-text-primary">92%</strong>.
+      </span>
+    ),
+    timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+  },
+  {
+    id: '4',
+    category: 'Tasks',
+    icon: Pin,
+    iconColor: 'text-status-warning',
+    iconBg: 'bg-status-warning/10',
+    content: (
+      <span>
+        📌 You were assigned a new task: <a href="#" className="text-brand hover:underline font-medium">Screening Review - Anuj Mehta</a>.
+      </span>
+    ),
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+  },
+  {
+    id: '5',
+    category: 'Interviews',
+    icon: CalendarClock,
+    iconColor: 'text-blue-500',
+    iconBg: 'bg-blue-100',
+    content: (
+      <span>
+        📅 Interview scheduled: <strong className="text-text-primary">Ashish Ranjan</strong> with <strong className="text-text-primary">Rajat Mehta</strong> on Aug 22nd at 2:00 PM.
+      </span>
+    ),
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+  },
+  {
+    id: '6',
+    category: 'Jobs',
+    icon: Rocket,
+    iconColor: 'text-orange-500',
+    iconBg: 'bg-orange-100',
+    content: (
+      <span>
+        🚀 Job Posting <a href="#" className="text-brand hover:underline font-medium">Senior Blockchain Backend Engineer</a> went live.
+      </span>
+    ),
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+  },
+];
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [mockActivities, setMockActivities] = useState<MockActivity[]>([]);
+  const [activityFilter, setActivityFilter] = useState<ActivityCategory>('All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +166,7 @@ export default function DashboardPage() {
         ]);
         setStats(statsData);
         setActivity(activityData);
+        setMockActivities(getMockActivities());
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
         setError('Failed to load dashboard data. Please try again.');
@@ -115,9 +211,8 @@ export default function DashboardPage() {
       <PageHeader title="Dashboard" />
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard 
-          title="Open Requisitions" 
-          value={stats?.openRequisitions ?? 0} 
+        <StatCard              title="Open Job Postings"
+              value={stats?.openJobPostings ?? 0} 
           icon={<Briefcase className="w-4 h-4" />} 
         />
         <StatCard 
@@ -139,46 +234,51 @@ export default function DashboardPage() {
 
       <div className="flex-1">
         <PageSection title="Recent Activity">
-          {activity.length === 0 ? (
-            <div className="bg-surface border border-border rounded-md p-8 text-center text-text-muted text-[14px]">
-              No recent activity found.
+          <div className="bg-surface border border-border rounded-md p-6">
+            
+            {/* Filter Chips */}
+            <div className="flex gap-2 mb-6 border-b border-border pb-4 overflow-x-auto">
+              {(['All', 'Pipeline', 'Interviews', 'Tasks', 'Jobs'] as ActivityCategory[]).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActivityFilter(cat)}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                    activityFilter === cat
+                      ? 'bg-brand text-white border border-brand'
+                      : 'bg-subtle text-text-secondary hover:text-brand hover:bg-brand/10 border border-border'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="bg-surface border border-border rounded-md p-6">
-              <div className="flow-root">
-                <ul className="-mb-8">
-                  {activity.map((item, itemIdx) => {
-                    const { user, description, reason } = getActivityText(item);
+
+            <div className="flow-root">
+              <ul className="-mb-8">
+                {mockActivities
+                  .filter(item => activityFilter === 'All' || item.category === activityFilter)
+                  .map((item, itemIdx, arr) => {
+                    const Icon = item.icon;
                     return (
                       <li key={item.id}>
                         <div className="relative pb-8">
-                          {itemIdx !== activity.length - 1 ? (
+                          {itemIdx !== arr.length - 1 ? (
                             <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-border" aria-hidden="true" />
                           ) : null}
-                          <div className="relative flex space-x-3">
+                          <div className="relative flex space-x-3 items-start">
                             <div>
-                              <span className="h-8 w-8 rounded-full bg-subtle flex items-center justify-center ring-8 ring-surface text-text-muted">
-                                {item.entity_type === 'application' ? (
-                                  <Users className="w-4 h-4" />
-                                ) : (
-                                  <Briefcase className="w-4 h-4" />
-                                )}
+                              <span className={`h-8 w-8 rounded-full ${item.iconBg} flex items-center justify-center ring-8 ring-surface ${item.iconColor}`}>
+                                <Icon className="w-4 h-4" />
                               </span>
                             </div>
-                            <div className="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
+                            <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:justify-between space-y-1 sm:space-y-0 sm:space-x-4 pt-1.5">
                               <div>
                                 <p className="text-[14px] text-text-secondary">
-                                  <span className="font-semibold text-text-primary">{user}</span>{' '}
-                                  {description}
+                                  {item.content}
                                 </p>
-                                {reason && (
-                                  <p className="mt-1 text-[13px] text-text-muted italic bg-subtle px-3 py-1.5 rounded border border-border inline-block">
-                                    &quot;{reason}&quot;
-                                  </p>
-                                )}
                               </div>
-                              <div className="text-right text-[12px] whitespace-nowrap text-text-muted">
-                                <time dateTime={item.changed_at}>{formatRelativeTime(item.changed_at)}</time>
+                              <div className="text-left sm:text-right text-[12px] whitespace-nowrap text-text-muted shrink-0">
+                                <time dateTime={item.timestamp}>{formatRelativeTime(item.timestamp)}</time>
                               </div>
                             </div>
                           </div>
@@ -186,10 +286,14 @@ export default function DashboardPage() {
                       </li>
                     );
                   })}
-                </ul>
-              </div>
+                {mockActivities.filter(item => activityFilter === 'All' || item.category === activityFilter).length === 0 && (
+                  <div className="text-center py-6 text-text-muted text-[14px]">
+                    No activity found for this category.
+                  </div>
+                )}
+              </ul>
             </div>
-          )}
+          </div>
         </PageSection>
       </div>
     </div>
