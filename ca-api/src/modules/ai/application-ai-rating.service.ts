@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AdminSettingsService } from '../admin/admin-settings.service';
+import { AiExecutionService } from './ai-execution.service';
 import OpenAI from 'openai';
 
 export interface AiRatingResult {
@@ -21,7 +22,10 @@ export interface AiRatingResult {
 export class ApplicationAiRatingService {
   private readonly logger = new Logger(ApplicationAiRatingService.name);
 
-  constructor(private readonly adminService: AdminSettingsService) {}
+  constructor(
+    private readonly adminService: AdminSettingsService,
+    private readonly aiExecutionService: AiExecutionService
+  ) {}
 
   async rateApplication(
     candidate: any,
@@ -92,53 +96,47 @@ ADDITIONAL RULES:
 
     const config = await this.adminService.getAiConfigForOrg(email);
     const provider = (config.provider || 'gemini').toLowerCase();
-    const apiKey = config.api_key;
     const modelName = config.model;
     const baseUrl = config.base_url;
 
-    if (!apiKey) {
-      throw new Error(
-        `API Key for provider ${provider} is not configured for organization.`,
-      );
+    if (provider !== 'gemini' && !baseUrl) {
+      throw new Error(`Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`);
     }
 
     const prompt = `${systemPrompt}\n\nData for Evaluation:\n${JSON.stringify(inputData, null, 2)}`;
 
     try {
-      let content = '';
-
-      if (provider === 'gemini') {
-        this.logger.log(
-          `Calling Gemini API for application rating - model: ${modelName}`,
-        );
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const geminiModel = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: 'application/json',
+      const content = await this.aiExecutionService.executeWithFailover(email, provider, async (apiKey) => {
+        if (provider === 'gemini') {
+          this.logger.log(`Calling Gemini API for application rating - model: ${modelName}`);
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const geminiModel = genAI.getGenerativeModel({
+            model: modelName!,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+            },
+          });
+          const result = await geminiModel.generateContent(prompt);
+          return result.response.text() || '';
+        } else {
+          this.logger.log(`Calling OpenAI-compatible API for application rating - baseUrl: ${baseUrl}, model: ${modelName}`);
+          const client = new OpenAI({ apiKey, baseURL: baseUrl! });
+          
+          const reqPayload: any = {
+            model: modelName!,
+            messages: [{ role: 'user', content: prompt }],
             temperature: 0.1,
-          },
-        });
-        const result = await geminiModel.generateContent(prompt);
-        content = result.response.text() || '';
-      } else {
-        if (!baseUrl) {
-          throw new Error(
-            `Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`,
-          );
+          };
+          
+          if (!baseUrl?.includes('groq.com')) {
+            reqPayload.response_format = { type: 'json_object' };
+          }
+          
+          const completion = await client.chat.completions.create(reqPayload);
+          return completion.choices[0]?.message?.content || '';
         }
-        this.logger.log(
-          `Calling OpenAI-compatible API for application rating - baseUrl: ${baseUrl}, model: ${modelName}`,
-        );
-        const client = new OpenAI({ apiKey, baseURL: baseUrl });
-        const completion = await client.chat.completions.create({
-          model: modelName,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.1,
-          response_format: { type: 'json_object' },
-        });
-        content = completion.choices[0]?.message?.content || '';
-      }
+      });
 
       if (!content) {
         throw new Error('AI provider returned empty content.');

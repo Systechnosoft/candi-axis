@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/components/primitives/DataTableShell';
-import { DrawerShell, DrawerShell80 } from '@/components/primitives/ModalShell';
+import { DrawerShell, DrawerShell80, ModalShell } from '@/components/primitives/ModalShell';
 import { InterviewsService } from '@/lib/api/interviews';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { jobPostingsApi } from '@/lib/api/job-postings';
@@ -148,6 +148,19 @@ export default function JobPostingDetailPage() {
   const [checkingGoogle, setCheckingGoogle] = useState(false);
   const [candidateEmail, setCandidateEmail] = useState('');
 
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean;
+    type: 'alert' | 'confirm';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'alert',
+    title: '',
+    message: ''
+  });
+
   const handleOpenScheduleDrawer = async (app: any) => {
     setTeamsMeetingId('');
     setTeamsPasscode('');
@@ -218,7 +231,18 @@ export default function JobPostingDetailPage() {
       }
     } catch (err: any) {
       console.error('Failed to generate meeting link:', err);
-      alert(err.data?.message || err.message || 'Automatic link generation is not yet supported for this provider. Please enter the link manually.');
+      let errorMessage = 'Automatic link generation failed. Please check the provider configuration or create the meeting manually and paste the link below.';
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setDialogConfig({
+        isOpen: true,
+        type: 'alert',
+        title: 'Meeting Generation Failed',
+        message: errorMessage
+      });
       // Fallback: allow manual entry
       setMeetingLinkEditable(true);
     } finally {
@@ -260,19 +284,37 @@ export default function JobPostingDetailPage() {
       };
       window.addEventListener('message', messageListener);
     } catch (err: any) {
-      alert('Cannot connect: The system administrator has not configured the backend Google OAuth App (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) in the backend API .env file.');
+      setDialogConfig({
+        isOpen: true,
+        type: 'alert',
+        title: 'Configuration Required',
+        message: 'Google Calendar integration is currently unavailable. Please contact your system administrator to configure the required backend settings.'
+      });
     }
   };
 
   const handleDisconnectGoogle = async () => {
-    if (!confirm('Are you sure you want to disconnect Google Calendar?')) return;
-    try {
-      await GoogleCalendarService.disconnect();
-      setGoogleConnected(false);
-      setGoogleEmail('');
-    } catch (err: any) {
-      alert('Failed to disconnect Google Calendar: ' + err.message);
-    }
+    setDialogConfig({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Disconnect Google Calendar',
+      message: 'Are you sure you want to disconnect your Google Calendar account? You will no longer be able to auto-generate meeting links.',
+      onConfirm: async () => {
+        try {
+          await GoogleCalendarService.disconnect();
+          setGoogleConnected(false);
+          setGoogleEmail('');
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        } catch (err: any) {
+          setDialogConfig({
+            isOpen: true,
+            type: 'alert',
+            title: 'Error',
+            message: 'Failed to disconnect Google Calendar. Please try again.'
+          });
+        }
+      }
+    });
   };
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
@@ -1606,6 +1648,38 @@ export default function JobPostingDetailPage() {
             </div>
           </form>
         </DrawerShell80>
+      )}
+
+      {dialogConfig.isOpen && (
+        <ModalShell
+          title={dialogConfig.title}
+          onClose={() => setDialogConfig(prev => ({ ...prev, isOpen: false }))}
+          footer={
+            <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
+              {dialogConfig.type === 'confirm' && (
+                <Button variant="outline" onClick={() => setDialogConfig(prev => ({ ...prev, isOpen: false }))}>
+                  Cancel
+                </Button>
+              )}
+              <Button 
+                onClick={() => {
+                  if (dialogConfig.type === 'confirm' && dialogConfig.onConfirm) {
+                    dialogConfig.onConfirm();
+                  } else {
+                    setDialogConfig(prev => ({ ...prev, isOpen: false }));
+                  }
+                }}
+                className={dialogConfig.type === 'confirm' ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-brand text-white hover:bg-brand/90'}
+              >
+                {dialogConfig.type === 'confirm' ? 'Disconnect' : 'OK'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="text-sm text-text-secondary">
+            {dialogConfig.message}
+          </div>
+        </ModalShell>
       )}
     </div>
   );

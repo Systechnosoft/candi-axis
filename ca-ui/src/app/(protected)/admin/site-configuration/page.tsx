@@ -19,7 +19,9 @@ import {
   Lock,
   Globe,
   Cpu,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  X
 } from 'lucide-react';
 
 const PROVIDER_DEFAULTS: Record<string, { model: string; baseUrl: string; label: string }> = {
@@ -45,6 +47,17 @@ const PROVIDER_DEFAULTS: Record<string, { model: string; baseUrl: string; label:
   }
 };
 
+type ApiKeyStatus = 'active' | 'unavailable' | 'invalid';
+
+interface UiApiKey {
+  id?: string;
+  key: string;
+  maskedKey?: string;
+  isNew?: boolean;
+  status?: ApiKeyStatus;
+  lastUsedAt?: string;
+}
+
 export default function SiteConfigurationPage() {
   const { hasAccess } = useAuth();
   const isAdmin = hasAccess('users');
@@ -60,33 +73,57 @@ export default function SiteConfigurationPage() {
 
   // Form State
   const [selectedProvider, setSelectedProvider] = useState<string>('gemini');
-  const [apiKey, setApiKey] = useState<string>('');
+  const [keys, setKeys] = useState<UiApiKey[]>([]);
   const [model, setModel] = useState<string>('');
+  const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
   const [baseUrl, setBaseUrl] = useState<string>('');
   
-  const [showKey, setShowKey] = useState(false);
+  const [showKeyIndex, setShowKeyIndex] = useState<number | null>(null);
   const [isForgetModalOpen, setIsForgetModalOpen] = useState(false);
   
   const [availableModels, setAvailableModels] = useState<string[] | null>(null);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [fetchModelsError, setFetchModelsError] = useState<string | null>(null);
 
+
+
   const fetchConfig = async () => {
     try {
       setLoading(true);
       const data = await AdminService.getAiConfig();
+      console.log('Fetched AI Config:', data);
       setConfig(data);
       
       const activeProv = data.provider || 'gemini';
       setSelectedProvider(activeProv);
+      setIsCustomModel(false);
       
       const provDetails = data.providers?.[activeProv];
       if (provDetails) {
-        setApiKey(provDetails.maskedKey || '');
+        if (provDetails.keys && provDetails.keys.length > 0) {
+          setKeys(provDetails.keys.map((k: any) => ({
+            id: k.id,
+            key: '',
+            maskedKey: k.maskedKey,
+            status: k.status || 'active',
+            isNew: false,
+            lastUsedAt: k.lastUsedAt
+          })));
+        } else if (provDetails.has_custom_key) {
+          setKeys([{
+            id: 'legacy-key',
+            key: '',
+            maskedKey: provDetails.maskedKey,
+            status: 'active',
+            isNew: false
+          }]);
+        } else {
+          setKeys([]);
+        }
         setModel(provDetails.model || PROVIDER_DEFAULTS[activeProv].model);
         setBaseUrl(provDetails.base_url || PROVIDER_DEFAULTS[activeProv].baseUrl);
       } else {
-        setApiKey('');
+        setKeys([]);
         setModel(PROVIDER_DEFAULTS[activeProv].model);
         setBaseUrl(PROVIDER_DEFAULTS[activeProv].baseUrl);
       }
@@ -108,17 +145,36 @@ export default function SiteConfigurationPage() {
     const newProv = e.target.value;
     setSelectedProvider(newProv);
     
-    // Auto populate model & base url based on new provider
     const defaults = PROVIDER_DEFAULTS[newProv];
-    setModel(defaults.model);
-    setBaseUrl(defaults.baseUrl);
-
-    // Populate key if exists in DB config
     const dbProvDetails = config?.providers?.[newProv];
-    if (dbProvDetails && dbProvDetails.has_custom_key) {
-      setApiKey(dbProvDetails.maskedKey || '');
+    
+    setModel(dbProvDetails?.model || defaults.model);
+    setBaseUrl(dbProvDetails?.base_url || defaults.baseUrl);
+    setIsCustomModel(false);
+
+    if (dbProvDetails) {
+      if (dbProvDetails.keys && dbProvDetails.keys.length > 0) {
+        setKeys(dbProvDetails.keys.map((k: any) => ({
+          id: k.id,
+          key: '',
+          maskedKey: k.maskedKey,
+          status: k.status || 'active',
+          isNew: false,
+          lastUsedAt: k.lastUsedAt
+        })));
+      } else if (dbProvDetails.has_custom_key) {
+        setKeys([{
+          id: 'legacy-key',
+          key: '',
+          maskedKey: dbProvDetails.maskedKey,
+          status: 'active',
+          isNew: false
+        }]);
+      } else {
+        setKeys([]);
+      }
     } else {
-      setApiKey('');
+      setKeys([]);
     }
     setAvailableModels(null);
     setFetchModelsError(null);
@@ -128,9 +184,12 @@ export default function SiteConfigurationPage() {
     setIsFetchingModels(true);
     setFetchModelsError(null);
     try {
+      const activeKeys = keys.filter(k => k.status === 'active' || k.isNew);
+      const testKey = activeKeys.length > 0 ? (activeKeys[0].isNew ? activeKeys[0].key : undefined) : undefined;
+      
       const models = await AdminService.fetchModels({
         provider: selectedProvider,
-        api_key: apiKey === '' || apiKey.includes('*') ? undefined : apiKey
+        api_key: testKey
       });
       setAvailableModels(models);
       if (models.length === 0) {
@@ -151,12 +210,20 @@ export default function SiteConfigurationPage() {
     setSuccessMsg(null);
     setErrorMsg(null);
 
+    // Validate that new keys are not empty
+    const filteredKeys = keys.filter(k => !k.isNew || (k.isNew && k.key.trim().length > 0));
+
     try {
       await AdminService.updateAiConfig({
         provider: selectedProvider,
-        custom_api_key: apiKey === '' ? '' : apiKey,
         model: model,
-        base_url: baseUrl
+        base_url: baseUrl,
+        keys: filteredKeys.map(k => ({
+          id: k.isNew ? undefined : k.id,
+          key: k.key,
+          isNew: k.isNew,
+          status: k.status || 'active'
+        }))
       });
 
       setSuccessMsg('AI Configuration saved successfully.');
@@ -185,6 +252,28 @@ export default function SiteConfigurationPage() {
     }
   };
 
+  const handleAddKey = () => {
+    setKeys([...keys, { key: '', isNew: true, status: 'active' }]);
+  };
+
+  const handleRemoveKey = (index: number) => {
+    const keyToRemove = keys[index];
+    if (!keyToRemove.isNew) {
+      if (!window.confirm("Are you sure you want to remove this saved API key? This action will not be permanent until you click 'Save Configuration'.")) {
+        return;
+      }
+    }
+    const newKeys = [...keys];
+    newKeys.splice(index, 1);
+    setKeys(newKeys);
+  };
+
+  const updateKeyInput = (index: number, val: string) => {
+    const newKeys = [...keys];
+    newKeys[index].key = val;
+    setKeys(newKeys);
+  };
+
   if (!isAdmin) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -199,9 +288,9 @@ export default function SiteConfigurationPage() {
     );
   }
 
-  // Check if API key is configured in DB for selected provider
-  const isKeyConfigured = config && config.providers && config.providers[selectedProvider] && config.providers[selectedProvider].has_custom_key;
+  const isKeyConfigured = keys.length > 0;
   const isSystemDefault = config && config.providers && config.providers[selectedProvider] && config.providers[selectedProvider].is_system_default;
+  const hasHealthyKeys = keys.some(k => k.status === 'active');
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-10">
@@ -226,7 +315,6 @@ export default function SiteConfigurationPage() {
       ) : (
         <form onSubmit={handleSave} className="flex flex-col gap-6">
           <Card className="overflow-hidden">
-            {/* Header section with active configuration status banner */}
             <div className="p-6 border-b border-border bg-subtle/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-brand" />
@@ -236,7 +324,6 @@ export default function SiteConfigurationPage() {
                 </div>
               </div>
               
-              {/* API Key validation status badge */}
               <div className="flex-shrink-0">
                 {isKeyConfigured ? (
                   isSystemDefault ? (
@@ -244,10 +331,15 @@ export default function SiteConfigurationPage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
                       System Default Active
                     </span>
-                  ) : (
+                  ) : hasHealthyKeys ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success-dark border border-success/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                      API Key is Configured
+                      API Keys Active ({keys.filter(k => k.status === 'active').length})
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-status-error/10 text-status-error border border-status-error/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-status-error" />
+                      No Healthy API Keys
                     </span>
                   )
                 ) : (
@@ -260,7 +352,6 @@ export default function SiteConfigurationPage() {
             </div>
 
             <div className="p-6 flex flex-col gap-6">
-              {/* Provider Selection */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                 <div>
                   <label className="block text-sm font-semibold text-text-primary mb-1">AI Provider</label>
@@ -279,47 +370,80 @@ export default function SiteConfigurationPage() {
                 </div>
               </div>
 
-              {/* API Key */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                 <div>
                   <label className="block text-sm font-semibold text-text-primary mb-1 flex items-center gap-1.5">
-                    <Lock className="w-4 h-4 text-text-muted" /> API Key
+                    <Lock className="w-4 h-4 text-text-muted" /> API Keys
                   </label>
-                  <p className="text-xs text-text-secondary">Credentials will be encrypted securely at rest in our database.</p>
+                  <p className="text-xs text-text-secondary">Provide one or more credentials. The system will automatically failover between them on quota limits.</p>
                 </div>
-                <div className="md:col-span-2">
-                  <div className="relative">
-                    <input 
-                      type={showKey ? 'text' : 'password'}
-                      placeholder={isKeyConfigured ? '••••••••••••••••' : 'Enter your API key'}
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="w-full pl-3 pr-10 py-2 rounded-md border border-border bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowKey(!showKey)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors focus:outline-none"
-                    >
-                      {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {isKeyConfigured && (
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs text-text-secondary">Masked Key: <span className="font-mono bg-subtle px-1.5 py-0.5 rounded text-text-primary">{config?.providers?.[selectedProvider]?.maskedKey}</span></span>
-                      <button 
-                        type="button"
-                        onClick={() => setIsForgetModalOpen(true)}
-                        className="text-xs text-status-error hover:text-status-error/90 font-medium flex items-center gap-1 hover:underline focus:outline-none"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Forget API Key
-                      </button>
-                    </div>
-                  )}
+                <div className="md:col-span-2 flex flex-col gap-3">
+                  {keys.map((k, index) => {
+                    const isErrorState = k.status === 'invalid' || k.status === 'unavailable';
+                    return (
+                      <div key={k.id || `new-${index}`} className="flex flex-col gap-2 p-3 rounded-lg border border-border bg-subtle/30">
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            {k.isNew ? (
+                              <input 
+                                type={showKeyIndex === index ? 'text' : 'password'}
+                                placeholder="Enter API key"
+                                value={k.key}
+                                onChange={(e) => updateKeyInput(index, e.target.value)}
+                                className="w-full pl-3 pr-10 py-2 rounded-md border border-border bg-surface text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
+                                required={k.isNew}
+                              />
+                            ) : (
+                              <div className="w-full pl-3 py-2 rounded-md border border-border bg-surface/50 text-sm font-mono text-text-primary">
+                                {k.maskedKey || '••••••••••••••••'}
+                              </div>
+                            )}
+                            {k.isNew && (
+                              <button 
+                                type="button"
+                                onClick={() => setShowKeyIndex(showKeyIndex === index ? null : index)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors focus:outline-none"
+                              >
+                                {showKeyIndex === index ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            )}
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveKey(index)}
+                            className="flex items-center justify-center w-9 h-9 rounded-md border border-border bg-surface text-text-secondary hover:text-status-error hover:border-status-error/30 transition-colors focus:outline-none"
+                            title="Remove Key"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        {!k.isNew && (
+                          <div className="flex items-center justify-between mt-1 px-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-text-secondary">
+                                Status: {k.status === 'unavailable' ? 'Unavailable' : 
+                                         k.status === 'invalid' ? 'Invalid' : 'Active'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={handleAddKey}
+                    className="w-full border-dashed flex items-center justify-center gap-2 py-3"
+                  >
+                    <Plus className="w-4 h-4" /> Add API Key
+                  </Button>
                 </div>
               </div>
 
-              {/* Model */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                 <div>
                   <label className="block text-sm font-semibold text-text-primary mb-1 flex items-center gap-1.5">
@@ -330,30 +454,61 @@ export default function SiteConfigurationPage() {
                 <div className="md:col-span-2">
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
-                      <select 
-                        required
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
-                      >
-                        {model && availableModels && !availableModels.includes(model) && (
-                          <option value={model}>{model} (Unavailable)</option>
-                        )}
-                        {model && !availableModels && (
-                          <option value={model}>{model}</option>
-                        )}
-                        {availableModels?.map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                        {(!availableModels || availableModels.length === 0) && !model && (
-                          <option value="" disabled>Fetch models to select...</option>
-                        )}
-                      </select>
+                      {isCustomModel ? (
+                        <div className="flex w-full gap-2 relative">
+                          <input 
+                            type="text"
+                            required
+                            value={model}
+                            onChange={(e) => setModel(e.target.value)}
+                            placeholder="Type custom model name..."
+                            className="w-full px-3 py-2 pr-16 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCustomModel(false);
+                              setModel(availableModels?.[0] || PROVIDER_DEFAULTS[selectedProvider]?.model || '');
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted hover:text-text-primary font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <select 
+                          required
+                          value={model}
+                          onChange={(e) => {
+                            if (e.target.value === '__other__') {
+                              setIsCustomModel(true);
+                              setModel('');
+                            } else {
+                              setModel(e.target.value);
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
+                        >
+                          {model && availableModels && !availableModels.includes(model) && (
+                            <option value={model}>{model} (Unavailable)</option>
+                          )}
+                          {model && !availableModels && (
+                            <option value={model}>{model}</option>
+                          )}
+                          {availableModels?.map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                          {(!availableModels || availableModels.length === 0) && !model && (
+                            <option value="" disabled>Fetch models to select...</option>
+                          )}
+                          <option value="__other__">Other (Type custom name)</option>
+                        </select>
+                      )}
                       <Button
                         type="button"
                         variant="secondary"
                         onClick={handleFetchModels}
-                        disabled={isFetchingModels || (!apiKey && !isKeyConfigured)}
+                        disabled={isFetchingModels || (!isKeyConfigured)}
                         className="whitespace-nowrap flex items-center gap-1.5"
                       >
                         {isFetchingModels ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -367,7 +522,6 @@ export default function SiteConfigurationPage() {
                 </div>
               </div>
 
-              {/* Base URL */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                 <div>
                   <label className="block text-sm font-semibold text-text-primary mb-1 flex items-center gap-1.5">
@@ -388,7 +542,6 @@ export default function SiteConfigurationPage() {
               </div>
             </div>
 
-            {/* Actions Footer */}
             <div className="px-6 py-4 border-t border-border bg-subtle flex justify-end gap-3">
               <Button 
                 type="submit" 
@@ -401,55 +554,13 @@ export default function SiteConfigurationPage() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                Save
+                Save Configuration
               </Button>
             </div>
           </Card>
         </form>
       )}
 
-      {/* Confirmation Modal for Revocation */}
-      {isForgetModalOpen && (
-        <ModalShell
-          title="Revoke API Key"
-          onClose={() => setIsForgetModalOpen(false)}
-          footer={
-            <>
-              <Button 
-                variant="secondary" 
-                onClick={() => setIsForgetModalOpen(false)}
-                disabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                variant="primary" 
-                className="bg-status-error text-white hover:bg-status-error/95"
-                onClick={handleForgetConfirm}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-1.5 inline" />
-                ) : (
-                  <Trash2 className="w-4 h-4 mr-1.5 inline" />
-                )}
-                Confirm Revocation
-              </Button>
-            </>
-          }
-        >
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-text-primary font-medium">
-              Forget {PROVIDER_DEFAULTS[selectedProvider]?.label || selectedProvider} API Key?
-            </p>
-            <p className="text-xs text-text-secondary">
-              This action will permanently delete the encrypted API Key from the database. Resume parsing and application rating matching using this provider will be disabled until a new key is provided.
-            </p>
-          </div>
-        </ModalShell>
-      )}
-
-      {/* Error Dialog Modal */}
       {errorMsg && (
         <ModalShell
           title="Configuration Failed"

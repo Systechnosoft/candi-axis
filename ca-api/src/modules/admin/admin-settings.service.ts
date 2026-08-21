@@ -12,13 +12,27 @@ import { PG_POOL } from '../../infrastructure/database/database.module';
 import { AuditService } from '../audit/audit.service';
 import { UpdateAiConfigDto } from './dto/update-ai-config.dto';
 import { CandidatesService } from '../candidates/candidates.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
+
+export type ApiKeyStatus = 'active' | 'unavailable' | 'invalid';
+
+export interface ApiKeyItem {
+  id: string;
+  encryptedKey?: string;
+  maskedKey?: string;
+  status: ApiKeyStatus;
+  lastUsedAt?: string | null;
+  lastSuccessAt?: string | null;
+  is_system_default?: boolean;
+}
 
 export interface ProviderConfig {
   has_custom_key: boolean;
   base_url: string | null;
   model: string | null;
-  maskedKey: string | null;
-  api_key?: string | null;
+  keys: ApiKeyItem[];
+  // Legacy support for older frontend
+  maskedKey?: string | null;
   is_system_default?: boolean;
 }
 
@@ -101,7 +115,7 @@ export class AdminSettingsService {
   }
 
   private getProviderDefaultModel(provider: string): string {
-    if (provider === 'gemini') return 'gemini-3.6-flash';
+    if (provider === 'gemini') return 'gemini-1.5-flash-latest';
     if (provider === 'openai') return 'gpt-4o-mini';
     if (provider === 'anthropic') return 'claude-3-5-sonnet-20241022';
     if (provider === 'groq') return 'qwen/qwen3.6-27b';
@@ -169,9 +183,9 @@ export class AdminSettingsService {
     providersList.forEach((p) => {
       config.providers[p] = {
         has_custom_key: false,
-        is_system_default: false,
         base_url: this.getProviderDefaultBaseUrl(p),
         model: this.getProviderDefaultModel(p),
+        keys: [],
         maskedKey: null,
       };
     });
@@ -179,7 +193,11 @@ export class AdminSettingsService {
     res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
-      let val = String(row.setting_value);
+      const rawValue = row.setting_value;
+      let val = typeof rawValue === 'object' && rawValue !== null 
+        ? JSON.stringify(rawValue) 
+        : String(rawValue);
+        
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
@@ -192,15 +210,52 @@ export class AdminSettingsService {
       } else if (key.startsWith('ai_parsing_api_key_')) {
         const prov = key.replace('ai_parsing_api_key_', '');
         if (config.providers[prov]) {
-          const decrypted = this.decrypt(val || '');
-          const isConfigured =
-            decrypted &&
-            !decrypted.includes('*') &&
-            decrypted.trim().length > 0;
-          config.providers[prov].has_custom_key = Boolean(isConfigured);
-          config.providers[prov].maskedKey = isConfigured
-            ? this.maskApiKey(decrypted)
-            : null;
+          let parsedKeys: any[] = [];
+          
+          try {
+            const parsed = JSON.parse(val);
+            if (parsed && typeof parsed === 'object' && parsed.version === 2 && Array.isArray(parsed.keys)) {
+              parsedKeys = parsed.keys;
+            } else {
+              throw new Error('Not version 2 format');
+            }
+          } catch (e) {
+            // Legacy single-string format
+            if (val && val.trim().length > 0 && val !== 'null') {
+              parsedKeys = [{
+                id: 'legacy-key',
+                encryptedKey: val,
+                status: 'active'
+              }];
+            }
+          }
+
+          const validKeys: ApiKeyItem[] = [];
+          let hasCustom = false;
+          let legacyMasked = null;
+
+          for (const k of parsedKeys) {
+            if (!k.encryptedKey) continue;
+            const decrypted = this.decrypt(k.encryptedKey);
+            const isValid = decrypted && !decrypted.includes('*') && decrypted.trim().length > 0;
+            if (isValid) {
+              hasCustom = true;
+              const masked = this.maskApiKey(decrypted);
+              if (!legacyMasked) legacyMasked = masked;
+              validKeys.push({
+                id: k.id,
+                encryptedKey: k.encryptedKey,
+                maskedKey: masked,
+                status: k.status || 'active',
+                lastUsedAt: k.lastUsedAt || null,
+                lastSuccessAt: k.lastSuccessAt || null,
+              });
+            }
+          }
+
+          config.providers[prov].keys = validKeys;
+          config.providers[prov].has_custom_key = hasCustom;
+          config.providers[prov].maskedKey = legacyMasked;
         }
       } else if (key.startsWith('ai_parsing_base_url_')) {
         const prov = key.replace('ai_parsing_base_url_', '');
@@ -209,6 +264,7 @@ export class AdminSettingsService {
         }
       } else if (key.startsWith('ai_parsing_model_')) {
         const prov = key.replace('ai_parsing_model_', '');
+        console.log(`[getAiConfig] Found model for ${prov}: ${val} (rawValue: ${rawValue})`);
         if (config.providers[prov]) {
           config.providers[prov].model = val;
         }
@@ -262,46 +318,100 @@ export class AdminSettingsService {
         ],
       );
 
-      // Update custom key if provided and not masked
-      if (dto.custom_api_key !== undefined && dto.custom_api_key !== null) {
+      // Fetch existing keys to preserve encrypted values for unmodified masked keys
+      const keyName = `${orgPrefix}ai_parsing_api_key_${providerClean}`;
+      const existingRes = await client.query(
+        `SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 LIMIT 1`,
+        [keyName]
+      );
+      
+      let existingKeys: ApiKeyItem[] = [];
+      if (existingRes.rows.length > 0) {
+        const rawExisting = existingRes.rows[0].setting_value;
+        let val = typeof rawExisting === 'object' && rawExisting !== null 
+          ? JSON.stringify(rawExisting) 
+          : String(rawExisting);
+          
+        if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
+          val = val.slice(1, -1);
+        }
+        try {
+          const parsed = JSON.parse(val);
+          if (parsed && typeof parsed === 'object' && parsed.version === 2 && Array.isArray(parsed.keys)) {
+            existingKeys = parsed.keys;
+          } else {
+             throw new Error('Not version 2');
+          }
+        } catch (e) {
+          if (val && val.trim().length > 0 && val !== 'null') {
+            existingKeys = [{ id: 'legacy-key', encryptedKey: val, status: 'active' }];
+          }
+        }
+      }
+
+      const finalKeys: ApiKeyItem[] = [];
+      
+      if (dto.keys && Array.isArray(dto.keys)) {
+        for (const k of dto.keys) {
+          if (k.isNew && k.key) {
+            const cleanKey = k.key.trim();
+            if (cleanKey !== '' && !cleanKey.includes('*')) {
+              if (!this.validateApiKey(cleanKey, providerClean)) {
+                throw new BadRequestException(this.getProviderErrorMessage(providerClean));
+              }
+              const { v4: uuidv4 } = require('uuid');
+              finalKeys.push({
+                id: k.id || uuidv4(),
+                encryptedKey: this.encrypt(cleanKey),
+                status: (k.status as ApiKeyStatus) || 'active',
+              });
+            }
+          } else {
+            const existing = existingKeys.find(ek => ek.id === k.id);
+            if (existing) {
+              finalKeys.push({
+                ...existing,
+                status: (k.status as ApiKeyStatus) || existing.status || 'active'
+              });
+            }
+          }
+        }
+      } else if (dto.custom_api_key !== undefined && dto.custom_api_key !== null) {
         const cleanKey = dto.custom_api_key.trim();
         if (cleanKey !== '') {
-          const isMasked = cleanKey.includes('*');
-          if (!isMasked) {
-            const isKeyValid = this.validateApiKey(cleanKey, providerClean);
-            if (!isKeyValid) {
-              throw new BadRequestException(
-                this.getProviderErrorMessage(providerClean),
-              );
+          if (!cleanKey.includes('*')) {
+            if (!this.validateApiKey(cleanKey, providerClean)) {
+              throw new BadRequestException(this.getProviderErrorMessage(providerClean));
             }
-
-            const encrypted = this.encrypt(cleanKey);
-            const keyName = `${orgPrefix}ai_parsing_api_key_${providerClean}`;
-            await client.query(
-              `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
-               VALUES ($1, $2, 'string', true)
-               ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = now(), updated_by = $3`,
-              [keyName, JSON.stringify(encrypted || null), userId],
-            );
-
-            this.logger.log(
-              `API Key updated for provider ${providerClean}. Format valid: true`,
-            );
+            const { v4: uuidv4 } = require('uuid');
+            finalKeys.push({
+              id: uuidv4(),
+              encryptedKey: this.encrypt(cleanKey),
+              status: 'active'
+            });
           } else {
-            this.logger.log(
-              `API Key update skipped for ${providerClean} because submitted key was masked.`,
-            );
+            finalKeys.push(...existingKeys);
           }
         }
       } else {
-        // If no new key is provided, verify an active valid key exists in the database for the selected provider
-        const existingKey = await this.getActiveApiKey(email, providerClean);
-        if (!existingKey) {
-          throw new BadRequestException(
-            this.getProviderErrorMessage(providerClean),
-          );
-        }
+        finalKeys.push(...existingKeys);
       }
+
+      if (finalKeys.length === 0) {
+        throw new BadRequestException(`At least one valid API Key is required for ${providerClean}.`);
+      }
+
+      const payload = {
+        version: 2,
+        keys: finalKeys
+      };
+
+      await client.query(
+        `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
+         VALUES ($1, $2, 'string', true)
+         ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = now(), updated_by = $3`,
+        [keyName, JSON.stringify(payload), userId]
+      );
 
       if (dto.base_url !== undefined && dto.base_url !== null) {
         const urlName = `${orgPrefix}ai_parsing_base_url_${providerClean}`;
@@ -317,6 +427,7 @@ export class AdminSettingsService {
       if (dto.model !== undefined && dto.model !== null) {
         const modelName = `${orgPrefix}ai_parsing_model_${providerClean}`;
         const cleanModel = dto.model.trim();
+        console.log(`[updateAiConfig] Saving model for ${providerClean}: ${cleanModel} (saving as ${JSON.stringify(cleanModel || null)})`);
         await client.query(
           `INSERT INTO ca_admin_settings (setting_key, setting_value, value_type, is_active) 
            VALUES ($1, $2, 'string', true)
@@ -458,10 +569,7 @@ export class AdminSettingsService {
     return settingsRes.rows;
   }
 
-  async getActiveApiKey(
-    email: string,
-    provider: string,
-  ): Promise<string | null> {
+  async getEligibleApiKeys(email: string, provider: string): Promise<(ApiKeyItem & { decryptedKey: string })[]> {
     const orgPrefix = this.getOrgPrefix(email);
     const settingKey = `${orgPrefix}ai_parsing_api_key_${provider}`;
 
@@ -470,17 +578,131 @@ export class AdminSettingsService {
       [settingKey],
     );
 
+    const eligibleKeys: (ApiKeyItem & { decryptedKey: string })[] = [];
+
     if (existing.rows[0]) {
-      let val = String(existing.rows[0].setting_value);
-      if (val === 'null' || !val) return null;
+      const rawExisting = existing.rows[0].setting_value;
+      let val = typeof rawExisting === 'object' && rawExisting !== null 
+        ? JSON.stringify(rawExisting) 
+        : String(rawExisting);
+        
+      if (val === 'null' || !val) val = '';
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
 
-      const decrypted = this.decrypt(val);
-      if (this.validateApiKey(decrypted, provider)) {
-        return decrypted;
+      let parsedKeys: any[] = [];
+      try {
+        const parsed = JSON.parse(val);
+        if (parsed && typeof parsed === 'object' && parsed.version === 2 && Array.isArray(parsed.keys)) {
+          parsedKeys = parsed.keys;
+        } else {
+          throw new Error('Not version 2');
+        }
+      } catch (e) {
+        if (val && val.trim().length > 0 && val !== 'null') {
+          parsedKeys = [{ id: 'legacy-key', encryptedKey: val, status: 'active' }];
+        }
       }
+
+      for (const k of parsedKeys) {
+        if (k.status === 'invalid' || k.status === 'unavailable') continue;
+
+        if (k.encryptedKey) {
+          const decrypted = this.decrypt(k.encryptedKey);
+          if (this.validateApiKey(decrypted, provider)) {
+            eligibleKeys.push({
+              ...k,
+              decryptedKey: decrypted
+            });
+          }
+        }
+      }
+    }
+
+    // Fallback to environment variable if no eligible database keys
+    if (eligibleKeys.length === 0) {
+      const envKey = process.env[`${provider.toUpperCase()}_API_KEY`];
+      if (envKey && this.validateApiKey(envKey, provider)) {
+        eligibleKeys.push({
+          id: 'env-key',
+          status: 'active',
+          decryptedKey: envKey.trim(),
+          is_system_default: true
+        });
+      }
+    }
+
+    return eligibleKeys;
+  }
+
+  async updateApiKeyStatus(email: string, provider: string, keyId: string, status: 'active' | 'unavailable' | 'invalid') {
+    if (keyId === 'legacy-key' || keyId === 'env-key') return; // Cannot update state of env or unmigrated legacy key here directly without full save
+    
+    const orgPrefix = this.getOrgPrefix(email);
+    const settingKey = `${orgPrefix}ai_parsing_api_key_${provider}`;
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const existingRes = await client.query(
+        'SELECT setting_value FROM ca_admin_settings WHERE setting_key = $1 FOR UPDATE',
+        [settingKey]
+      );
+
+      if (existingRes.rows.length > 0) {
+        const rawExisting = existingRes.rows[0].setting_value;
+        let val = typeof rawExisting === 'object' && rawExisting !== null 
+          ? JSON.stringify(rawExisting) 
+          : String(rawExisting);
+          
+        if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
+          val = val.slice(1, -1);
+        }
+        
+        try {
+          const parsed = JSON.parse(val);
+          if (parsed && typeof parsed === 'object' && parsed.version === 2 && Array.isArray(parsed.keys)) {
+            let modified = false;
+            parsed.keys = parsed.keys.map((k: any) => {
+              if (k.id === keyId) {
+                modified = true;
+                return {
+                  ...k,
+                  status,
+                  lastUsedAt: new Date().toISOString()
+                };
+              }
+              return k;
+            });
+
+            if (modified) {
+              await client.query(
+                'UPDATE ca_admin_settings SET setting_value = $1, updated_at = now() WHERE setting_key = $2',
+                [JSON.stringify(parsed), settingKey]
+              );
+            }
+          }
+        } catch (e) {
+          this.logger.error('Failed to parse and update API key status JSON', e);
+        }
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      this.logger.error('Error updating API key status', e);
+    } finally {
+      client.release();
+    }
+  }
+
+  async getActiveApiKey(
+    email: string,
+    provider: string,
+  ): Promise<string | null> {
+    const keys = await this.getEligibleApiKeys(email, provider);
+    if (keys.length > 0) {
+      return keys[0].decryptedKey;
     }
 
     // Fallback to environment variable
@@ -781,6 +1003,13 @@ export class AdminSettingsService {
             required: true,
             isSecret: false,
           },
+          {
+            key: 'host_email',
+            label: 'Host Email (for Server-to-Server)',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
         ],
       },
       {
@@ -851,6 +1080,17 @@ export class AdminSettingsService {
       );
     }
 
+    // Preserve existing credentials if new ones are not provided
+    const existingRes = await this.pool.query(
+      `SELECT encrypted_credentials_json FROM public.ca_interview_provider_configurations WHERE provider = $1 LIMIT 1`,
+      [provider]
+    );
+    let finalCredentials = credentials_json;
+    if (existingRes.rows.length > 0) {
+      const existingCreds = existingRes.rows[0].encrypted_credentials_json || {};
+      finalCredentials = { ...existingCreds, ...credentials_json };
+    }
+
     const res = await this.pool.query<{ id: string }>(
       `INSERT INTO public.ca_interview_provider_configurations 
          (org_id, provider, display_name, auth_mode, config_json, encrypted_credentials_json, is_active, is_default, created_by, updated_by)
@@ -869,7 +1109,7 @@ export class AdminSettingsService {
         display_name,
         auth_mode || 'oauth2',
         JSON.stringify(config_json || {}),
-        JSON.stringify(credentials_json || {}),
+        JSON.stringify(finalCredentials || {}),
         userId,
       ],
     );
@@ -933,6 +1173,61 @@ export class AdminSettingsService {
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async resetUnavailableKeys() {
+    this.logger.log('Running daily reset of unavailable AI API keys');
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const res = await client.query(`SELECT setting_key, setting_value FROM ca_admin_settings WHERE setting_key LIKE '%ai_parsing_api_key_%' AND is_active = true FOR UPDATE`);
+      
+      let totalUpdated = 0;
+      for (const row of res.rows) {
+        const rawValue = row.setting_value;
+        let val = typeof rawValue === 'object' && rawValue !== null 
+          ? JSON.stringify(rawValue) 
+          : String(rawValue);
+          
+        if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
+          val = val.slice(1, -1);
+        }
+        
+        try {
+          const parsed = JSON.parse(val);
+          if (parsed && typeof parsed === 'object' && parsed.version === 2 && Array.isArray(parsed.keys)) {
+            let modified = false;
+            parsed.keys = parsed.keys.map((k: any) => {
+              if (k.status === 'unavailable') {
+                modified = true;
+                return { ...k, status: 'active' };
+              }
+              return k;
+            });
+
+            if (modified) {
+              await client.query(
+                'UPDATE ca_admin_settings SET setting_value = $1, updated_at = now() WHERE setting_key = $2',
+                [JSON.stringify(parsed), row.setting_key]
+              );
+              totalUpdated++;
+            }
+          }
+        } catch (e) {
+          // ignore parse errors for legacy non-JSON keys
+        }
+      }
+      
+      await client.query('COMMIT');
+      this.logger.log(`Daily reset complete. Re-activated keys in ${totalUpdated} provider configs.`);
+    } catch (e) {
+      await client.query('ROLLBACK');
+      this.logger.error('Failed to run daily reset of AI keys', e);
     } finally {
       client.release();
     }

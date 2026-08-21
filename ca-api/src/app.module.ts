@@ -1,4 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from './infrastructure/config/config.module';
@@ -28,6 +29,9 @@ import { EmailModule } from './modules/email/email.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { GoogleCalendarModule } from './modules/integrations/google-calendar/google-calendar.module';
 import { OrganisationsModule } from './modules/organisations/organisations.module';
+import { TeamsIntegrationModule } from './modules/integrations/teams/teams.module';
+import { ZoomIntegrationModule } from './modules/integrations/zoom/zoom.module';
+import { WebexIntegrationModule } from './modules/integrations/webex/webex.module';
 
 @Module({
   imports: [
@@ -57,6 +61,10 @@ import { OrganisationsModule } from './modules/organisations/organisations.modul
     EmailModule,
     TasksModule,
     GoogleCalendarModule,
+    TeamsIntegrationModule,
+    ZoomIntegrationModule,
+    WebexIntegrationModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

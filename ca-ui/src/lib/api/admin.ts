@@ -10,6 +10,12 @@ export const AdminService = {
     custom_api_key?: string;
     base_url?: string;
     model?: string;
+    keys?: {
+      id?: string;
+      key: string;
+      isNew?: boolean;
+      status?: 'active' | 'rate_limited' | 'quota_exhausted' | 'invalid' | 'disabled';
+    }[];
   }) => {
     const { data } = await apiClient.patch<any>('/admin/settings/ai', payload);
     return data;

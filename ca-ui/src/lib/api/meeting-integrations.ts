@@ -22,7 +22,8 @@ export const MeetingIntegrationsService = {
   },
 
   generateMeetingLink: async (provider: string): Promise<{ meetingLink: string; externalEventId: string }> => {
-    const { data } = await apiClient.post<{ meetingLink: string; externalEventId: string }>(`/meeting-integrations/${provider}/generate-meeting-link`);
+    const routeProvider = provider.toLowerCase();
+    const { data } = await apiClient.post<{ meetingLink: string; externalEventId: string }>(`/api/integrations/${routeProvider}/generate-meet-link`);
     return data;
   },
 };

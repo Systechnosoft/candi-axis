@@ -44,6 +44,7 @@ export class AdminSettingsController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: UpdateAiConfigDto,
   ) {
+    console.log('Incoming updateAiConfig DTO:', dto);
     return this.adminService.updateAiConfig(
       req.user.atsUserId,
       req.user.email,

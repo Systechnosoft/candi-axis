@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AdminSettingsService } from '../admin/admin-settings.service';
+import { AiExecutionService } from './ai-execution.service';
 import OpenAI from 'openai';
 
 export interface ParsedResume {
@@ -60,17 +61,14 @@ CRITICAL RULES:
 export class ResumeAiParserService {
   private readonly logger = new Logger(ResumeAiParserService.name);
 
-  constructor(private readonly adminService: AdminSettingsService) {}
+  constructor(
+    private readonly adminService: AdminSettingsService,
+    private readonly aiExecutionService: AiExecutionService,
+  ) {}
 
   async parseResumeText(text: string, email: string): Promise<ParsedResume> {
-    const config: {
-      provider: string;
-      model: string;
-      base_url: string;
-      api_key: string | null;
-    } = await this.adminService.getAiConfigForOrg(email);
+    const config = await this.adminService.getAiConfigForOrg(email);
     const provider = (config.provider || 'gemini').toLowerCase();
-    const apiKey = config.api_key;
     const model = config.model;
     const baseUrl = config.base_url;
 
@@ -78,22 +76,17 @@ export class ResumeAiParserService {
       `Resume parsing request - Org email domain: ${email.split('@')[1]}, provider: ${provider}, model: ${model}`,
     );
 
-    if (!apiKey) {
-      throw new Error(
-        `Provider "${provider}" is selected but no valid API key was found in Site Configuration for organization.`,
-      );
+    if (provider !== 'gemini' && !baseUrl) {
+      throw new Error(`Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`);
     }
 
-    if (provider === 'gemini') {
-      return this.callGemini(text, apiKey, model);
-    } else {
-      if (!baseUrl) {
-        throw new Error(
-          `Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`,
-        );
+    return this.aiExecutionService.executeWithFailover(email, provider, async (apiKey) => {
+      if (provider === 'gemini') {
+        return this.callGemini(text, apiKey, model!);
+      } else {
+        return this.callOpenAiCompat(text, apiKey, baseUrl!, model!);
       }
-      return this.callOpenAiCompat(text, apiKey, baseUrl, model);
-    }
+    });
   }
 
   private async callGemini(
