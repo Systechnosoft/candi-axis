@@ -838,12 +838,17 @@ export class AdminSettingsService {
     res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
-      let val: string | null = row.setting_value;
+      const rawValue = row.setting_value;
+      let val =
+        typeof rawValue === 'object' && rawValue !== null
+          ? JSON.stringify(rawValue)
+          : String(rawValue);
+
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
       if (val === 'null' || val === null) {
-        val = null;
+        val = '';
       }
 
       if (key === 'ai_parsing_provider') {
@@ -858,12 +863,17 @@ export class AdminSettingsService {
     res.rows.forEach((row) => {
       const fullKey = row.setting_key;
       const key = fullKey.substring(orgPrefix.length);
-      let val: string | null = row.setting_value;
+      const rawValue = row.setting_value;
+      let val =
+        typeof rawValue === 'object' && rawValue !== null
+          ? JSON.stringify(rawValue)
+          : String(rawValue);
+
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
       if (val === 'null' || val === null) {
-        val = null;
+        val = '';
       }
 
       if (key === `ai_parsing_model_${provider}`) {
@@ -872,8 +882,28 @@ export class AdminSettingsService {
         if (val) config.base_url = val.trim();
       } else if (key === `ai_parsing_api_key_${provider}`) {
         if (val) {
-          const dec = this.decrypt(val);
-          config.api_key = dec ? dec.trim() : null;
+          let encryptedKey = val;
+          try {
+            const parsed = JSON.parse(val);
+            if (
+              parsed &&
+              typeof parsed === 'object' &&
+              parsed.version === 2 &&
+              Array.isArray(parsed.keys)
+            ) {
+              const activeKey = parsed.keys.find((k: any) => k.status === 'active');
+              encryptedKey = activeKey ? activeKey.encryptedKey : null;
+            }
+          } catch (e) {
+            // Fallback for legacy plain string
+          }
+
+          if (encryptedKey) {
+            const dec = this.decrypt(encryptedKey);
+            config.api_key = dec ? dec.trim() : null;
+          } else {
+            config.api_key = null;
+          }
         }
       }
     });
