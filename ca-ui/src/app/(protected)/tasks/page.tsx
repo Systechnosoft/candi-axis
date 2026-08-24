@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterBar } from '@/components/primitives/FilterBar';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
@@ -109,21 +110,20 @@ export default function TasksPage() {
       <Card>
         <div className="p-2 border-b border-border bg-surface">
           <FilterBar searchValue={searchQuery} onSearchChange={setSearchQuery}>
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                 Position
               </div>
-              <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={positionFilter}
-                onChange={(e) => setPositionFilter(e.target.value)}
-              >
-                <option value="">All Positions</option>
-                {uniquePositions.map(title => (
-                  <option key={title} value={title}>{title}</option>
-                ))}
-              </select>
+              <SingleSelect
+                options={[
+                  { id: '', name: 'All' },
+                  ...uniquePositions.map(title => ({ id: title, name: title }))
+                ]}
+                selectedId={positionFilter}
+                onChange={setPositionFilter}
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+              />
             </div>
           </FilterBar>
         </div>

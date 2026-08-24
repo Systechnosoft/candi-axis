@@ -79,7 +79,7 @@ export const AiRatingCard: React.FC<AiRatingCardProps> = ({ application, refresh
                   
                   <div className="w-full mt-8 pt-6 border-t border-slate-700/50 flex justify-between items-end">
                      <div>
-                        <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Confidence</p>
+                        <p className="text-[10px] text-slate-400 tracking-widest mb-1">Confidence</p>
                         <p className="text-sm font-semibold text-slate-200">High</p>
                      </div>
                      <div className="flex items-center gap-1.5 opacity-60">

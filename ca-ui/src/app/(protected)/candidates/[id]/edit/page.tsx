@@ -8,7 +8,8 @@ import { jobDescriptionsApi } from '@/lib/api/job-descriptions';
 import { ApplicationsService } from '@/lib/api/applications';
 import { CandidateFormValues } from '@/types/candidates';
 import { JobDescription } from '@/types/job-descriptions';
-import { Loader2, Link2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Save, Building2, MapPin, Mail, Phone, Calendar, Clock, DollarSign, Target, Loader2, Link2, Trash2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { Button } from '@/components/primitives/Button';
 import { AiRatingCard } from '@/components/ats/AiRatingCard';
 import {
@@ -239,23 +240,21 @@ function EditCandidateForm() {
           
           <div className="flex flex-col gap-6 py-4">
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+              <label className="text-xs font-bold tracking-wider text-text-secondary">
                 Select Job Description
               </label>
               <div className="flex gap-3">
-                <select
-                  value={selectedJdId}
-                  onChange={(e) => setSelectedJdId(e.target.value)}
-                  disabled={linking}
-                  className="flex-1 h-10 px-3 rounded-md border border-strong-border bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
-                >
-                  <option value="">-- Choose a JD --</option>
-                  {jds.map((jd) => (
-                    <option key={jd.id} value={jd.id}>
-                      {jd.title}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1">
+                  <SingleSelect
+                    options={[
+                      { id: '', name: '-- Choose a JD --' },
+                      ...jds.map((jd) => ({ id: jd.id, name: jd.title }))
+                    ]}
+                    selectedId={selectedJdId}
+                    onChange={setSelectedJdId}
+                    disabled={linking}
+                  />
+                </div>
                 <Button
                   onClick={handleLinkToJd}
                   disabled={!selectedJdId || linking}

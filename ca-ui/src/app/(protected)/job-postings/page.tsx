@@ -251,23 +251,24 @@ export default function JobPostingsPage() {
       <Card>
         <div className="border-b border-border p-2 bg-surface">
           <FilterBar searchValue={search} onSearchChange={(v) => { setSearch(v); setPage(1); }} onRefresh={fetchData} onClearFilters={() => setStatusFilter('')}>
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                 Status
               </div>
-              <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
+              <SingleSelect
+                options={[
+                  { id: '', name: 'All' },
+                  { id: 'open', name: 'Open' },
+                  { id: 'closed', name: 'Closed' }
+                ]}
+                selectedId={statusFilter}
+                onChange={(id) => {
+                  setStatusFilter(id);
                   setPage(1);
                 }}
-              >
-                <option value="">All</option>
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
-              </select>
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+              />
             </div>
           </FilterBar>
         </div>

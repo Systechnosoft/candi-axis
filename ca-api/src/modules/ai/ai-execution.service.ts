@@ -43,8 +43,10 @@ export class AiExecutionService {
     }
 
     let lastError: Error | null = null;
+    let exhaustionCount = 0;
+    const totalEligible = eligibleKeys.length;
 
-    for (let i = 0; i < eligibleKeys.length; i++) {
+    for (let i = 0; i < totalEligible; i++) {
       const keyItem = eligibleKeys[i];
       try {
         this.logger.debug(
@@ -61,19 +63,30 @@ export class AiExecutionService {
           `AI execution failed with key id: ${keyItem.id}: ${err.message}`,
         );
 
-        const isCritical = await this.classifyAndHandleError(
+        const { failover, reason } = await this.classifyAndHandleError(
           email,
           provider,
           keyItem.id,
           err,
         );
+        
+        if (reason === 'exhaustion') {
+          exhaustionCount++;
+        }
 
         // If error is related to payload, model, or infrastructure, do not failover - bubble it up
-        if (!isCritical) {
+        if (!failover) {
           throw err;
         }
         // Otherwise, continue to the next key (failover)
       }
+    }
+
+    if (totalEligible > 0 && exhaustionCount === totalEligible) {
+      const error: any = new Error('AI_KEYS_TOKEN_EXHAUSTED');
+      error.code = 'AI_KEYS_TOKEN_EXHAUSTED';
+      error.status = 429;
+      throw error;
     }
 
     throw new Error(
@@ -91,7 +104,7 @@ export class AiExecutionService {
     provider: string,
     keyId: string,
     err: AiExecutionError,
-  ): Promise<boolean> {
+  ): Promise<{ failover: boolean; reason: 'exhaustion' | 'invalid' | 'other' }> {
     const status = err.response?.status || err.status;
     const message = err.message?.toLowerCase() || '';
 
@@ -108,13 +121,13 @@ export class AiExecutionService {
         keyId,
         'invalid',
       );
-      return true; // failover
+      return { failover: true, reason: 'invalid' }; // failover
     }
 
     // 403 - Permission Restriction / Revoked
     if (status === 403) {
       // Do not automatically mark key invalid on 403. Treat as provider error.
-      return false; // do NOT failover
+      return { failover: false, reason: 'other' }; // do NOT failover
     }
 
     // 429 - Rate Limit / Quota Exhausted
@@ -131,7 +144,7 @@ export class AiExecutionService {
         keyId,
         'unavailable',
       );
-      return true; // failover
+      return { failover: true, reason: 'exhaustion' }; // failover
     }
 
     // 413 - Payload Too Large
@@ -142,7 +155,7 @@ export class AiExecutionService {
       message.includes('maximum context length')
     ) {
       // NOT a key health issue. Do NOT failover.
-      return false;
+      return { failover: false, reason: 'other' };
     }
 
     // 5xx / Network Errors / Timeout
@@ -154,7 +167,7 @@ export class AiExecutionService {
     ) {
       // Transient infrastructure error. Do NOT failover by marking key unhealthy, although one might retry with same key.
       // We will let it fail the request immediately to avoid exhausting limits unnecessarily.
-      return false;
+      return { failover: false, reason: 'other' };
     }
 
     // Unsupported model, etc.
@@ -164,10 +177,10 @@ export class AiExecutionService {
       message.includes('does not exist')
     ) {
       // Request specific
-      return false;
+      return { failover: false, reason: 'other' };
     }
 
     // Default: bubble up, do not burn other keys on unknown errors
-    return false;
+    return { failover: false, reason: 'other' };
   }
 }

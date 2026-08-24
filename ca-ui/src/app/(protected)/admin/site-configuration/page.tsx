@@ -369,15 +369,11 @@ export default function SiteConfigurationPage() {
                   <p className="text-xs text-text-secondary">Select which LLM provider handles backend operations.</p>
                 </div>
                 <div className="md:col-span-2">
-                  <select 
-                    value={selectedProvider}
+                  <SingleSelect
+                    options={Object.entries(PROVIDER_DEFAULTS).map(([key, details]) => ({ id: key, name: details.label }))}
+                    selectedId={selectedProvider}
                     onChange={handleProviderChange}
-                    className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-                  >
-                    {Object.entries(PROVIDER_DEFAULTS).map(([key, details]) => (
-                      <option key={key} value={key}>{details.label}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -487,33 +483,24 @@ export default function SiteConfigurationPage() {
                           </button>
                         </div>
                       ) : (
-                        <select 
-                          required
-                          value={model}
-                          onChange={(e) => {
-                            if (e.target.value === '__other__') {
+                        <SingleSelect
+                          options={[
+                            ...(model && availableModels && !availableModels.includes(model) ? [{ id: model, name: `${model} (Unavailable)` }] : []),
+                            ...(model && !availableModels ? [{ id: model, name: model }] : []),
+                            ...(availableModels?.map(m => ({ id: m, name: m })) || []),
+                            ...((!availableModels || availableModels.length === 0) && !model ? [{ id: '', name: 'Fetch models to select...' }] : []),
+                            { id: '__other__', name: 'Other (Type custom name)' }
+                          ]}
+                          selectedId={model}
+                          onChange={(id) => {
+                            if (id === '__other__') {
                               setIsCustomModel(true);
                               setModel('');
                             } else {
-                              setModel(e.target.value);
+                              setModel(id);
                             }
                           }}
-                          className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm text-text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-mono"
-                        >
-                          {model && availableModels && !availableModels.includes(model) && (
-                            <option value={model}>{model} (Unavailable)</option>
-                          )}
-                          {model && !availableModels && (
-                            <option value={model}>{model}</option>
-                          )}
-                          {availableModels?.map(m => (
-                            <option key={m} value={m}>{m}</option>
-                          ))}
-                          {(!availableModels || availableModels.length === 0) && !model && (
-                            <option value="" disabled>Fetch models to select...</option>
-                          )}
-                          <option value="__other__">Other (Type custom name)</option>
-                        </select>
+                        />
                       )}
                       <Button
                         type="button"

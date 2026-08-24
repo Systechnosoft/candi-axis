@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { Button } from '@/components/primitives/Button';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { Requisition, CreateRequisitionRequest, RequisitionPriority, RequisitionStatus } from '@/types/requisitions';
 import { UserLookup } from '@/types/users';
 import { Loader2, Archive, ArchiveRestore } from 'lucide-react';
@@ -82,7 +83,7 @@ export function RequisitionModal({ isOpen, onClose, onSave, onArchive, onUnarchi
 
   const renderViewField = (label: string, value: React.ReactNode) => (
     <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-subtle/30 border border-border">
-      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-xs font-semibold text-text-muted tracking-wider">{label}</span>
       <span className="text-sm font-medium text-text-primary break-words">{value || <span className="text-text-muted italic">Not provided</span>}</span>
     </div>
   );
@@ -193,17 +194,14 @@ export function RequisitionModal({ isOpen, onClose, onSave, onArchive, onUnarchi
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Hiring Manager <span className="text-danger">*</span></label>
-            <select
-              required
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm bg-surface"
-              value={formData.hiring_manager_id}
-              onChange={e => setFormData({ ...formData, hiring_manager_id: e.target.value })}
-            >
-              <option value="" disabled>Select Manager</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
-              ))}
-            </select>
+            <SingleSelect
+              options={[
+                { id: '', name: '--Please Select--' },
+                ...users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}` }))
+              ]}
+              selectedId={formData.hiring_manager_id}
+              onChange={id => setFormData({ ...formData, hiring_manager_id: id })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -222,32 +220,30 @@ export function RequisitionModal({ isOpen, onClose, onSave, onArchive, onUnarchi
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Priority <span className="text-danger">*</span></label>
-            <select
-              required
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm bg-surface"
-              value={formData.priority}
-              onChange={e => setFormData({ ...formData, priority: e.target.value as RequisitionPriority })}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
+            <SingleSelect
+              options={[
+                { id: 'low', name: 'Low' },
+                { id: 'medium', name: 'Medium' },
+                { id: 'high', name: 'High' },
+                { id: 'critical', name: 'Critical' }
+              ]}
+              selectedId={formData.priority}
+              onChange={id => setFormData({ ...formData, priority: id as RequisitionPriority })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Status <span className="text-danger">*</span></label>
-            <select
-              required
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm bg-surface"
-              value={formData.status}
-              onChange={e => setFormData({ ...formData, status: e.target.value as RequisitionStatus })}
-            >
-              <option value="draft">Draft</option>
-              <option value="open">Open</option>
-              <option value="on_hold">On Hold</option>
-              <option value="closed">Closed</option>
-            </select>
+            <SingleSelect
+              options={[
+                { id: 'draft', name: 'Draft' },
+                { id: 'open', name: 'Open' },
+                { id: 'on_hold', name: 'On Hold' },
+                { id: 'closed', name: 'Closed' }
+              ]}
+              selectedId={formData.status}
+              onChange={id => setFormData({ ...formData, status: id as RequisitionStatus })}
+            />
           </div>
         </div>
 

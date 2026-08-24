@@ -295,7 +295,7 @@ export default function CandidateReviewPage() {
                 <div className="border-t border-success/15 pt-2 mt-2 space-y-2">
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-text-muted">Decision Outcome:</span>
-                    <Badge variant={task.feedback_action === 'approve' ? 'success' : 'error'} className="font-bold uppercase text-[10px]">
+                    <Badge variant={task.feedback_action === 'approve' ? 'success' : 'error'} className="font-bold text-[10px]">
                       {task.feedback_action}
                     </Badge>
                   </div>
@@ -334,7 +334,7 @@ export default function CandidateReviewPage() {
             {jdOpen && (
               <CardContent className="p-6 border-t border-border/50 space-y-4 text-xs">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Role Title</span>
+                  <span className="text-[10px] font-bold text-text-muted tracking-wider">Role Title</span>
                   <p className="font-semibold text-text-primary">{jobDescription.title} ({jobDescription.code || 'N/A'})</p>
                 </div>
 
@@ -351,7 +351,7 @@ export default function CandidateReviewPage() {
 
                 {jobDescription.job_summary && (
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Summary</span>
+                    <span className="text-[10px] font-bold text-text-muted tracking-wider">Summary</span>
                     <div 
                       className="prose prose-xs max-w-none text-text-secondary ql-editor p-0 text-xs"
                       dangerouslySetInnerHTML={{ __html: jobDescription.job_summary }}
@@ -361,7 +361,7 @@ export default function CandidateReviewPage() {
 
                 {jobDescription.must_have_text && (
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Must-Have Skills</span>
+                    <span className="text-[10px] font-bold text-text-muted tracking-wider">Must-Have Skills</span>
                     <div 
                       className="prose prose-xs max-w-none text-text-secondary ql-editor p-0 text-xs"
                       dangerouslySetInnerHTML={{ __html: jobDescription.must_have_text }}
@@ -371,7 +371,7 @@ export default function CandidateReviewPage() {
 
                 {jobDescription.nice_to_have_text && (
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Nice-to-Have Skills</span>
+                    <span className="text-[10px] font-bold text-text-muted tracking-wider">Nice-to-Have Skills</span>
                     <div 
                       className="prose prose-xs max-w-none text-text-secondary ql-editor p-0 text-xs"
                       dangerouslySetInnerHTML={{ __html: jobDescription.nice_to_have_text }}
@@ -381,7 +381,7 @@ export default function CandidateReviewPage() {
 
                 {jobDescription.responsibilities_text && (
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Responsibilities</span>
+                    <span className="text-[10px] font-bold text-text-muted tracking-wider">Responsibilities</span>
                     <div 
                       className="prose prose-xs max-w-none text-text-secondary ql-editor p-0 text-xs"
                       dangerouslySetInnerHTML={{ __html: jobDescription.responsibilities_text }}
@@ -417,7 +417,7 @@ export default function CandidateReviewPage() {
                   <div className="md:col-span-1 space-y-4">
                     {/* Match Score */}
                     <Card className="p-4 border border-border/60 bg-subtle/10 space-y-2">
-                      <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">JD Match Score</span>
+                      <span className="text-[10px] font-bold text-text-muted tracking-wider block">JD Match Score</span>
                       <div className="text-2xl font-extrabold text-brand flex items-baseline">
                         {overallScore !== null ? overallScore.toFixed(1) : 'N/A'}
                         <span className="text-sm text-text-muted font-semibold">/10</span>
@@ -427,7 +427,7 @@ export default function CandidateReviewPage() {
                     {/* Resume PDF Toggle */}
                     {pdfUrl && (
                       <Card className="p-4 border border-border/60 bg-subtle/10 space-y-3">
-                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Resume document</span>
+                        <span className="text-[10px] font-bold text-text-muted tracking-wider block">Resume document</span>
                         <Button 
                           variant="secondary" 
                           onClick={() => setShowResume(!showResume)}
@@ -442,7 +442,7 @@ export default function CandidateReviewPage() {
                     {/* Contact details */}
                     {hasContact && (
                       <Card className="p-4 border border-border/60 bg-subtle/10 space-y-2 text-xs">
-                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Contact Info</span>
+                        <span className="text-[10px] font-bold text-text-muted tracking-wider block">Contact Info</span>
                         {candidate.email && <p className="truncate"><strong>Email:</strong> {candidate.email}</p>}
                         {candidate.phone && <p><strong>Phone:</strong> {candidate.phone}</p>}
                         {candidate.location && <p><strong>Location:</strong> {candidate.location}</p>}
@@ -481,7 +481,7 @@ export default function CandidateReviewPage() {
                     {/* Profile Summary */}
                     {isPresent(candidate.profile_summary) && (
                       <div className="space-y-1.5">
-                        <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">Profile Summary</h4>
+                        <h4 className="text-xs font-bold text-text-primary tracking-wider">Profile Summary</h4>
                         <div
                           className="text-xs text-text-secondary leading-relaxed prose prose-xs"
                           dangerouslySetInnerHTML={{ __html: candidate.profile_summary }}
@@ -492,7 +492,7 @@ export default function CandidateReviewPage() {
                     {/* Skills */}
                     {displaySkillsList.length > 0 && (
                       <div className="space-y-1.5">
-                        <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">Matching Skills</h4>
+                        <h4 className="text-xs font-bold text-text-primary tracking-wider">Matching Skills</h4>
                         <div className="flex flex-wrap gap-1">
                           {displaySkillsList.map((skill: string, idx: number) => (
                             <Badge key={idx} variant="default" className="text-[10px]">
@@ -510,7 +510,7 @@ export default function CandidateReviewPage() {
                   {/* Employments */}
                   {hasItems(candidate.employments) && (
                     <div className="space-y-2">
-                      <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px]">Employment History</h4>
+                      <h4 className="font-bold text-text-primary tracking-wider text-[10px]">Employment History</h4>
                       <div className="space-y-2">
                         {candidate.employments.map((emp: any, idx: number) => (
                           <div key={idx} className="border-l-2 border-brand/50 pl-3 py-0.5">
@@ -527,7 +527,7 @@ export default function CandidateReviewPage() {
                   {/* Educations */}
                   {hasItems(candidate.educations) && (
                     <div className="space-y-2">
-                      <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px]">Education</h4>
+                      <h4 className="font-bold text-text-primary tracking-wider text-[10px]">Education</h4>
                       <div className="space-y-2">
                         {candidate.educations.map((ed: any, idx: number) => (
                           <div key={idx} className="border-l-2 border-brand/35 pl-3 py-0.5">
@@ -558,7 +558,7 @@ export default function CandidateReviewPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-4">
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <span className="text-text-secondary">Decision Outcome:</span>
-                    <Badge variant={task.feedback_action === 'approve' ? 'success' : 'error'} className="font-bold uppercase text-[10px]">
+                    <Badge variant={task.feedback_action === 'approve' ? 'success' : 'error'} className="font-bold text-[10px]">
                       {task.feedback_action}
                     </Badge>
                   </div>
@@ -576,7 +576,7 @@ export default function CandidateReviewPage() {
                 )}
                 {task.feedback_reason && (
                   <div className="text-xs text-text-secondary bg-subtle/30 border border-border p-4 rounded-lg">
-                    <span className="font-bold block text-text-muted mb-2 uppercase tracking-wider text-[10px]">Justification / Reason</span>
+                    <span className="font-bold block text-text-muted mb-2 tracking-wider text-[10px]">Justification / Reason</span>
                     <div 
                       className="prose prose-xs max-w-none text-text-primary ql-editor p-0" 
                       dangerouslySetInnerHTML={{ __html: task.feedback_reason }} 
@@ -588,7 +588,7 @@ export default function CandidateReviewPage() {
               <div className="space-y-6">
                 {/* Decision Toggle */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Your Decision</label>
+                  <label className="text-xs font-bold text-text-muted tracking-wider block">Your Decision</label>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
@@ -620,7 +620,7 @@ export default function CandidateReviewPage() {
                 {/* Reason RichTextArea */}
                 {action && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                    <label className="text-xs font-bold text-text-muted tracking-wider block">
                       Reason {action === 'reject' ? <span className="text-danger">*</span> : <span className="text-text-muted"></span>}
                     </label>
                     <RichTextEditor

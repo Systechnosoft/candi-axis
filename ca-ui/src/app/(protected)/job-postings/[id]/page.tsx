@@ -854,7 +854,7 @@ export default function JobPostingDetailPage() {
                   : 'bg-surface border-border text-text-secondary hover:border-text-secondary/50 shadow-sm'
               }`}
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider opacity-85 truncate" title={stat.label}>{stat.label}</div>
+              <div className="text-[10px] font-bold tracking-wider opacity-85 truncate" title={stat.label}>{stat.label}</div>
               <div className="text-xl font-black mt-0.5 leading-none">{stat.count}</div>
             </Card>
           );
@@ -880,38 +880,36 @@ export default function JobPostingDetailPage() {
             </button>
           </div>
 
-          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
-            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center">
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[80px] justify-center rounded-l-md">
               Stage
             </div>
-            <select 
-              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-              value={selectedStageFilter || ''}
-              onChange={(e) => setSelectedStageFilter(e.target.value || null)}
-            >
-              <option value="">All Stages</option>
-              {PIPELINE_STAGES.map(s => <option key={s.key} value={s.label}>{s.label}</option>)}
-            </select>
+            <SingleSelect
+              options={[
+                { id: '', name: 'All' },
+                ...PIPELINE_STAGES.map(s => ({ id: s.label, name: s.label }))
+              ]}
+              selectedId={selectedStageFilter || ''}
+              onChange={(id) => setSelectedStageFilter(id || null)}
+              variant="minimal"
+              className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+            />
           </div>
           
-          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden col-span-1">
-            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[90px] justify-center whitespace-nowrap">
+          <div className="flex items-center border border-border rounded-md bg-surface h-[34px] col-span-1">
+            <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[90px] justify-center whitespace-nowrap rounded-l-md">
               Sub Stage
             </div>
-            <select 
-              className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-              value={selectedSubStageFilter || ''}
-              onChange={(e) => setSelectedSubStageFilter(e.target.value || null)}
-            >
-              <option value="">All Sub Stages</option>
-              {uniqueSubStages.map(sub => (
-                <option key={sub} value={sub}>
-                  {sub === 'interview_to_be_scheduled' ? 'Interview to be scheduled' : sub.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
+            <SingleSelect
+              options={[
+                { id: '', name: 'All' },
+                ...uniqueSubStages.map(sub => ({ id: sub, name: sub === 'interview_to_be_scheduled' ? 'Interview to be scheduled' : sub.replace(/_/g, ' ') }))
+              ]}
+              selectedId={selectedSubStageFilter || ''}
+              onChange={(id) => setSelectedSubStageFilter(id || null)}
+              variant="minimal"
+              className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+            />
           </div>
 
           <div className="flex items-center gap-1 justify-end col-span-1">
@@ -1220,7 +1218,7 @@ export default function JobPostingDetailPage() {
 
                   {/* Reason Text Area */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex justify-between">
+                    <label className="text-xs font-bold tracking-wider text-text-muted flex justify-between">
                       <span>Reason / Description for Transition</span>
                     </label>
                     <RichTextEditor
@@ -1234,7 +1232,7 @@ export default function JobPostingDetailPage() {
                   {/* Conditional inputs */}
                   {targetStage === 'offered' && (
                     <div className="p-4 border border-brand/20 bg-brand/5 rounded-xl space-y-4">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-brand">
+                      <h5 className="text-xs font-bold tracking-wider text-brand">
                         Offer Details Required
                       </h5>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1267,7 +1265,7 @@ export default function JobPostingDetailPage() {
 
                   {targetStage === 'joined' && (
                     <div className="p-4 border border-brand/20 bg-brand/5 rounded-xl space-y-4">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-brand">
+                      <h5 className="text-xs font-bold tracking-wider text-brand">
                         Joining details Required
                       </h5>
                       <div className="flex flex-col gap-1.5">
@@ -1322,7 +1320,7 @@ export default function JobPostingDetailPage() {
               {/* Right Column: Stages List */}
               <div className="border-l border-border/50 pl-0 lg:pl-8">
                 <div className="space-y-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                  <span className="text-xs font-bold tracking-wider text-text-muted">
                     SELECT TARGET STAGE
                   </span>
                   <div className="space-y-3 max-h-[500px] overflow-y-auto overflow-x-hidden pr-2">
@@ -1352,7 +1350,7 @@ export default function JobPostingDetailPage() {
                         >
                           <div className="flex flex-col">
                             <span className={`text-sm font-bold ${isCurrent ? 'text-brand' : isSelected ? 'text-brand' : 'text-text-primary group-hover:text-brand'}`}>
-                              {st.label} {isCurrent && <span className="text-[10px] font-normal uppercase ml-1.5 px-1.5 py-0.5 rounded bg-brand/10 text-brand animate-pulse">Current</span>}
+                              {st.label} {isCurrent && <span className="text-[10px] font-normal ml-1.5 px-1.5 py-0.5 rounded bg-brand/10 text-brand animate-pulse">Current</span>}
                             </span>
                             <span className="text-xs text-text-muted mt-0.5">
                               {st.desc}
@@ -1368,7 +1366,7 @@ export default function JobPostingDetailPage() {
                                 <Check className="w-3.5 h-3.5 text-white" />
                               </div>
                             ) : isBackward ? (
-                              <span className="text-[10px] font-semibold text-text-muted/60 bg-subtle/50 px-1.5 py-0.5 rounded uppercase tracking-wider">Blocked</span>
+                              <span className="text-[10px] font-semibold text-text-muted/60 bg-subtle/50 px-1.5 py-0.5 rounded tracking-wider">Blocked</span>
                             ) : (
                               <div className="w-5 h-5 rounded-full border border-border group-hover:border-brand/50 flex items-center justify-center transition-colors" />
                             )}
@@ -1417,7 +1415,7 @@ export default function JobPostingDetailPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   Candidate Email ID
                 </label>
                 <input
@@ -1430,7 +1428,7 @@ export default function JobPostingDetailPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   Round Type
                 </label>
                 <select
@@ -1445,7 +1443,7 @@ export default function JobPostingDetailPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   Date & Time
                 </label>
                 <input
@@ -1460,21 +1458,22 @@ export default function JobPostingDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   Mode
                 </label>
-                <select
-                  value={mode}
-                  onChange={(e) => setMode(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface"
-                >
-                  <option value="online">Online</option>
-                  <option value="offline">Offline</option>
-                </select>
+                <SingleSelect
+                  options={[
+                    { id: 'online', name: 'Online' },
+                    { id: 'offline', name: 'Offline' }
+                  ]}
+                  selectedId={mode}
+                  onChange={(id) => setMode(id)}
+                  className="w-full text-sm"
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   Duration (mins)
                 </label>
                 <input
@@ -1489,28 +1488,33 @@ export default function JobPostingDetailPage() {
 
               {mode === 'online' ? (
                 <div className="flex flex-col gap-1.5">
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  <label className="block text-xs font-bold text-text-secondary mb-1">
                     Meeting Provider
                   </label>
                   {activeProviders.length > 0 ? (
                     <div className="flex gap-2">
-                      <select
-                        value={selectedMeetingProvider}
-                        onChange={(e) => {
-                          setSelectedMeetingProvider(e.target.value);
-                          setMeetingLink('');
-                          setExternalEventId('');
-                          setMeetingLinkEditable(false);
-                        }}
-                        className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-surface"
-                      >
-                        <option value="">Select provider...</option>
-                        {activeProviders.map((p: any) => (
-                          <option key={p.provider} value={p.provider}>
-                            {p.display_name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex-1">
+                        <SingleSelect
+                          options={[
+                            { id: '', name: '--Please Select--' },
+                            ...activeProviders.map((p: any) => ({
+                              id: p.provider,
+                              name: p.display_name
+                                .split(' ')
+                                .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                .join(' ')
+                            }))
+                          ]}
+                          selectedId={selectedMeetingProvider}
+                          onChange={(id) => {
+                            setSelectedMeetingProvider(id);
+                            setMeetingLink('');
+                            setExternalEventId('');
+                            setMeetingLinkEditable(false);
+                          }}
+                          className="w-full text-sm"
+                        />
+                      </div>
                       <button
                         type="button"
                         disabled={!selectedMeetingProvider || generatingLink || (selectedMeetingProvider === 'GOOGLE_MEET' && !googleConnected)}
@@ -1532,7 +1536,7 @@ export default function JobPostingDetailPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                  <label className="block text-xs font-bold text-text-secondary mb-1">
                     Location / Room
                   </label>
                   <input
@@ -1584,7 +1588,7 @@ export default function JobPostingDetailPage() {
 
             {mode === 'online' && (
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   Meeting Link
                 </label>
                 <input
@@ -1599,7 +1603,7 @@ export default function JobPostingDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   To (Interviewers)
                 </label>
                 <MultiSelect
@@ -1611,7 +1615,7 @@ export default function JobPostingDetailPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+                <label className="block text-xs font-bold text-text-secondary mb-1">
                   CC (Hiring Manager / HR)
                 </label>
                 <MultiSelect
@@ -1624,7 +1628,7 @@ export default function JobPostingDetailPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+              <label className="block text-xs font-bold text-text-secondary mb-1">
                 Email Subject
               </label>
               <input
@@ -1637,7 +1641,7 @@ export default function JobPostingDetailPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="block text-xs font-bold text-text-secondary uppercase mb-1">
+              <label className="block text-xs font-bold text-text-secondary mb-1">
                 Note <span className="font-normal normal-case text-text-muted ml-1">(optional)</span>
               </label>
               <RichTextEditor

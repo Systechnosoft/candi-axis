@@ -23,7 +23,7 @@ export function InfoCard({ label, value, className }: { label: string; value: Re
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardContent className="p-4 flex flex-col justify-center">
-        <span className="text-[12px] text-text-secondary mb-1 uppercase tracking-wider font-semibold">{label}</span>
+        <span className="text-[12px] text-text-secondary mb-1 tracking-wider font-semibold">{label}</span>
         <span className="text-[14px] text-text-primary font-medium">{value}</span>
       </CardContent>
     </Card>

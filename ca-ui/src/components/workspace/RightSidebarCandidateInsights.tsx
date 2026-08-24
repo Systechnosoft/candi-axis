@@ -80,7 +80,7 @@ export const RightSidebarCandidateInsights: React.FC<RightSidebarCandidateInsigh
         <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
           <Sparkles className="w-5 h-5 animate-pulse" />
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted rotate-180 whitespace-nowrap" style={{ writingMode: 'vertical-lr' }}>
+        <span className="text-[10px] font-black tracking-widest text-text-muted rotate-180 whitespace-nowrap" style={{ writingMode: 'vertical-lr' }}>
           Skill Insights
         </span>
       </div>
@@ -172,7 +172,7 @@ export const RightSidebarCandidateInsights: React.FC<RightSidebarCandidateInsigh
             <Sparkles className="w-5 h-5" />
           </div>
 
-          <span className="text-xs font-bold text-text-muted uppercase tracking-widest mb-3">Overall Fit</span>
+          <span className="text-xs font-bold text-text-muted tracking-widest mb-3">Overall Fit</span>
           
           <CircularProgressRing 
             score={candidate.overall_match_score}
@@ -197,7 +197,7 @@ export const RightSidebarCandidateInsights: React.FC<RightSidebarCandidateInsigh
             <div className="flex flex-col gap-0.5">
               <button 
                 onClick={() => setIsMatchedListExpanded(!isMatchedListExpanded)}
-                className="w-full flex items-center justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider hover:text-text-primary transition-colors py-0.5"
+                className="w-full flex items-center justify-between text-[11px] font-bold text-text-muted tracking-wider hover:text-text-primary transition-colors py-0.5"
               >
                 <span>Matched Skills ({sortedMatchedTags.length})</span>
                 <span className="text-[10px] text-text-secondary">
@@ -249,7 +249,7 @@ export const RightSidebarCandidateInsights: React.FC<RightSidebarCandidateInsigh
 
         {/* Recruiter Insights Quick Stats */}
         <div className="bg-slate-50 border border-border rounded-xl p-3 space-y-2">
-          <h5 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-0.5 flex items-center gap-1">
+          <h5 className="text-[10px] font-bold text-text-muted tracking-wider mb-0.5 flex items-center gap-1">
             <Award className="w-3.5 h-3.5 text-brand" />
             Recruiter Match Summary
           </h5>

@@ -103,7 +103,7 @@ export const CircularProgressRing: React.FC<CircularProgressRingProps> = ({
             {clampedScore.toFixed(1)}
           </span>
         </div>
-        <span className="text-text-muted font-semibold text-[10px] tracking-wider uppercase mt-0.5">/ 10</span>
+        <span className="text-text-muted font-semibold text-[10px] tracking-wider mt-0.5">/ 10</span>
       </div>
     </div>
   );

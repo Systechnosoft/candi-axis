@@ -12,6 +12,9 @@ interface SingleSelectProps {
   onChange: (id: string) => void;
   placeholder?: string;
   required?: boolean;
+  className?: string;
+  disabled?: boolean;
+  variant?: 'default' | 'minimal';
 }
 
 export const SingleSelect: React.FC<SingleSelectProps> = ({
@@ -20,6 +23,9 @@ export const SingleSelect: React.FC<SingleSelectProps> = ({
   onChange,
   placeholder = 'Select option...',
   required = false,
+  className = '',
+  disabled = false,
+  variant = 'default',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,8 +105,13 @@ export const SingleSelect: React.FC<SingleSelectProps> = ({
     <div className="relative w-full" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-2 text-sm border border-input rounded-md bg-surface text-left focus:outline-none focus:ring-1 focus:ring-brand shadow-sm transition-all duration-200"
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`flex items-center justify-between w-full text-left transition-all duration-200 ${
+          variant === 'default'
+            ? 'px-3 py-2 text-sm border border-input rounded-md bg-surface focus:outline-none focus:ring-1 focus:ring-brand shadow-sm'
+            : 'bg-transparent focus:outline-none'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
       >
         <span className={`truncate max-w-[90%] ${selectedOption ? 'text-text-primary' : 'text-text-muted'}`}>
           {displayText}

@@ -47,7 +47,7 @@ export const ExpandableJdCard: React.FC<ExpandableJdCardProps> = ({
         <CardContent className="p-6 space-y-6">
           {summary && (
             <div>
-              <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Summary</h4>
+              <h4 className="text-xs font-bold text-text-muted tracking-wider mb-2">Summary</h4>
               <div 
                 className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap prose max-w-none" 
                 dangerouslySetInnerHTML={{ __html: summary }} 
@@ -57,7 +57,7 @@ export const ExpandableJdCard: React.FC<ExpandableJdCardProps> = ({
           
           {responsibilities && (
             <div>
-              <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Responsibilities</h4>
+              <h4 className="text-xs font-bold text-text-muted tracking-wider mb-2">Responsibilities</h4>
               <div 
                 className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap prose max-w-none" 
                 dangerouslySetInnerHTML={{ __html: responsibilities }} 
@@ -68,7 +68,7 @@ export const ExpandableJdCard: React.FC<ExpandableJdCardProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {mustHave && (
               <div className="bg-success-50/10 p-4 rounded-xl border border-success/10">
-                <h4 className="text-xs font-bold text-success uppercase tracking-wider mb-2">Must Have</h4>
+                <h4 className="text-xs font-bold text-success tracking-wider mb-2">Must Have</h4>
                 <div 
                   className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap prose max-w-none" 
                   dangerouslySetInnerHTML={{ __html: mustHave }} 
@@ -78,7 +78,7 @@ export const ExpandableJdCard: React.FC<ExpandableJdCardProps> = ({
             
             {niceToHave && (
               <div className="bg-brand-50/10 p-4 rounded-xl border border-brand/10">
-                <h4 className="text-xs font-bold text-brand uppercase tracking-wider mb-2">Nice To Have</h4>
+                <h4 className="text-xs font-bold text-brand tracking-wider mb-2">Nice To Have</h4>
                 <div 
                   className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap prose max-w-none" 
                   dangerouslySetInnerHTML={{ __html: niceToHave }} 
@@ -89,7 +89,7 @@ export const ExpandableJdCard: React.FC<ExpandableJdCardProps> = ({
           
           {tags.length > 0 && (
             <div className="pt-4 border-t border-border/60">
-              <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Required Skills & Tags</h4>
+              <h4 className="text-xs font-bold text-text-muted tracking-wider mb-2">Required Skills & Tags</h4>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag) => (
                   <Badge key={tag.id} variant="info" className="bg-brand/10 text-brand border-none font-medium flex items-center gap-1.5" title={tag.is_starred ? "Must-have skill" : undefined}>

@@ -125,7 +125,7 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
             </span>
           )}
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted rotate-180 whitespace-nowrap" style={{ writingMode: 'vertical-lr' }}>
+        <span className="text-[10px] font-black tracking-widest text-text-muted rotate-180 whitespace-nowrap" style={{ writingMode: 'vertical-lr' }}>
           Matching Candidates
         </span>
       </div>
@@ -159,7 +159,7 @@ export const LeftSidebarCandidates: React.FC<LeftSidebarCandidatesProps> = ({
 
       {/* Searchable Multi-select Tag Filter */}
       <div className="p-3 border-b border-border flex flex-col gap-2 relative z-20" ref={dropdownRef}>
-        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-text-muted tracking-wider">
           Filter by skills
         </span>
         

@@ -10,6 +10,7 @@ import { Loader2, Archive, ArchiveRestore, X } from 'lucide-react';
 import { cleanText } from '@/lib/utils';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { TagSelector } from '@/components/ats/TagSelector';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 
 interface JobDescriptionFormProps {
   mode: 'create' | 'edit';
@@ -167,31 +168,31 @@ export function JobDescriptionForm({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Work Mode</label>
-            <select
-              className="w-full px-3 py-2 border border-border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm"
-              value={formData.work_mode || ''}
-              onChange={e => setFormData({ ...formData, work_mode: e.target.value })}
-            >
-              <option value="">None specified</option>
-              <option value="onsite">Onsite</option>
-              <option value="remote">Remote</option>
-              <option value="hybrid">Hybrid</option>
-            </select>
+            <SingleSelect
+              options={[
+                { id: '', name: 'None specified' },
+                { id: 'onsite', name: 'Onsite' },
+                { id: 'remote', name: 'Remote' },
+                { id: 'hybrid', name: 'Hybrid' }
+              ]}
+              selectedId={formData.work_mode || ''}
+              onChange={id => setFormData({ ...formData, work_mode: id })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Employment Type</label>
-            <select
-              className="w-full px-3 py-2 border border-border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm"
-              value={formData.employment_type || ''}
-              onChange={e => setFormData({ ...formData, employment_type: e.target.value })}
-            >
-              <option value="">None specified</option>
-              <option value="full_time">Full-Time</option>
-              <option value="part_time">Part-Time</option>
-              <option value="contract">Contract</option>
-              <option value="internship">Internship</option>
-            </select>
+            <SingleSelect
+              options={[
+                { id: '', name: 'None specified' },
+                { id: 'full_time', name: 'Full-Time' },
+                { id: 'part_time', name: 'Part-Time' },
+                { id: 'contract', name: 'Contract' },
+                { id: 'internship', name: 'Internship' }
+              ]}
+              selectedId={formData.employment_type || ''}
+              onChange={id => setFormData({ ...formData, employment_type: id })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -218,30 +219,28 @@ export function JobDescriptionForm({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Status</label>
-            <select
-              className="w-full px-3 py-2 border border-border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm"
-              value={formData.status || 'draft'}
-              onChange={e => setFormData({ ...formData, status: e.target.value })}
-            >
-              <option value="draft">Draft</option>
-              <option value="open">Open</option>
-              <option value="on_hold">On Hold</option>
-              <option value="closed">Closed</option>
-            </select>
+            <SingleSelect
+              options={[
+                { id: 'draft', name: 'Draft' },
+                { id: 'open', name: 'Open' },
+                { id: 'on_hold', name: 'On Hold' },
+                { id: 'closed', name: 'Closed' }
+              ]}
+              selectedId={formData.status || 'draft'}
+              onChange={id => setFormData({ ...formData, status: id })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Owner (User)</label>
-            <select
-              className="w-full px-3 py-2 border border-border bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm"
-              value={formData.owner_user_id || ''}
-              onChange={e => setFormData({ ...formData, owner_user_id: e.target.value })}
-            >
-              <option value="">No owner assigned</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
-              ))}
-            </select>
+            <SingleSelect
+              options={[
+                { id: '', name: 'No owner assigned' },
+                ...users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}` }))
+              ]}
+              selectedId={formData.owner_user_id || ''}
+              onChange={id => setFormData({ ...formData, owner_user_id: id })}
+            />
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2 lg:col-span-3">
             <label className="text-sm font-medium text-text-primary">Skills</label>

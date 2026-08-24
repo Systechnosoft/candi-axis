@@ -9,21 +9,24 @@ import { AdminService } from '@/lib/api/admin';
 import {
   Eye,
   EyeOff,
-  Save,
+  Check,
+  X,
+  Server,
+  RefreshCw,
   Loader2,
+  Save,
+  Sparkles,
+  Star,
+  Power,
   AlertCircle,
   CheckCircle2,
   Lock,
   Globe,
   Settings,
-  RefreshCw,
-  Power,
-  Star,
-  Check,
   Video,
-  X,
   AlertTriangle
 } from 'lucide-react';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 
 const PROVIDER_METADATA: Record<string, { label: string; logoUrl?: string; color: string }> = {
   GOOGLE_MEET: { label: 'Google Meet', color: 'bg-blue-500/10 border-blue-500 text-blue-500' },
@@ -324,7 +327,7 @@ export default function InterviewConfigurationPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Provider List Column */}
           <div className="md:col-span-1 flex flex-col gap-4">
-            <h3 className="font-semibold text-sm text-text-secondary uppercase tracking-wider mb-1">
+            <h3 className="font-semibold text-sm text-text-secondary tracking-wider mb-1">
               Providers
             </h3>
             {Object.keys(PROVIDER_METADATA).map((provKey) => {
@@ -380,7 +383,7 @@ export default function InterviewConfigurationPage() {
 
                     {dbRow?.last_test_status && (
                       <span
-                        className={`text-[10px] uppercase font-bold tracking-tight ${
+                        className={`text-[10px] font-bold tracking-tight ${
                           dbRow.last_test_status === 'SUCCESS' ? 'text-emerald-600' : 'text-rose-600'
                         }`}
                       >
@@ -471,24 +474,20 @@ export default function InterviewConfigurationPage() {
 
                     return (
                       <div key={field.key} className="flex flex-col gap-1.5 text-left">
-                        <label className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                        <label className="text-xs font-bold text-text-primary tracking-wider">
                           {field.label} {field.required && <span className="text-rose-500">*</span>}
                         </label>
 
                         {field.type === 'select' ? (
-                          <select
-                            value={value}
-                            required={field.required}
-                            onChange={(e) => handleInputChange(field.key, e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text-primary"
-                          >
-                            <option value="">Select option...</option>
-                            {field.options?.map((opt: any) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
+                          <SingleSelect
+                            options={[
+                              { id: '', name: '--Please Select--' },
+                              ...(field.options || []).map((opt: any) => ({ id: opt.value, name: opt.label }))
+                            ]}
+                            selectedId={value}
+                            onChange={(id) => handleInputChange(field.key, id)}
+                            className="w-full text-sm"
+                          />
                         ) : isSecret ? (
                           <div className="relative">
                             <input

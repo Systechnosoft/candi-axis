@@ -501,13 +501,13 @@ export default function ViewCandidatePage() {
           <div>
             <h1 className="text-2xl font-bold text-text-primary flex items-center gap-3">
               {candidate.full_name}
-              <span className="text-xs font-normal bg-brand/10 text-brand px-2.5 py-0.5 rounded-full uppercase border border-brand/20 select-none">
+              <span className="text-xs font-normal bg-brand/10 text-brand px-2.5 py-0.5 rounded-full border border-brand/20 select-none">
                 {candidate.status}
               </span>
             </h1>
             <p className="text-sm text-text-secondary">
               {candidate.current_designation || 'Candidate'}
-              {/* <span className="text-xs font-normal bg-brand/10 text-brand px-2.5 py-0.5 rounded-full uppercase border border-brand/20 select-none">
+              {/* <span className="text-xs font-normal bg-brand/10 text-brand px-2.5 py-0.5 rounded-full border border-brand/20 select-none">
                 {candidate.status}
               </span> */}
               {candidate.total_exp_months != null && ` • ${formatExperience(candidate.total_exp_months)}`}
@@ -621,7 +621,7 @@ export default function ViewCandidatePage() {
                   <div className="space-y-3">
                     {isPresent(candidate.email) && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Email Address</span>
+                        <span className="text-[10px] font-bold text-text-muted tracking-wider">Email Address</span>
                         <a href={`mailto:${candidate.email}`} className="text-xs font-semibold text-brand hover:underline flex items-center gap-1.5 break-all">
                           <Mail className="w-3.5 h-3.5 shrink-0" /> {candidate.email}
                         </a>
@@ -629,7 +629,7 @@ export default function ViewCandidatePage() {
                     )}
                     {isPresent(candidate.phone) && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Phone Number</span>
+                        <span className="text-[10px] font-bold text-text-muted tracking-wider">Phone Number</span>
                         <span className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
                           <Phone className="w-3.5 h-3.5 text-text-secondary shrink-0" /> {candidate.phone}
                         </span>
@@ -637,7 +637,7 @@ export default function ViewCandidatePage() {
                     )}
                     {isPresent(candidate.location) && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Location</span>
+                        <span className="text-[10px] font-bold text-text-muted tracking-wider">Location</span>
                         <span className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5 text-text-secondary shrink-0" /> {candidate.location}
                         </span>
@@ -874,12 +874,12 @@ export default function ViewCandidatePage() {
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-border/50 text-text-muted">
                           <div>
-                            <span className="block font-semibold uppercase tracking-wider text-[10px]">Duration</span>
+                            <span className="block font-semibold tracking-wider text-[10px]">Duration</span>
                             <span>{ed.start_year ? `${ed.start_year} - ` : ''}{ed.end_year || 'Present'}</span>
                           </div>
                           {ed.grade_or_percentage && (
                             <div>
-                              <span className="block font-semibold uppercase tracking-wider text-[10px]">Grade / Percentage</span>
+                              <span className="block font-semibold tracking-wider text-[10px]">Grade / Percentage</span>
                               <span>{ed.grade_or_percentage}</span>
                             </div>
                           )}

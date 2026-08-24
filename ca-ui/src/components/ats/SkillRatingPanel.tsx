@@ -55,7 +55,7 @@ export const SkillRatingPanel: React.FC<SkillRatingPanelProps> = ({
     <>
       <Card className="border border-border shadow-sm bg-surface sticky top-6 animate-in slide-in-from-right duration-300">
         <CardHeader className="pb-3 border-b border-border">
-          <CardTitle className="text-sm font-bold text-text-primary uppercase tracking-wider">
+          <CardTitle className="text-sm font-bold text-text-primary tracking-wider">
             AI Fit Breakdown
           </CardTitle>
         </CardHeader>
@@ -64,7 +64,7 @@ export const SkillRatingPanel: React.FC<SkillRatingPanelProps> = ({
           {/* Overall Fit Circle */}
           <div className="flex flex-col items-center justify-center py-4 bg-subtle/30 rounded-xl border border-border/40">
             <CircularProgressRing score={overallScore} size={130} strokeWidth={8} />
-            <span className="text-xs font-bold text-text-muted uppercase tracking-widest mt-3">
+            <span className="text-xs font-bold text-text-muted tracking-widest mt-3">
               Overall Fit
             </span>
             <span className={`text-xs font-semibold mt-1 ${overallScore >= 7 ? 'text-success' : overallScore >= 4 ? 'text-brand' : 'text-danger'
@@ -75,7 +75,7 @@ export const SkillRatingPanel: React.FC<SkillRatingPanelProps> = ({
 
           {/* Top Matching Skills */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-text-muted tracking-wider">
               Top Matching Skills
             </h4>
             <div className="space-y-2">

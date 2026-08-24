@@ -10,6 +10,7 @@ import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import { tagsApi } from '@/lib/api/tags';
 import { Tag, TagType, CreateTagRequest } from '@/types/tags';
 import { Plus, Edit2, Loader2, FilterX, RefreshCw } from 'lucide-react';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { ModalShell, DrawerShell } from '@/components/primitives/ModalShell';
 import { TablePagination } from '@/components/primitives/TablePagination';
 import { FilterBar } from '@/components/primitives/FilterBar';
@@ -160,35 +161,37 @@ export default function TagsManagementPage() {
       <Card>
         <div className="border-b border-border p-2 bg-surface">
           <FilterBar searchValue={search} onSearchChange={setSearch} onRefresh={fetchTags} onClearFilters={() => { setTypeFilter(''); setActiveFilter('true'); }}>
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                 Type
               </div>
-              <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary capitalize"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-              >
-                <option value="">All Types</option>
-                {TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
+              <SingleSelect
+                options={[
+                  { id: '', name: 'All' },
+                  ...TYPE_OPTIONS.map(opt => ({ id: opt.value, name: opt.label }))
+                ]}
+                selectedId={typeFilter}
+                onChange={setTypeFilter}
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary capitalize"
+              />
             </div>
 
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                 Status
               </div>
-              <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none focus:ring-1 focus:ring-brand appearance-none cursor-pointer text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={activeFilter}
-                onChange={(e) => setActiveFilter(e.target.value)}
-              >
-                <option value="all">All</option>
-                <option value="true">Active Only</option>
-                <option value="false">Disabled Only</option>
-              </select>
+              <SingleSelect
+                options={[
+                  { id: 'true', name: 'Active' },
+                  { id: 'false', name: 'Inactive' },
+                  { id: 'all', name: 'All' }
+                ]}
+                selectedId={activeFilter}
+                onChange={setActiveFilter}
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary capitalize"
+              />
             </div>
           </FilterBar>
         </div>
@@ -243,7 +246,7 @@ export default function TagsManagementPage() {
                       {tag.name}
                     </button>
                   </TableCell>
-                  <TableCell className="text-center"><Badge variant="default" className="uppercase text-[10px] tracking-wider">{tag.type}</Badge></TableCell>
+                  <TableCell className="text-center"><Badge variant="default" className="text-[10px] tracking-wider">{tag.type}</Badge></TableCell>
                   <TableCell className="text-sm text-text-secondary truncate max-w-xs">{tag.description || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{tag.updated_by_name || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{formatDate(tag.updated_at)}</TableCell>
@@ -351,7 +354,7 @@ export default function TagsManagementPage() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-text-muted mb-1">Type</h3>
-                <p className="text-sm text-text-primary uppercase tracking-wider">{viewingTag.type}</p>
+                <p className="text-sm text-text-primary tracking-wider">{viewingTag.type}</p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-text-muted mb-1">Status</h3>

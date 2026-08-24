@@ -227,7 +227,7 @@ export default function ResumeScoringSettingsPage() {
             </div>
           </div>
           <div className="text-right shrink-0">
-            <span className="text-xs text-text-muted font-semibold uppercase tracking-wider block">Sum of current weights</span>
+            <span className="text-xs text-text-muted font-semibold tracking-wider block">Sum of current weights</span>
             <span className={`text-2xl font-extrabold ${totalWeight === 100 ? 'text-status-success' : 'text-amber-500'}`}>
               {totalWeight} / 100
             </span>

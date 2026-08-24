@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Edit2, Archive, Loader2, Check } from 'lucide-react';
 import { DrawerShell80, ModalShell } from '@/components/primitives/ModalShell';
 import { MultiSelect } from '@/components/primitives/MultiSelect';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { ArchiveConfirmModal } from '@/components/ui/ArchiveConfirmModal';
 import { FilterBar } from '@/components/primitives/FilterBar';
 
@@ -248,38 +249,40 @@ export default function JobDescriptionsPage() {
             onRefresh={fetchData}
             onClearFilters={() => { setStatusFilter(''); setWorkModeFilter(''); }}
           >
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                 Status
               </div>
-              <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="closed">Closed</option>
-              </select>
+              <SingleSelect
+                options={[
+                  { id: '', name: 'All' },
+                  { id: 'draft', name: 'Draft' },
+                  { id: 'active', name: 'Active' },
+                  { id: 'closed', name: 'Closed' }
+                ]}
+                selectedId={statusFilter}
+                onChange={setStatusFilter}
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+              />
             </div>
 
-            <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+            <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+              <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                 Work Mode
               </div>
-              <select 
-                className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                value={workModeFilter}
-                onChange={(e) => setWorkModeFilter(e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="Onsite">Onsite</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Remote">Remote</option>
-              </select>
+              <SingleSelect
+                options={[
+                  { id: '', name: 'All' },
+                  { id: 'Onsite', name: 'Onsite' },
+                  { id: 'Hybrid', name: 'Hybrid' },
+                  { id: 'Remote', name: 'Remote' }
+                ]}
+                selectedId={workModeFilter}
+                onChange={setWorkModeFilter}
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+              />
             </div>
           </FilterBar>
         </div>

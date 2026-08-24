@@ -79,7 +79,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 {jd.title}
               </h1>
               <Badge variant={jd.status === 'open' ? 'success' : 'default'}>
-                {jd.status === 'open' ? 'Open' : jd.status.toUpperCase()}
+                {jd.status === 'open' ? 'Open' : jd.status.charAt(0).toUpperCase() + jd.status.slice(1).toLowerCase()}
               </Badge>
             </div>
             
@@ -166,7 +166,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             <div className="px-6 pb-6 pt-2 border-t border-border bg-slate-50/20 text-xs text-text-secondary space-y-4 animate-in slide-in-from-top-4 duration-300">
               {jd.job_summary && (
                 <div className="space-y-1">
-                  <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px]">Job Summary</h4>
+                  <h4 className="font-bold text-text-primary tracking-wider text-[10px]">Job Summary</h4>
                   <div 
                     className="leading-relaxed bg-white border border-slate-100 p-3 rounded-lg prose prose-xs"
                     dangerouslySetInnerHTML={{ __html: jd.job_summary }}
@@ -177,7 +177,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {jd.must_have_text && (
                   <div className="space-y-1">
-                    <h4 className="font-bold text-emerald-600 uppercase tracking-wider text-[10px]">Key Requirements (Must Have)</h4>
+                    <h4 className="font-bold text-emerald-600 tracking-wider text-[10px]">Key Requirements (Must Have)</h4>
                     <div 
                       className="leading-relaxed bg-white border border-slate-100 p-3 rounded-lg prose prose-xs"
                       dangerouslySetInnerHTML={{ __html: jd.must_have_text }}
@@ -186,7 +186,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 )}
                 {jd.nice_to_have_text && (
                   <div className="space-y-1">
-                    <h4 className="font-bold text-indigo-600 uppercase tracking-wider text-[10px]">Nice to Have</h4>
+                    <h4 className="font-bold text-indigo-600 tracking-wider text-[10px]">Nice to Have</h4>
                     <div 
                       className="leading-relaxed bg-white border border-slate-100 p-3 rounded-lg prose prose-xs"
                       dangerouslySetInnerHTML={{ __html: jd.nice_to_have_text }}

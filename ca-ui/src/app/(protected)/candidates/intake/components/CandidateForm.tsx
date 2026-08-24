@@ -7,6 +7,7 @@ import { cleanText, formatToHtmlBullets } from '@/lib/utils';
 import { CandidateFormValues, DuplicateMatchResponse, CandidateEducation, CandidateEmployment, CandidateCertification, CandidateSocialLink } from '@/types/candidates';
 import { X, Plus, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { TagSelector } from '@/components/ats/TagSelector';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { Tag } from '@/types/tags';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
 import { CandidatesService } from '@/lib/api/candidates';
@@ -546,15 +547,19 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-text-primary">Employment Type <span className="text-error">*</span></label>
-                    <select required className="w-full px-3 py-2 border border-border rounded-md text-sm bg-surface" value={emp.employment_type || ''} onChange={(e) => handleEmploymentChange(index, 'employment_type', e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="full_time">Full Time</option>
-                      <option value="part_time">Part Time</option>
-                      <option value="contract">Contract</option>
-                      <option value="internship">Internship</option>
-                      <option value="freelance">Freelance</option>
-                      <option value="other">Other</option>
-                    </select>
+                    <SingleSelect
+                      options={[
+                        { id: '', name: '--Please Select--' },
+                        { id: 'full_time', name: 'Full Time' },
+                        { id: 'part_time', name: 'Part Time' },
+                        { id: 'contract', name: 'Contract' },
+                        { id: 'internship', name: 'Internship' },
+                        { id: 'freelance', name: 'Freelance' },
+                        { id: 'other', name: 'Other' }
+                      ]}
+                      selectedId={emp.employment_type || ''}
+                      onChange={(id) => handleEmploymentChange(index, 'employment_type', id)}
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-text-primary">Location</label>
@@ -623,16 +628,20 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-text-primary">Qualification Level</label>
-                    <select className="w-full px-3 py-2 border border-border rounded-md text-sm bg-surface" value={ed.qualification_level || ''} onChange={(e) => handleEducationChange(index, 'qualification_level', e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="secondary">Secondary</option>
-                      <option value="higher_secondary">Higher Secondary</option>
-                      <option value="diploma">Diploma</option>
-                      <option value="bachelor">Bachelor&apos;s</option>
-                      <option value="master">Master&apos;s</option>
-                      <option value="doctorate">Doctorate</option>
-                      <option value="other">Other</option>
-                    </select>
+                    <SingleSelect
+                      options={[
+                        { id: '', name: '--Please Select--' },
+                        { id: 'secondary', name: 'Secondary' },
+                        { id: 'higher_secondary', name: 'Higher Secondary' },
+                        { id: 'diploma', name: 'Diploma' },
+                        { id: 'bachelor', name: 'Bachelor\'s' },
+                        { id: 'master', name: 'Master\'s' },
+                        { id: 'doctorate', name: 'Doctorate' },
+                        { id: 'other', name: 'Other' }
+                      ]}
+                      selectedId={ed.qualification_level || ''}
+                      onChange={(id) => handleEducationChange(index, 'qualification_level', id)}
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-text-primary">Degree Name</label>
@@ -750,13 +759,17 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
                 <div key={index} className="flex flex-col sm:flex-row items-start sm:items-end gap-4 p-4 border border-border rounded-lg bg-surface">
                   <div className="flex flex-col gap-1.5 w-full sm:w-1/3">
                     <label className="text-sm font-medium text-text-primary">Platform <span className="text-error">*</span></label>
-                    <select required className="w-full px-3 py-2 border border-border rounded-md text-sm bg-surface" value={link.link_type} onChange={(e) => handleSocialLinkChange(index, 'link_type', e.target.value)}>
-                      <option value="linkedin">LinkedIn</option>
-                      <option value="github">GitHub</option>
-                      <option value="portfolio">Portfolio</option>
-                      <option value="website">Personal Website</option>
-                      <option value="other">Other</option>
-                    </select>
+                    <SingleSelect
+                      options={[
+                        { id: 'linkedin', name: 'LinkedIn' },
+                        { id: 'github', name: 'GitHub' },
+                        { id: 'portfolio', name: 'Portfolio' },
+                        { id: 'website', name: 'Personal Website' },
+                        { id: 'other', name: 'Other' }
+                      ]}
+                      selectedId={link.link_type}
+                      onChange={(id) => handleSocialLinkChange(index, 'link_type', id)}
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5 flex-1 w-full">
                     <label className="text-sm font-medium text-text-primary">URL <span className="text-error">*</span></label>

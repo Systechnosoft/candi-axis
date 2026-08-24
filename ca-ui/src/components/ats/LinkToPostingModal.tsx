@@ -129,7 +129,7 @@ export function LinkToPostingModal({ candidateId, candidateName, onClose }: Link
                       </div>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <div className="bg-brand text-surface text-[10px] font-bold px-2 py-1 rounded">ADD</div>
+                      <div className="bg-brand text-surface text-[10px] font-bold px-2 py-1 rounded">Add</div>
                     </div>
                   </button>
                 ))

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DrawerShell } from '@/components/primitives/ModalShell';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { JobDescription } from '@/types/job-descriptions';
 import { Tag } from '@/types/tags';
 import { tagsApi } from '@/lib/api/tags';
@@ -115,17 +116,18 @@ export function JobDescriptionDetailModal({
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Update Status:</span>
-              <select
-                className="px-2 py-1.5 border border-border bg-white rounded-md text-sm outline-none focus:ring-1 focus:ring-brand"
-                value={jobDescription.status}
+              <SingleSelect
+                options={[
+                  { id: 'draft', name: 'Draft' },
+                  { id: 'open', name: 'Open' },
+                  { id: 'on_hold', name: 'On Hold' },
+                  { id: 'closed', name: 'Closed' }
+                ]}
+                selectedId={jobDescription.status}
+                onChange={handleStatusUpdate}
                 disabled={statusUpdating}
-                onChange={(e) => handleStatusUpdate(e.target.value)}
-              >
-                <option value="draft">Draft</option>
-                <option value="open">Open</option>
-                <option value="on_hold">On Hold</option>
-                <option value="closed">Closed</option>
-              </select>
+                className="w-32"
+              />
               {statusUpdating && <Loader2 className="w-4 h-4 animate-spin text-brand" />}
             </div>
             {jobDescription.published_internal_at && (
@@ -137,21 +139,21 @@ export function JobDescriptionDetailModal({
         {/* Specs Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-muted p-4 rounded-md border border-border/20">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Work Mode</p>
+            <p className="text-xs font-semibold text-muted-foreground">Work Mode</p>
             <p className="text-sm font-medium mt-1">{jobDescription.work_mode?.replace('_', ' ') || 'Any'}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Employment Type</p>
+            <p className="text-xs font-semibold text-muted-foreground">Employment Type</p>
             <p className="text-sm font-medium mt-1">{jobDescription.employment_type?.replace('_', ' ') || 'Any'}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Experience (Mo)</p>
+            <p className="text-xs font-semibold text-muted-foreground">Experience (Mo)</p>
             <p className="text-sm font-medium mt-1">
               {jobDescription.exp_min_months != null ? jobDescription.exp_min_months : '-'} to {jobDescription.exp_max_months != null ? jobDescription.exp_max_months : '-'}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Owner ID</p>
+            <p className="text-xs font-semibold text-muted-foreground">Owner ID</p>
             <p className="text-sm font-medium mt-1 truncate" title={jobDescription.owner_user_id || ''}>
               {jobDescription.owner_user_id ? 'Assigned' : 'Unassigned'}
             </p>

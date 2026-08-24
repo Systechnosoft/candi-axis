@@ -8,6 +8,7 @@ import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/c
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { cn, formatDate, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { OrganisationsService, Organisation } from '@/lib/api/organisations';
@@ -225,28 +226,29 @@ export default function OrganisationsPage() {
               onRefresh={fetchOrganisations}
               onClearFilters={() => { setStatusFilter(''); setCreatedOnFilter(''); }}
             >
-              <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+              <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                   Status
                 </div>
-                <select 
-                  className="pl-3 pr-8 h-full w-full text-sm bg-transparent outline-none appearance-none cursor-pointer text-text-primary"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em' }}
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="">All Statuses</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="SUSPENDED">Suspended</option>
-                </select>
-              </div>
+              <SingleSelect
+                options={[
+                  { id: '', name: 'All' },
+                  { id: 'ACTIVE', name: 'Active' },
+                  { id: 'INACTIVE', name: 'Inactive' },
+                  { id: 'SUSPENDED', name: 'Suspended' }
+                ]}
+                selectedId={statusFilter}
+                onChange={(id) => {
+                  setStatusFilter(id);
+                  setPage(1);
+                }}
+                variant="minimal"
+                className="pl-3 pr-2 h-full w-full text-sm bg-transparent outline-none cursor-pointer text-text-primary"
+              />
+            </div>
 
-              <div className="flex items-center border border-border rounded-md bg-surface h-[34px] overflow-hidden">
-                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center">
+              <div className="flex items-center border border-border rounded-md bg-surface h-[34px]">
+                <div className="px-4 h-full flex items-center text-sm font-medium text-text-secondary bg-subtle/50 border-r border-border min-w-[110px] justify-center rounded-l-md">
                   Created On
                 </div>
                 <input 
@@ -435,34 +437,34 @@ export default function OrganisationsPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-text-primary">Company Size</label>
-                <select
-                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand bg-surface"
-                  value={form.company_size}
-                  onChange={(e) => setForm((prev) => ({ ...prev, company_size: e.target.value }))}
+                <SingleSelect
+                  options={[
+                    { id: '', name: '--Please Select--' },
+                    { id: '1-10', name: '1-10 Employees' },
+                    { id: '11-50', name: '11-50 Employees' },
+                    { id: '51-200', name: '51-200 Employees' },
+                    { id: '201-500', name: '201-500 Employees' },
+                    { id: '501-1000', name: '501-1000 Employees' },
+                    { id: '1000+', name: '1000+ Employees' }
+                  ]}
+                  selectedId={form.company_size}
+                  onChange={(id) => setForm((prev) => ({ ...prev, company_size: id }))}
                   disabled={submitting}
-                >
-                  <option value="">Select Size</option>
-                  <option value="1-10">1-10 Employees</option>
-                  <option value="11-50">11-50 Employees</option>
-                  <option value="51-200">51-200 Employees</option>
-                  <option value="201-500">201-500 Employees</option>
-                  <option value="501-1000">501-1000 Employees</option>
-                  <option value="1000+">1000+ Employees</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-text-primary">Status</label>
-                <select
-                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand bg-surface"
-                  value={form.status}
-                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+                <SingleSelect
+                  options={[
+                    { id: 'ACTIVE', name: 'Active' },
+                    { id: 'INACTIVE', name: 'Inactive' },
+                    { id: 'SUSPENDED', name: 'Suspended' }
+                  ]}
+                  selectedId={form.status}
+                  onChange={(id) => setForm((prev) => ({ ...prev, status: id }))}
                   disabled={submitting}
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="SUSPENDED">Suspended</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1.5 col-span-2">

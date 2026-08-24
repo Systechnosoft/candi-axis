@@ -239,7 +239,7 @@ export const CandidateFullProfileView: React.FC<CandidateFullProfileViewProps> =
           <div className="p-6">
             {subTab === 'summary' && (
               <div className="space-y-2 max-w-full">
-                <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5 border-b pb-1.5 border-border">
+                <h3 className="text-xs font-bold text-text-muted tracking-wider flex items-center gap-1.5 border-b pb-1.5 border-border">
                   <User className="w-3.5 h-3.5 text-brand" /> Professional Summary
                 </h3>
                 <div 

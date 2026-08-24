@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, CreateUserRequest, UpdateUserRequest } from '@/types/users';
 import { usersApi } from '@/lib/api/users';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { ModalShell } from '@/components/primitives/ModalShell';
 import { Button } from '@/components/primitives/Button';
 import { OrganisationsService, Organisation } from '@/lib/api/organisations';
@@ -221,31 +222,28 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">System Role *</label>
-            <select
-              required
-              className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              value={formData.role_code}
-              onChange={(e) => setFormData(prev => ({ ...prev, role_code: e.target.value }))}
+            <SingleSelect
+              options={[
+                { id: '', name: '--Please Select--' },
+                ...ROLES.filter(r => r.value !== 'super_admin').map(r => ({ id: r.value, name: r.label }))
+              ]}
+              selectedId={formData.role_code}
+              onChange={(id) => setFormData(prev => ({ ...prev, role_code: id }))}
               disabled={saving}
-            >
-              <option value="" disabled>--Please Select--</option>
-              {ROLES.filter(r => r.value !== 'super_admin').map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Account Status</label>
-            <select
-              className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              value={formData.status}
-              onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}
+            <SingleSelect
+              options={[
+                { id: 'active', name: 'Active' },
+                { id: 'inactive', name: 'Inactive' }
+              ]}
+              selectedId={formData.status}
+              onChange={(id) => setFormData(prev => ({ ...prev, status: id as 'active' | 'inactive' }))}
               disabled={saving}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            />
           </div>
 
           <div className="flex flex-col gap-1.5 col-span-2">
@@ -260,7 +258,7 @@ export function UserModal({ isOpen, onClose, user, onSaved }: UserModalProps) {
                 onChange={(e) => setFormData(prev => ({ ...prev, org_id: e.target.value }))}
                 disabled={saving}
               >
-                <option value="">-- Please Select --</option>
+                <option value="">--Please Select--</option>
                 {organisations.map(o => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}

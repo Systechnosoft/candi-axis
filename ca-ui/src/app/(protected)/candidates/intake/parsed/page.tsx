@@ -338,10 +338,18 @@ export default function ParsedIntakePage() {
         setError(`AI Parsing failed: ${docResult.parse_error || 'Unknown error'}. Falling back to manual entry mode with resume attached.`);
         // We do not throw here so that they can proceed to review step
       }
-      
       setStep('review');
     } catch (err: any) {
-      setError(err.data?.message || err.message || 'Failed to upload or parse document. Please try again.');
+      if (
+        err.data?.code === 'AI_KEYS_TOKEN_EXHAUSTED' ||
+        err.code === 'AI_KEYS_TOKEN_EXHAUSTED' ||
+        err.data?.message?.includes('AI_KEYS_TOKEN_EXHAUSTED') ||
+        err.message?.includes('AI_KEYS_TOKEN_EXHAUSTED')
+      ) {
+        setError('The tokens for the existing keys have expired. Please check or switch to another AI provider for further parsing.');
+      } else {
+        setError(err.data?.message || err.message || 'Failed to upload or parse document. Please try again.');
+      }
       setStep('upload');
     }
   };

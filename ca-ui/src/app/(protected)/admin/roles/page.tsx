@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { useAuth } from '@/contexts/AuthContext';
 import { rolesApi, Role, Module, ModulePermission } from '@/lib/api/roles';
 import { Plus, Loader2, Shield, Trash2, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react';
@@ -214,7 +215,7 @@ export default function RolesPage() {
   };
 
   const handleDeleteRole = async (role: Role) => {
-    if (!confirm(`Are you sure you want to delete the role "${role.name.toUpperCase()}"?`)) return;
+    if (!confirm(`Are you sure you want to delete the role "${role.name}"?`)) return;
     setError(null);
     setSuccessMessage(null);
     try {
@@ -396,7 +397,7 @@ export default function RolesPage() {
                       }`}
                     >
                       <div className="flex flex-col gap-0.5 min-w-0 pr-4">
-                        <span className="font-semibold text-sm text-text-primary truncate">{r.name.toUpperCase()}</span>
+                        <span className="font-semibold text-sm text-text-primary truncate">{r.name}</span>
                       </div>
                       
                       <span className="text-brand font-semibold text-sm whitespace-nowrap">
@@ -428,7 +429,7 @@ export default function RolesPage() {
                   <div className="p-4 lg:p-6 w-full">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                       <div>
-                        <h2 className="text-xl font-bold text-text-primary">{selectedRole.name.toUpperCase()}</h2>
+                        <h2 className="text-xl font-bold text-text-primary">{selectedRole.name}</h2>
                         {selectedRole.description && (
                           <p className="text-sm text-text-secondary mt-1">{selectedRole.description}</p>
                         )}
@@ -511,7 +512,7 @@ export default function RolesPage() {
                   type="text"
                   required
                   placeholder="e.g. INTERVIEWER, CUSTOM_HR"
-                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand uppercase"
+                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand"
                   value={newRoleForm.name}
                   onChange={(e) => setNewRoleForm(prev => ({ ...prev, name: e.target.value }))}
                   disabled={creating}
@@ -520,18 +521,15 @@ export default function RolesPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-text-primary">Role Type *</label>
-                <select
-                  required
-                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand bg-surface"
-                  value={newRoleForm.role_type}
-                  onChange={(e) => setNewRoleForm(prev => ({ ...prev, role_type: e.target.value }))}
+                <SingleSelect
+                  options={[
+                    ...allowedRoleTypes.map(type => ({ id: type.value, name: type.label })),
+                    { id: 'CUSTOM', name: 'Custom Role' }
+                  ]}
+                  selectedId={newRoleForm.role_type}
+                  onChange={(id) => setNewRoleForm(prev => ({ ...prev, role_type: id }))}
                   disabled={creating}
-                >
-                  {allowedRoleTypes.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                  <option value="CUSTOM">Custom Role</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1.5 col-span-2">
@@ -572,18 +570,15 @@ export default function RolesPage() {
               {isSuperAdmin && organisations.length > 0 && (
                 <div className="flex flex-col gap-1.5 col-span-2">
                   <label className="text-sm font-semibold text-text-primary">Organisation *</label>
-                  <select
-                    required
-                    className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand bg-surface"
-                    value={newRoleForm.org_id}
-                    onChange={(e) => setNewRoleForm(prev => ({ ...prev, org_id: e.target.value }))}
+                  <SingleSelect
+                    options={[
+                      { id: '', name: '--Please Select--' },
+                      ...organisations.map(c => ({ id: c.id, name: c.name }))
+                    ]}
+                    selectedId={newRoleForm.org_id}
+                    onChange={(id) => setNewRoleForm(prev => ({ ...prev, org_id: id }))}
                     disabled={creating}
-                  >
-                    <option value="" disabled>Select Organisation</option>
-                    {organisations.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               )}
             </div>

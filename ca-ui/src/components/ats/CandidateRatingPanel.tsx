@@ -31,7 +31,7 @@ export function CandidateRatingPanel({ rating, loading, onRefresh }: Props) {
       <CardContent className="p-5 space-y-6">
 
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text-muted uppercase">
+          <h3 className="text-sm font-bold text-text-muted">
             AI Rating Summary
           </h3>
           <Button size="sm" variant="secondary" onClick={onRefresh}>
@@ -60,7 +60,7 @@ export function CandidateRatingPanel({ rating, loading, onRefresh }: Props) {
               <RatingRow label="Domain Match" value={rating.domain} />
 
               <div className="mt-2">
-                <p className="text-xs text-text-muted mb-2 uppercase font-semibold">
+                <p className="text-xs text-text-muted mb-2 font-semibold">
                   Skill Match Breakdown
                 </p>
 

@@ -114,7 +114,7 @@ export function LinkToJdModal({ candidateId, candidateName, onClose }: LinkToJdM
                       </div>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-brand text-surface text-[10px] font-bold px-2 py-1 rounded">SELECT</div>
+                      <div className="bg-brand text-surface text-[10px] font-bold px-2 py-1 rounded">Select</div>
                     </div>
                   </button>
                 ))

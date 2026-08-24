@@ -69,7 +69,7 @@ export const CandidateMatchesList: React.FC<CandidateMatchesListProps> = ({
       {/* Skill Search & Filter Header */}
       <div className="p-4 border-b border-border bg-subtle/5 space-y-3 relative">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+          <h3 className="text-xs font-bold text-text-muted tracking-wider flex items-center gap-1.5">
             <SlidersHorizontal className="w-3.5 h-3.5 text-brand" /> Find By Skill
           </h3>
           {selectedSkills.length > 0 && (

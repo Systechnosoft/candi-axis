@@ -8,6 +8,7 @@ import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { Card } from '@/components/primitives/Card';
 import { DrawerShell80 } from '@/components/primitives/ModalShell';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomersService, Customer } from '@/lib/api/customers';
 import { Loader2, Edit2, Ban, ShieldAlert, Plus } from 'lucide-react';
@@ -400,34 +401,34 @@ export default function CustomersPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-text-primary">Company Size</label>
-                <select
-                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand bg-surface"
-                  value={form.company_size}
-                  onChange={(e) => setForm((prev) => ({ ...prev, company_size: e.target.value }))}
+                <SingleSelect
+                  options={[
+                    { id: '', name: '--Please Select--' },
+                    { id: '1-10', name: '1-10 Employees' },
+                    { id: '11-50', name: '11-50 Employees' },
+                    { id: '51-200', name: '51-200 Employees' },
+                    { id: '201-500', name: '201-500 Employees' },
+                    { id: '501-1000', name: '501-1000 Employees' },
+                    { id: '1000+', name: '1000+ Employees' }
+                  ]}
+                  selectedId={form.company_size}
+                  onChange={(id) => setForm((prev) => ({ ...prev, company_size: id }))}
                   disabled={submitting}
-                >
-                  <option value="">Select Size</option>
-                  <option value="1-10">1-10 Employees</option>
-                  <option value="11-50">11-50 Employees</option>
-                  <option value="51-200">51-200 Employees</option>
-                  <option value="201-500">201-500 Employees</option>
-                  <option value="501-1000">501-1000 Employees</option>
-                  <option value="1000+">1000+ Employees</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-text-primary">Status</label>
-                <select
-                  className="px-3 py-2 border border-border rounded-lg bg-surface-primary text-text-primary focus:outline-none focus:ring-1 focus:ring-brand bg-surface"
-                  value={form.status}
-                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+                <SingleSelect
+                  options={[
+                    { id: 'ACTIVE', name: 'Active' },
+                    { id: 'INACTIVE', name: 'Inactive' },
+                    { id: 'SUSPENDED', name: 'Suspended' }
+                  ]}
+                  selectedId={form.status}
+                  onChange={(id) => setForm((prev) => ({ ...prev, status: id }))}
                   disabled={submitting}
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="SUSPENDED">Suspended</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1.5 col-span-2">

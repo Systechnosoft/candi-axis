@@ -368,7 +368,7 @@ export default function JobDescriptionDetailPage() {
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="rotate-90 origin-left translate-x-4 whitespace-nowrap text-xs font-bold text-text-muted uppercase tracking-wider">
+              <div className="rotate-90 origin-left translate-x-4 whitespace-nowrap text-xs font-bold text-text-muted tracking-wider">
                 Candidates List
               </div>
               <div className="w-1.5" />
@@ -414,7 +414,7 @@ export default function JobDescriptionDetailPage() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="-rotate-90 origin-right -translate-x-3 whitespace-nowrap text-xs font-bold text-text-muted uppercase tracking-wider">
+              <div className="-rotate-90 origin-right -translate-x-3 whitespace-nowrap text-xs font-bold text-text-muted tracking-wider">
                 AI Fit Breakdown
               </div>
               <div className="w-1.5" />
