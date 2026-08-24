@@ -223,12 +223,14 @@ export default function CandidatesPage() {
               <TableHeader className="text-center w-32">Stage</TableHeader>
               <TableHeader>Updated By</TableHeader>
               <TableHeader>Updated On</TableHeader>
+              <TableHeader>Email</TableHeader>
+              <TableHeader>Phone</TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-text-muted">
+                <TableCell colSpan={8} className="text-center py-8 text-text-muted">
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin text-brand" />
                     <span>Loading candidates...</span>
@@ -237,13 +239,13 @@ export default function CandidatesPage() {
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-error">
+                <TableCell colSpan={8} className="text-center py-8 text-error">
                   {error}
                 </TableCell>
               </TableRow>
             ) : candidates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-text-muted">
+                <TableCell colSpan={8} className="text-center py-8 text-text-muted">
                   No candidates found.
                 </TableCell>
               </TableRow>
@@ -274,6 +276,8 @@ export default function CandidatesPage() {
                   <TableCell className="text-center w-32">{getStageBadge((candidate as any).application_stage || candidate.status || 'Applied')}</TableCell>
                   <TableCell className="text-text-secondary">{candidate.updated_by_name || '-'}</TableCell>
                   <TableCell className="text-text-secondary">{formatDate(candidate.updated_at)}</TableCell>
+                  <TableCell className="text-text-secondary">{candidate.email || '-'}</TableCell>
+                  <TableCell className="text-text-secondary">{candidate.phone || '-'}</TableCell>
                 </TableRow>
               ))
             )}

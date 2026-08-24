@@ -9,6 +9,7 @@ import { X, Plus, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-
 import { TagSelector } from '@/components/ats/TagSelector';
 import { Tag } from '@/types/tags';
 import { RichTextEditor } from '@/components/primitives/RichTextEditor';
+import { CandidatesService } from '@/lib/api/candidates';
 
 interface CandidateFormProps {
   mode: 'manual' | 'parsed' | 'edit';
@@ -59,6 +60,9 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
   onClearError,
 }) => {
   const [showSuccessBanner, setShowSuccessBanner] = useState(true);
+  // Used for manual form field validation (email/phone duplicate)
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
+
   const [formData, setFormData] = useState<CandidateFormValues>({
     full_name: '',
     first_name: '',
@@ -116,15 +120,40 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
     }
   }, [initialValues]);
 
-  const handleBlur = (field: keyof CandidateFormValues) => {
+  const handleBlur = async (field: keyof CandidateFormValues) => {
     const val = formData[field];
     if (typeof val === 'string') {
-      setFormData(prev => ({ ...prev, [field]: cleanText(val) }));
+      const cleanVal = cleanText(val);
+      setFormData(prev => ({ ...prev, [field]: cleanVal }));
+
+      // Add duplicate check for email and phone
+      if (field === 'email' || field === 'phone') {
+        if (cleanVal) {
+          try {
+            const check = await CandidatesService.checkDuplicate(
+              field === 'email' ? cleanVal : undefined,
+              field === 'phone' ? cleanVal : undefined
+            );
+            if (check.exists) {
+              setFieldErrors(prev => ({ ...prev, [field]: 'Duplicate candidate exists' }));
+            } else {
+              setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+            }
+          } catch (err) {
+            console.error('Failed to check duplicate', err);
+          }
+        } else {
+           setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+        }
+      }
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, field: keyof CandidateFormValues) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    if ((field === 'email' || field === 'phone') && fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   // --- Dynamic Array Handlers ---
@@ -249,8 +278,17 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
   };
 
   // --- Submit ---
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (readOnly) {
+      onCancel();
+      return;
+    }
+    
+    if (fieldErrors.email || fieldErrors.phone) {
+      return;
+    }
 
     // Explicit final clean
     const cleanedFullName = cleanText(formData.full_name);
@@ -376,12 +414,13 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
               <label className="text-sm font-medium text-text-primary">Email Address</label>
               <input
                 type="email"
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm ${fieldErrors.email ? 'border-danger' : 'border-border'}`}
                 value={formData.email}
                 onChange={e => handleChange(e, 'email')}
                 onBlur={() => handleBlur('email')}
                 placeholder="e.g. john@example.com"
               />
+              {fieldErrors.email && <p className="text-[11px] text-danger mt-0.5">{fieldErrors.email}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -410,12 +449,13 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({
               <label className="text-sm font-medium text-text-primary">Phone Number</label>
               <input
                 type="tel"
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-brand/50 text-sm ${fieldErrors.phone ? 'border-danger' : 'border-border'}`}
                 value={formData.phone}
                 onChange={e => handleChange(e, 'phone')}
                 onBlur={() => handleBlur('phone')}
                 placeholder="+1 (555) 000-0000"
               />
+              {fieldErrors.phone && <p className="text-[11px] text-danger mt-0.5">{fieldErrors.phone}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">

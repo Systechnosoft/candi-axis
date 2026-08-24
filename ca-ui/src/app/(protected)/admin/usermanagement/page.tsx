@@ -112,16 +112,16 @@ export default function UsersManagementPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
+    <div className="flex flex-col gap-6 w-full pb-10">
       <PageHeader 
         title="Users Management" 
+        description="Manage ATS users, roles, and system access."
         actions={
           <Button onClick={handleCreate} className="flex items-center gap-2">
             <Plus className="w-4 h-4" /> Add User
           </Button>
         }
       />
-      <p className="text-text-secondary -mt-2 mb-4">Manage ATS users, roles, and system access.</p>
 
       <Card>
         <div className="border-b border-border p-2 bg-surface">

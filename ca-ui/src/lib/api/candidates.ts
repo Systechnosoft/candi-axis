@@ -99,5 +99,15 @@ export const CandidatesService = {
   updateCandidate: async (id: string, data: UpdateCandidateRequest): Promise<Candidate> => {
     const response = await apiClient.put<Candidate>(`/candidates/${id}`, data);
     return response.data;
+  },
+
+  checkDuplicate: async (email?: string, phone?: string): Promise<{ exists: boolean }> => {
+    const searchParams = new URLSearchParams();
+    if (email) searchParams.append('email', email);
+    if (phone) searchParams.append('phone', phone);
+    
+    const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const response = await apiClient.get<{ exists: boolean }>(`/candidates/check-duplicate${queryString}`);
+    return response.data;
   }
 };

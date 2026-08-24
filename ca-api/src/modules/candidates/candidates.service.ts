@@ -14,7 +14,7 @@ import { CreateCandidateManualDto } from './dto/create-candidate-manual.dto';
 import { CreateCandidateParsedDto } from './dto/create-candidate-parsed.dto';
 import { UpdateCandidateDto } from './dto/update-candidate.dto';
 import { CandidateParserMappingService } from './candidate-parser-mapping.service';
-import { CandidateDuplicateService } from './candidate-duplicate.service';
+import { CandidateDuplicateService, normalizeCandidateEmail, normalizeCandidatePhone } from './candidate-duplicate.service';
 import { DocumentsService } from '../documents/documents.service';
 import { normalizeCandidateChildData } from './utils/parsed-candidate-normalizer';
 import { calculateProfileScore, DEFAULT_WEIGHTS } from './utils/profile-scorer';
@@ -89,16 +89,6 @@ export class CandidatesService {
     return text.trim().replace(/ +/g, ' ');
   }
 
-  private normalizeEmail(email?: string): string | null {
-    if (!email) return null;
-    return email.trim().toLowerCase();
-  }
-
-  private normalizePhone(phone?: string): string | null {
-    if (!phone) return null;
-    return phone.replace(/[^0-9+]/g, '');
-  }
-
   private normalizeCandidatePayload(data: {
     email?: string;
     phone?: string;
@@ -121,8 +111,8 @@ export class CandidatesService {
     }>;
     [key: string]: any;
   }): Record<string, any> {
-    const email = this.normalizeEmail(data.email);
-    const phone = this.normalizePhone(data.phone);
+    const email = normalizeCandidateEmail(data.email);
+    const phone = normalizeCandidatePhone(data.phone);
     const firstName = data.first_name ? this.cleanText(data.first_name) : null;
     const lastName = data.last_name ? this.cleanText(data.last_name) : null;
 

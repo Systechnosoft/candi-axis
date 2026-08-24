@@ -282,14 +282,11 @@ export default function InterviewConfigurationPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-10">
+    <div className="flex flex-col gap-6 w-full pb-10">
       <PageHeader 
         title="Interview Configuration" 
-        actions={null}
+        description="Manage configurations and API credentials settings for your interview meeting providers."
       />
-      <p className="text-text-secondary -mt-2">
-        Manage configurations and API credentials settings for your interview meeting providers.
-      </p>
 
       {successMsg && (
         <div className={`border px-4 py-3 rounded-lg flex items-center justify-between gap-3 text-sm animate-in fade-in duration-200 ${successMsg.includes('deactivated') ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>

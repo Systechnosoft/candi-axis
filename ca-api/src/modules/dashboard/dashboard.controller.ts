@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,7 +22,7 @@ export class DashboardController {
   @Get('activity')
   @RequireModule('dashboard', 'viewer')
   @ApiOperation({ summary: 'Get recent activity feed' })
-  async getActivity() {
-    return this.dashboardService.getActivity();
+  async getActivity(@Request() req: any) {
+    return this.dashboardService.getActivity(req.user.atsUserId);
   }
 }

@@ -56,101 +56,28 @@ function getActivityText(item: ActivityItem) {
 
 type ActivityCategory = 'All' | 'Pipeline' | 'Interviews' | 'Tasks' | 'Jobs';
 
-interface MockActivity {
-  id: string;
-  category: ActivityCategory;
-  icon: any;
-  iconColor: string;
-  iconBg: string;
-  content: React.ReactNode;
-  timestamp: string;
+function getActivityCategory(item: ActivityItem): ActivityCategory {
+  if (item.entity_type === 'candidate' || item.entity_type === 'application' || item.entity_type === 'ca_candidate_job_stages') return 'Pipeline';
+  if (item.entity_type === 'interview') return 'Interviews';
+  if (item.entity_type === 'task') return 'Tasks';
+  if (item.entity_type === 'job_posting' || item.entity_type === 'ca_job_postings') return 'Jobs';
+  return 'All';
 }
 
-const getMockActivities = (): MockActivity[] => [
-  {
-    id: '1',
-    category: 'Pipeline',
-    icon: UserCheck,
-    iconColor: 'text-status-success',
-    iconBg: 'bg-status-success/10',
-    content: (
-      <span>
-        🎉 <strong className="text-text-primary">Aarti Soni</strong> was moved to the <strong className="text-text-primary">Offer</strong> stage for the <a href="#" className="text-brand hover:underline font-medium">Full Stack Developer</a> role by Kriti Sharma.
-      </span>
-    ),
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: '2',
-    category: 'Interviews',
-    icon: CheckCircle2,
-    iconColor: 'text-brand',
-    iconBg: 'bg-brand/10',
-    content: (
-      <span>
-        ✅ <strong className="text-text-primary">Tejpal Singh</strong> submitted interview feedback for <strong className="text-text-primary">Mahaveer Kumawat</strong> (Decision: Strong Hire).
-      </span>
-    ),
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: '3',
-    category: 'Pipeline',
-    icon: Bot,
-    iconColor: 'text-purple-600',
-    iconBg: 'bg-purple-100',
-    content: (
-      <span>
-        🤖 Resume scoring completed for <a href="#" className="text-brand hover:underline font-medium">Karan Sejwani</a>. Match score: <strong className="text-text-primary">92%</strong>.
-      </span>
-    ),
-    timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
-  },
-  {
-    id: '4',
-    category: 'Tasks',
-    icon: Pin,
-    iconColor: 'text-status-warning',
-    iconBg: 'bg-status-warning/10',
-    content: (
-      <span>
-        📌 You were assigned a new task: <a href="#" className="text-brand hover:underline font-medium">Screening Review - Anuj Mehta</a>.
-      </span>
-    ),
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-  },
-  {
-    id: '5',
-    category: 'Interviews',
-    icon: CalendarClock,
-    iconColor: 'text-blue-500',
-    iconBg: 'bg-blue-100',
-    content: (
-      <span>
-        📅 Interview scheduled: <strong className="text-text-primary">Ashish Ranjan</strong> with <strong className="text-text-primary">Rajat Mehta</strong> on Aug 22nd at 2:00 PM.
-      </span>
-    ),
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-  {
-    id: '6',
-    category: 'Jobs',
-    icon: Rocket,
-    iconColor: 'text-orange-500',
-    iconBg: 'bg-orange-100',
-    content: (
-      <span>
-        🚀 Job Posting <a href="#" className="text-brand hover:underline font-medium">Senior Blockchain Backend Engineer</a> went live.
-      </span>
-    ),
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-  },
-];
+function getActivityIconData(item: ActivityItem) {
+  const cat = getActivityCategory(item);
+  switch (cat) {
+    case 'Pipeline': return { icon: UserCheck, iconColor: 'text-status-success', iconBg: 'bg-status-success/10' };
+    case 'Interviews': return { icon: CheckCircle2, iconColor: 'text-brand', iconBg: 'bg-brand/10' };
+    case 'Tasks': return { icon: Pin, iconColor: 'text-status-warning', iconBg: 'bg-status-warning/10' };
+    case 'Jobs': return { icon: Rocket, iconColor: 'text-orange-500', iconBg: 'bg-orange-100' };
+    default: return { icon: CheckCircle2, iconColor: 'text-text-secondary', iconBg: 'bg-subtle' };
+  }
+}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [mockActivities, setMockActivities] = useState<MockActivity[]>([]);
   const [activityFilter, setActivityFilter] = useState<ActivityCategory>('All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +93,6 @@ export default function DashboardPage() {
         ]);
         setStats(statsData);
         setActivity(activityData);
-        setMockActivities(getMockActivities());
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
         setError('Failed to load dashboard data. Please try again.');
@@ -255,10 +181,13 @@ export default function DashboardPage() {
 
             <div className="flow-root">
               <ul className="-mb-8">
-                {mockActivities
-                  .filter(item => activityFilter === 'All' || item.category === activityFilter)
+                {activity
+                  .filter(item => activityFilter === 'All' || getActivityCategory(item) === activityFilter)
                   .map((item, itemIdx, arr) => {
-                    const Icon = item.icon;
+                    const iconData = getActivityIconData(item);
+                    const Icon = iconData.icon;
+                    const text = getActivityText(item);
+                    
                     return (
                       <li key={item.id}>
                         <div className="relative pb-8">
@@ -267,18 +196,23 @@ export default function DashboardPage() {
                           ) : null}
                           <div className="relative flex space-x-3 items-start">
                             <div>
-                              <span className={`h-8 w-8 rounded-full ${item.iconBg} flex items-center justify-center ring-8 ring-surface ${item.iconColor}`}>
+                              <span className={`h-8 w-8 rounded-full ${iconData.iconBg} flex items-center justify-center ring-8 ring-surface ${iconData.iconColor}`}>
                                 <Icon className="w-4 h-4" />
                               </span>
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:justify-between space-y-1 sm:space-y-0 sm:space-x-4 pt-1.5">
                               <div>
                                 <p className="text-[14px] text-text-secondary">
-                                  {item.content}
+                                  <strong className="text-text-primary">{text.user}</strong> {text.description}.
                                 </p>
+                                {text.reason && (
+                                  <p className="text-[12px] text-text-muted mt-0.5 border-l-2 border-border pl-2 italic">
+                                    "{text.reason}"
+                                  </p>
+                                )}
                               </div>
                               <div className="text-left sm:text-right text-[12px] whitespace-nowrap text-text-muted shrink-0">
-                                <time dateTime={item.timestamp}>{formatRelativeTime(item.timestamp)}</time>
+                                <time dateTime={item.changed_at}>{formatRelativeTime(item.changed_at)}</time>
                               </div>
                             </div>
                           </div>
@@ -286,7 +220,7 @@ export default function DashboardPage() {
                       </li>
                     );
                   })}
-                {mockActivities.filter(item => activityFilter === 'All' || item.category === activityFilter).length === 0 && (
+                {activity.filter(item => activityFilter === 'All' || getActivityCategory(item) === activityFilter).length === 0 && (
                   <div className="text-center py-6 text-text-muted text-[14px]">
                     No activity found for this category.
                   </div>

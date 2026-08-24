@@ -33,8 +33,17 @@ export class DashboardService {
     };
   }
 
-  async getActivity() {
-    const res = await this.pool.query(`
+  async getActivity(userId: string) {
+    const rolesRes = await this.pool.query(
+      `SELECT r.code FROM ca_user_roles ur
+       JOIN ca_roles r ON r.id = ur.role_id
+       WHERE ur.user_id = $1`,
+       [userId]
+    );
+    const roles = rolesRes.rows.map(r => r.code);
+    const isSuperAdmin = roles.includes('super_admin');
+    
+    let query = `
       SELECT 
         sh.id,
         sh.entity_type,
@@ -46,9 +55,20 @@ export class DashboardService {
         u.full_name as user_name
       FROM ca_status_history sh
       LEFT JOIN ca_users u ON sh.changed_by = u.id
+    `;
+    const params: any[] = [];
+    
+    if (!isSuperAdmin) {
+      query += ` WHERE sh.changed_by = $1`;
+      params.push(userId);
+    }
+    
+    query += `
       ORDER BY sh.changed_at DESC
       LIMIT 10
-    `);
+    `;
+    
+    const res = await this.pool.query(query, params);
     return res.rows;
   }
 }

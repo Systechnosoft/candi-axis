@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
+import { ModalShell } from '@/components/primitives/ModalShell';
 import { AdminService } from '@/lib/api/admin';
 import { Loader2, Award, RefreshCw, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -91,6 +92,7 @@ export default function ResumeScoringSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadWeights() {
@@ -130,10 +132,13 @@ export default function ResumeScoringSettingsPage() {
   };
 
   const handleReset = () => {
-    if (confirm('Are you sure you want to reset all weights to system defaults?')) {
-      setWeights(DEFAULT_WEIGHTS);
-      setSuccess(null);
-    }
+    setIsResetModalOpen(true);
+  };
+
+  const confirmReset = () => {
+    setWeights(DEFAULT_WEIGHTS);
+    setSuccess(null);
+    setIsResetModalOpen(false);
   };
 
   const handleSave = async () => {
@@ -164,9 +169,10 @@ export default function ResumeScoringSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-16">
+    <div className="flex flex-col gap-6 w-full pb-16">
       <PageHeader 
         title="Resume Scoring Settings" 
+        description="Customize the relative importance (weightage) of profile sections in candidate resume parsing and scoring."
         actions={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleReset} className="flex items-center gap-2 text-xs">
@@ -179,9 +185,6 @@ export default function ResumeScoringSettingsPage() {
           </div>
         }
       />
-      <p className="text-text-secondary -mt-2">
-        Customize the relative importance (weightage) of profile sections in candidate resume parsing and scoring.
-      </p>
 
       {error && (
         <div className="bg-status-error/10 text-status-error border border-status-error/20 rounded-lg p-4 flex items-center gap-3 text-sm">
@@ -281,6 +284,27 @@ export default function ResumeScoringSettingsPage() {
           );
         })}
       </div>
+
+      {isResetModalOpen && (
+        <ModalShell
+          title="Reset to Defaults"
+          onClose={() => setIsResetModalOpen(false)}
+          footer={
+            <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
+              <Button variant="secondary" onClick={() => setIsResetModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={confirmReset} className="bg-brand text-white hover:bg-brand/90">
+                OK
+              </Button>
+            </div>
+          }
+        >
+          <div className="text-sm text-text-secondary">
+            Are you sure you want to reset all weights to system defaults?
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { tagsApi } from '@/lib/api/tags';
 import { CandidateFormValues, DuplicateMatchResponse } from '@/types/candidates';
 import { Tag } from '@/types/tags';
 import { Button } from '@/components/primitives/Button';
-import { UploadCloud, File, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { UploadCloud, File, Loader2, Sparkles, XCircle, AlertCircle } from 'lucide-react';
 import { formatToHtmlBullets } from '@/lib/utils';
 
 // --- Field mapping helpers from backend ParsedResume schema ---
@@ -256,6 +256,16 @@ export default function ParsedIntakePage() {
     fetchStatus();
   }, []);
 
+  // Auto-hide error after 4 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
@@ -305,6 +315,25 @@ export default function ParsedIntakePage() {
 
       setParsedFormValues(formValues);
       
+      // Perform duplicate check on the parsed email and phone
+      if (formValues.email || formValues.phone) {
+        setParseStatusMsg('Checking for existing candidate...');
+        try {
+          const dupCheck = await CandidatesService.checkDuplicate(formValues.email, formValues.phone);
+          if (dupCheck.exists) {
+            setDuplicateData({
+              message: 'Candidate details already exist inside the system.',
+              duplicates: [], // We don't have deep matches for this simple check, popup handles it
+            });
+            setError('Candidate details already exist inside the system.');
+            setStep('upload');
+            return;
+          }
+        } catch (err) {
+          console.error('Duplicate check failed', err);
+        }
+      }
+
       if (isParseFailure) {
         setError(`AI Parsing failed: ${docResult.parse_error || 'Unknown error'}. Falling back to manual entry mode with resume attached.`);
         // We do not throw here so that they can proceed to review step
@@ -438,9 +467,9 @@ export default function ParsedIntakePage() {
             )}
 
             {error && (
-              <div className="p-4 mb-6 bg-error-50 text-error-dark border border-error rounded-lg flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <span className="text-sm">{error}</span>
+              <div className="p-4 mb-6 bg-red-50 text-danger border border-danger rounded-lg flex items-center justify-between gap-3 transition-opacity">
+                <span className="text-sm font-medium">{error}</span>
+                <XCircle className="w-5 h-5 flex-shrink-0" />
               </div>
             )}
 

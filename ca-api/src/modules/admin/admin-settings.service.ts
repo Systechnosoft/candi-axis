@@ -919,22 +919,30 @@ export class AdminSettingsService {
   }
 
   async getActiveAiProviderStatus(email: string) {
-    const config = await this.getAiConfigForOrg(email);
-    const provider = config.provider;
-    const apiKey = config.api_key;
+    try {
+      this.logger.log(`Fetching active AI provider status for ${email}`);
+      const config = await this.getAiConfigForOrg(email);
+      this.logger.log(`Got config: provider=${config.provider}, model=${config.model}`);
+      const provider = config.provider;
+      const apiKey = config.api_key;
 
-    const isConfigured = this.validateApiKey(apiKey || '', provider);
-    const validationError = isConfigured
-      ? null
-      : this.getProviderErrorMessage(provider);
+      const isConfigured = this.validateApiKey(apiKey || '', provider);
+      const validationError = isConfigured
+        ? null
+        : this.getProviderErrorMessage(provider);
 
-    return {
-      provider: this.getProviderDisplayName(provider),
-      providerValue: provider,
-      model: config.model,
-      isConfigured,
-      validationError,
-    };
+      this.logger.log(`Returning status: isConfigured=${isConfigured}`);
+      return {
+        provider: this.getProviderDisplayName(provider),
+        providerValue: provider,
+        model: config.model,
+        isConfigured,
+        validationError,
+      };
+    } catch (err: any) {
+      this.logger.error(`Error in getActiveAiProviderStatus: ${err.message}`, err.stack);
+      throw err;
+    }
   }
 
   async getScoringWeights(email: string) {

@@ -10,6 +10,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CandidatesService } from './candidates.service';
+import { CandidateDuplicateService } from './candidate-duplicate.service';
 import { CreateCandidateManualDto } from './dto/create-candidate-manual.dto';
 import { CreateCandidateParsedDto } from './dto/create-candidate-parsed.dto';
 import { UpdateCandidateDto } from './dto/update-candidate.dto';
@@ -21,7 +22,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('candidates')
 @UseGuards(JwtAuthGuard, RbacGuard)
 export class CandidatesController {
-  constructor(private readonly candidatesService: CandidatesService) {}
+  constructor(
+    private readonly candidatesService: CandidatesService,
+    private readonly duplicateService: CandidateDuplicateService
+  ) {}
 
   @Post('manual')
   @RequireModule('candidates', 'editor')
@@ -41,6 +45,15 @@ export class CandidatesController {
     dto: CreateCandidateParsedDto,
   ) {
     return this.candidatesService.createParsed(user.atsUserId, user.email, dto);
+  }
+
+  @Get('check-duplicate')
+  @RequireModule('candidates', 'viewer') // Editor or viewer can check duplicates
+  checkDuplicate(
+    @Query('email') email?: string,
+    @Query('phone') phone?: string,
+  ) {
+    return this.duplicateService.checkExists(email, phone);
   }
 
   @Get()

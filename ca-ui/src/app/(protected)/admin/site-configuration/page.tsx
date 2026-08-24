@@ -228,7 +228,10 @@ export default function SiteConfigurationPage() {
       });
 
       setSuccessMsg('AI Configuration saved successfully.');
-      await fetchConfig();
+      
+      // Refresh config to update local state
+      const updatedConfig = await AdminService.getAiConfig();
+      setConfig(updatedConfig);
     } catch (err: any) {
       setErrorMsg(err.data?.message || err.message || 'Failed to update AI settings.');
     } finally {
@@ -302,12 +305,11 @@ export default function SiteConfigurationPage() {
   const hasHealthyKeys = keys.some(k => k.status === 'active');
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-10">
+    <div className="flex flex-col gap-6 w-full pb-10">
       <PageHeader 
         title="Site Configuration" 
-        actions={null}
+        description="Configure system-wide integrations, AI parsing engines, and credentials securely."
       />
-      <p className="text-text-secondary -mt-2">Configure system-wide integrations, AI parsing engines, and credentials securely.</p>
 
       {successMsg && (
         <div className="bg-success/10 border border-success/30 text-success-dark px-4 py-3 rounded-lg flex items-center gap-3 text-sm animate-in fade-in duration-200">

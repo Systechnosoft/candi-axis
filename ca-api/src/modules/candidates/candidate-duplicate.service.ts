@@ -13,6 +13,16 @@ export interface DuplicateMatchResult {
   }>;
 }
 
+export function normalizeCandidateEmail(email?: string): string | null {
+  if (!email) return null;
+  return email.trim().toLowerCase();
+}
+
+export function normalizeCandidatePhone(phone?: string): string | null {
+  if (!phone) return null;
+  return phone.replace(/[^0-9+]/g, '');
+}
+
 @Injectable()
 export class CandidateDuplicateService {
   constructor(@Inject(PG_POOL) private pool: Pool) {}
@@ -92,6 +102,38 @@ export class CandidateDuplicateService {
     }
 
     return result;
+  }
+
+  async checkExists(email?: string, phone?: string): Promise<{ exists: boolean }> {
+    const emailNorm = normalizeCandidateEmail(email);
+    const phoneNorm = normalizeCandidatePhone(phone);
+
+    if (!emailNorm && !phoneNorm) {
+      return { exists: false };
+    }
+
+    const conditions: string[] = [];
+    const values: any[] = [];
+    let counter = 1;
+
+    if (emailNorm) {
+      conditions.push(`email_normalized = $${counter++}`);
+      values.push(emailNorm);
+    }
+    if (phoneNorm) {
+      conditions.push(`phone_normalized = $${counter++}`);
+      values.push(phoneNorm);
+    }
+
+    const query = `
+      SELECT 1
+      FROM ca_candidates
+      WHERE is_deleted = false AND (${conditions.join(' OR ')})
+      LIMIT 1
+    `;
+
+    const res = await this.pool.query(query, values);
+    return { exists: (res.rowCount ?? 0) > 0 };
   }
 
   async recordDuplicateMatch(
