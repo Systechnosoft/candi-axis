@@ -179,7 +179,7 @@ export class GoogleCalendarService {
   ): Promise<{ meetingLink: string; externalEventId: string }> {
     const integrationRes = await this.pool.query(
       `SELECT refresh_token FROM ca_user_calendar_integrations WHERE user_id = $1 AND provider = 'GOOGLE' AND is_active = true LIMIT 1`,
-      [atsUserId]
+      [atsUserId],
     );
 
     if (integrationRes.rows.length === 0) {

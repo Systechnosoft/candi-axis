@@ -1,4 +1,9 @@
-import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../../../infrastructure/database/database.module';
 
@@ -8,7 +13,12 @@ export class ZoomService {
 
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
-  private async getConfig(): Promise<{ clientId: string; clientSecret: string; accountId: string; hostEmail: string }> {
+  private async getConfig(): Promise<{
+    clientId: string;
+    clientSecret: string;
+    accountId: string;
+    hostEmail: string;
+  }> {
     try {
       const dbRes = await this.pool.query(
         `SELECT config_json, encrypted_credentials_json 
@@ -26,15 +36,25 @@ export class ZoomService {
         };
       }
     } catch (dbErr) {
-      this.logger.error(`Failed to fetch ZOOM config from DB: ${dbErr.message}`);
+      this.logger.error(
+        `Failed to fetch ZOOM config from DB: ${dbErr.message}`,
+      );
     }
 
-    throw new BadRequestException('Zoom integration is not configured or activated.');
+    throw new BadRequestException(
+      'Zoom integration is not configured or activated.',
+    );
   }
 
-  private async getAccessToken(accountId: string, clientId: string, clientSecret: string): Promise<string> {
+  private async getAccessToken(
+    accountId: string,
+    clientId: string,
+    clientSecret: string,
+  ): Promise<string> {
     const url = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${accountId}`;
-    const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString(
+      'base64',
+    );
 
     const res = await fetch(url, {
       method: 'POST',
@@ -47,17 +67,25 @@ export class ZoomService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Zoom token error: ${errorText}`);
-      throw new BadRequestException('Failed to authenticate with Zoom. Please check your Server-to-Server credentials.');
+      throw new BadRequestException(
+        'Failed to authenticate with Zoom. Please check your Server-to-Server credentials.',
+      );
     }
 
     const data = await res.json();
     return data.access_token;
   }
 
-  async generateMeetingLink(): Promise<{ meetingLink: string; externalEventId: string }> {
-    const { clientId, clientSecret, accountId, hostEmail } = await this.getConfig();
+  async generateMeetingLink(): Promise<{
+    meetingLink: string;
+    externalEventId: string;
+  }> {
+    const { clientId, clientSecret, accountId, hostEmail } =
+      await this.getConfig();
     if (!clientId || !clientSecret || !accountId || !hostEmail) {
-      throw new BadRequestException('Zoom is missing configuration fields (including Host Email).');
+      throw new BadRequestException(
+        'Zoom is missing configuration fields (including Host Email).',
+      );
     }
 
     const token = await this.getAccessToken(accountId, clientId, clientSecret);
@@ -82,7 +110,9 @@ export class ZoomService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Zoom meeting error: ${errorText}`);
-      throw new BadRequestException(`Failed to create Zoom meeting. Ensure host ${hostEmail} exists in your Zoom account.`);
+      throw new BadRequestException(
+        `Failed to create Zoom meeting. Ensure host ${hostEmail} exists in your Zoom account.`,
+      );
     }
 
     const meeting = await res.json();

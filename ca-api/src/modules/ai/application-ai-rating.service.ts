@@ -24,7 +24,7 @@ export class ApplicationAiRatingService {
 
   constructor(
     private readonly adminService: AdminSettingsService,
-    private readonly aiExecutionService: AiExecutionService
+    private readonly aiExecutionService: AiExecutionService,
   ) {}
 
   async rateApplication(
@@ -100,43 +100,53 @@ ADDITIONAL RULES:
     const baseUrl = config.base_url;
 
     if (provider !== 'gemini' && !baseUrl) {
-      throw new Error(`Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`);
+      throw new Error(
+        `Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`,
+      );
     }
 
     const prompt = `${systemPrompt}\n\nData for Evaluation:\n${JSON.stringify(inputData, null, 2)}`;
 
     try {
-      const content = await this.aiExecutionService.executeWithFailover(email, provider, async (apiKey) => {
-        if (provider === 'gemini') {
-          this.logger.log(`Calling Gemini API for application rating - model: ${modelName}`);
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const geminiModel = genAI.getGenerativeModel({
-            model: modelName!,
-            generationConfig: {
-              responseMimeType: 'application/json',
+      const content = await this.aiExecutionService.executeWithFailover(
+        email,
+        provider,
+        async (apiKey) => {
+          if (provider === 'gemini') {
+            this.logger.log(
+              `Calling Gemini API for application rating - model: ${modelName}`,
+            );
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const geminiModel = genAI.getGenerativeModel({
+              model: modelName,
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.1,
+              },
+            });
+            const result = await geminiModel.generateContent(prompt);
+            return result.response.text() || '';
+          } else {
+            this.logger.log(
+              `Calling OpenAI-compatible API for application rating - baseUrl: ${baseUrl}, model: ${modelName}`,
+            );
+            const client = new OpenAI({ apiKey, baseURL: baseUrl });
+
+            const reqPayload: any = {
+              model: modelName,
+              messages: [{ role: 'user', content: prompt }],
               temperature: 0.1,
-            },
-          });
-          const result = await geminiModel.generateContent(prompt);
-          return result.response.text() || '';
-        } else {
-          this.logger.log(`Calling OpenAI-compatible API for application rating - baseUrl: ${baseUrl}, model: ${modelName}`);
-          const client = new OpenAI({ apiKey, baseURL: baseUrl! });
-          
-          const reqPayload: any = {
-            model: modelName!,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.1,
-          };
-          
-          if (!baseUrl?.includes('groq.com')) {
-            reqPayload.response_format = { type: 'json_object' };
+            };
+
+            if (!baseUrl?.includes('groq.com')) {
+              reqPayload.response_format = { type: 'json_object' };
+            }
+
+            const completion = await client.chat.completions.create(reqPayload);
+            return completion.choices[0]?.message?.content || '';
           }
-          
-          const completion = await client.chat.completions.create(reqPayload);
-          return completion.choices[0]?.message?.content || '';
-        }
-      });
+        },
+      );
 
       if (!content) {
         throw new Error('AI provider returned empty content.');

@@ -80,6 +80,7 @@ export default function SiteConfigurationPage() {
   
   const [showKeyIndex, setShowKeyIndex] = useState<number | null>(null);
   const [isForgetModalOpen, setIsForgetModalOpen] = useState(false);
+  const [keyToRemoveIndex, setKeyToRemoveIndex] = useState<number | null>(null);
   
   const [availableModels, setAvailableModels] = useState<string[] | null>(null);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
@@ -222,7 +223,7 @@ export default function SiteConfigurationPage() {
           id: k.isNew ? undefined : k.id,
           key: k.key,
           isNew: k.isNew,
-          status: k.status || 'active'
+          status: (k.status === 'unavailable' ? 'disabled' : k.status || 'active') as any
         }))
       });
 
@@ -259,13 +260,21 @@ export default function SiteConfigurationPage() {
   const handleRemoveKey = (index: number) => {
     const keyToRemove = keys[index];
     if (!keyToRemove.isNew) {
-      if (!window.confirm("Are you sure you want to remove this saved API key? This action will not be permanent until you click 'Save Configuration'.")) {
-        return;
-      }
+      setKeyToRemoveIndex(index);
+      return;
     }
     const newKeys = [...keys];
     newKeys.splice(index, 1);
     setKeys(newKeys);
+  };
+
+  const confirmRemoveKey = () => {
+    if (keyToRemoveIndex !== null) {
+      const newKeys = [...keys];
+      newKeys.splice(keyToRemoveIndex, 1);
+      setKeys(newKeys);
+      setKeyToRemoveIndex(null);
+    }
   };
 
   const updateKeyInput = (index: number, val: string) => {
@@ -585,6 +594,43 @@ export default function SiteConfigurationPage() {
               </p>
               <p className="text-sm text-text-secondary break-words whitespace-pre-line leading-relaxed">
                 {errorMsg}
+              </p>
+            </div>
+          </div>
+        </ModalShell>
+      )}
+
+      {keyToRemoveIndex !== null && (
+        <ModalShell
+          title="Remove API Key"
+          onClose={() => setKeyToRemoveIndex(null)}
+          footer={
+            <div className="flex justify-end gap-3 w-full">
+              <Button 
+                variant="secondary" 
+                onClick={() => setKeyToRemoveIndex(null)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmRemoveKey}
+              >
+                Remove
+              </Button>
+            </div>
+          }
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-error-50 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-error-dark" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-text-primary mb-1">
+                Are you sure you want to remove this saved API key?
+              </p>
+              <p className="text-sm text-text-secondary">
+                This action will not be permanent until you click &apos;Save Configuration&apos;.
               </p>
             </div>
           </div>

@@ -144,7 +144,10 @@ export class JobDescriptionsService {
     let counter = 1;
 
     if (query.requisition_id) {
-      const reqIds = query.requisition_id.split(',').map(id => id.trim()).filter(Boolean);
+      const reqIds = query.requisition_id
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
       if (reqIds.length > 0) {
         conditions.push(`jd.requisition_id = ANY($${counter++})`);
         values.push(reqIds);

@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsIn, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsIn,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -16,7 +23,12 @@ export class UpdateAiKeyDto {
 
   @IsOptional()
   @IsString()
-  status?: 'active' | 'rate_limited' | 'quota_exhausted' | 'invalid' | 'disabled';
+  status?:
+    | 'active'
+    | 'rate_limited'
+    | 'quota_exhausted'
+    | 'invalid'
+    | 'disabled';
 }
 
 export class UpdateAiConfigDto {

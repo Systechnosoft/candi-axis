@@ -1657,7 +1657,7 @@ export default function JobPostingDetailPage() {
           footer={
             <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
               {dialogConfig.type === 'confirm' && (
-                <Button variant="outline" onClick={() => setDialogConfig(prev => ({ ...prev, isOpen: false }))}>
+                <Button variant="secondary" onClick={() => setDialogConfig(prev => ({ ...prev, isOpen: false }))}>
                   Cancel
                 </Button>
               )}

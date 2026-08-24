@@ -31,10 +31,15 @@ export class AiExecutionService {
     provider: string,
     action: (apiKey: string) => Promise<T>,
   ): Promise<T> {
-    const eligibleKeys = await this.adminSettingsService.getEligibleApiKeys(email, provider);
-    
+    const eligibleKeys = await this.adminSettingsService.getEligibleApiKeys(
+      email,
+      provider,
+    );
+
     if (eligibleKeys.length === 0) {
-      throw new Error(`No available or eligible API keys for AI provider: ${provider}`);
+      throw new Error(
+        `No available or eligible API keys for AI provider: ${provider}`,
+      );
     }
 
     let lastError: Error | null = null;
@@ -42,18 +47,27 @@ export class AiExecutionService {
     for (let i = 0; i < eligibleKeys.length; i++) {
       const keyItem = eligibleKeys[i];
       try {
-        this.logger.debug(`Attempting AI call with key id: ${keyItem.id} for provider ${provider}`);
+        this.logger.debug(
+          `Attempting AI call with key id: ${keyItem.id} for provider ${provider}`,
+        );
         const result = await action(keyItem.decryptedKey);
-        
+
         // If it succeeds, the key remains active. No DB update needed for status.
-        
+
         return result;
       } catch (err: any) {
         lastError = err;
-        this.logger.error(`AI execution failed with key id: ${keyItem.id}: ${err.message}`);
-        
-        const isCritical = await this.classifyAndHandleError(email, provider, keyItem.id, err);
-        
+        this.logger.error(
+          `AI execution failed with key id: ${keyItem.id}: ${err.message}`,
+        );
+
+        const isCritical = await this.classifyAndHandleError(
+          email,
+          provider,
+          keyItem.id,
+          err,
+        );
+
         // If error is related to payload, model, or infrastructure, do not failover - bubble it up
         if (!isCritical) {
           throw err;
@@ -62,7 +76,9 @@ export class AiExecutionService {
       }
     }
 
-    throw new Error(`AI service is currently unavailable for this operation. All eligible keys failed. Last error: ${lastError?.message}`);
+    throw new Error(
+      `AI service is currently unavailable for this operation. All eligible keys failed. Last error: ${lastError?.message}`,
+    );
   }
 
   /**
@@ -70,13 +86,28 @@ export class AiExecutionService {
    * Returns true if the error is key-specific (and we should try the next key).
    * Returns false if the error is request/infrastructure specific (and we should NOT failover).
    */
-  private async classifyAndHandleError(email: string, provider: string, keyId: string, err: AiExecutionError): Promise<boolean> {
+  private async classifyAndHandleError(
+    email: string,
+    provider: string,
+    keyId: string,
+    err: AiExecutionError,
+  ): Promise<boolean> {
     const status = err.response?.status || err.status;
     const message = err.message?.toLowerCase() || '';
 
     // 401 - Invalid Credential
-    if (status === 401 || message.includes('invalid api key') || message.includes('unauthorized') || message.includes('incorrect api key')) {
-      await this.adminSettingsService.updateApiKeyStatus(email, provider, keyId, 'invalid');
+    if (
+      status === 401 ||
+      message.includes('invalid api key') ||
+      message.includes('unauthorized') ||
+      message.includes('incorrect api key')
+    ) {
+      await this.adminSettingsService.updateApiKeyStatus(
+        email,
+        provider,
+        keyId,
+        'invalid',
+      );
       return true; // failover
     }
 
@@ -87,28 +118,53 @@ export class AiExecutionService {
     }
 
     // 429 - Rate Limit / Quota Exhausted
-    if (status === 429 || message.includes('rate limit') || message.includes('too many requests') || message.includes('quota') || message.includes('429')) {
-      await this.adminSettingsService.updateApiKeyStatus(email, provider, keyId, 'unavailable');
+    if (
+      status === 429 ||
+      message.includes('rate limit') ||
+      message.includes('too many requests') ||
+      message.includes('quota') ||
+      message.includes('429')
+    ) {
+      await this.adminSettingsService.updateApiKeyStatus(
+        email,
+        provider,
+        keyId,
+        'unavailable',
+      );
       return true; // failover
     }
 
     // 413 - Payload Too Large
-    if (status === 413 || message.includes('payload too large') || message.includes('context_length_exceeded') || message.includes('maximum context length')) {
+    if (
+      status === 413 ||
+      message.includes('payload too large') ||
+      message.includes('context_length_exceeded') ||
+      message.includes('maximum context length')
+    ) {
       // NOT a key health issue. Do NOT failover.
       return false;
     }
 
     // 5xx / Network Errors / Timeout
-    if ((status && status >= 500) || message.includes('timeout') || message.includes('econnreset') || message.includes('fetch error')) {
+    if (
+      (status && status >= 500) ||
+      message.includes('timeout') ||
+      message.includes('econnreset') ||
+      message.includes('fetch error')
+    ) {
       // Transient infrastructure error. Do NOT failover by marking key unhealthy, although one might retry with same key.
       // We will let it fail the request immediately to avoid exhausting limits unnecessarily.
       return false;
     }
 
     // Unsupported model, etc.
-    if (status === 404 || message.includes('model not found') || message.includes('does not exist')) {
-       // Request specific
-       return false;
+    if (
+      status === 404 ||
+      message.includes('model not found') ||
+      message.includes('does not exist')
+    ) {
+      // Request specific
+      return false;
     }
 
     // Default: bubble up, do not burn other keys on unknown errors

@@ -69,7 +69,8 @@ export class EntityTagsController {
     @Param('entityType') entityType: string,
     @Param('entityId') entityId: string,
     @CurrentUser() user: any,
-    @Body(new ValidationPipe({ whitelist: true })) replaceDto: ReplaceEntityTagsDto,
+    @Body(new ValidationPipe({ whitelist: true }))
+    replaceDto: ReplaceEntityTagsDto,
   ) {
     return this.entityTagsService.replaceTags(
       entityType,

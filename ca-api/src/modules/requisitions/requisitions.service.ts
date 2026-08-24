@@ -132,7 +132,9 @@ export class RequisitionsService {
     }
 
     if (query.search) {
-      conditions.push(`(req.title ILIKE $${counter} OR req.code ILIKE $${counter})`);
+      conditions.push(
+        `(req.title ILIKE $${counter} OR req.code ILIKE $${counter})`,
+      );
       values.push(`%${query.search}%`);
       counter++;
     }
@@ -319,7 +321,9 @@ export class RequisitionsService {
     );
 
     if (currentResult.rows.length === 0) {
-      throw new NotFoundException(`Archived Requisition with ID ${id} not found.`);
+      throw new NotFoundException(
+        `Archived Requisition with ID ${id} not found.`,
+      );
     }
     const currentReq = currentResult.rows[0];
 

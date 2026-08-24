@@ -24,7 +24,10 @@ export class TagsController {
 
   @Post()
   @RequireModule('tags', 'editor')
-  create(@CurrentUser() user: { atsUserId: string }, @Body() createTagDto: CreateTagDto) {
+  create(
+    @CurrentUser() user: { atsUserId: string },
+    @Body() createTagDto: CreateTagDto,
+  ) {
     return this.tagsService.createTag(user.atsUserId, null, createTagDto);
   }
 

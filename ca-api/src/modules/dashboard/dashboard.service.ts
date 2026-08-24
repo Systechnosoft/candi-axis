@@ -9,7 +9,7 @@ export class DashboardService {
   async getStats() {
     const queries = {
       openJobPostings:
-        "SELECT COUNT(*) FROM ca_job_postings WHERE is_active = true",
+        'SELECT COUNT(*) FROM ca_job_postings WHERE is_active = true',
       totalCandidates:
         'SELECT COUNT(*) FROM ca_candidates WHERE is_deleted = false',
       draftOffers:

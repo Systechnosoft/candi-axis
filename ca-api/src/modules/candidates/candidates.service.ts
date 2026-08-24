@@ -1170,7 +1170,12 @@ export class CandidatesService {
     return { candidate: null, hasMediumMatch: dupResult.hasMediumMatch };
   }
 
-  async findAll(page: number = 1, limit: number = 20, search?: string, stage?: string) {
+  async findAll(
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+    stage?: string,
+  ) {
     const offset = (page - 1) * limit;
 
     let baseQuery = `
@@ -1194,20 +1199,23 @@ export class CandidatesService {
         baseQuery += ` AND a.stage IS NULL`;
       } else {
         const stageMap: Record<string, string[]> = {
-          'new': ['new', 'applied'],
-          'screening': ['screening', 'screened'],
-          'interviewing': ['interview', 'interviewing', 'engaged'],
-          'shortlisted': ['shortlisted'],
-          'offered': ['offered', 'offer'],
-          'accepted': ['accepted'],
-          'joined': ['joined', 'hired'],
-          'rejected': ['rejected', 'archived'],
-          'closed': ['closed']
+          new: ['new', 'applied'],
+          screening: ['screening', 'screened'],
+          interviewing: ['interview', 'interviewing', 'engaged'],
+          shortlisted: ['shortlisted'],
+          offered: ['offered', 'offer'],
+          accepted: ['accepted'],
+          joined: ['joined', 'hired'],
+          rejected: ['rejected', 'archived'],
+          closed: ['closed'],
         };
 
         const mapped = stageMap[s] || [s];
-        const clauses = mapped.map((_, i) => `COALESCE(a.stage, c.status, 'Applied') ILIKE $${params.length + i + 1}`);
-        mapped.forEach(val => params.push(`%${val}%`));
+        const clauses = mapped.map(
+          (_, i) =>
+            `COALESCE(a.stage, c.status, 'Applied') ILIKE $${params.length + i + 1}`,
+        );
+        mapped.forEach((val) => params.push(`%${val}%`));
         baseQuery += ` AND (${clauses.join(' OR ')})`;
       }
     }

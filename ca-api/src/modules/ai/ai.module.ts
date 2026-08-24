@@ -7,8 +7,20 @@ import { AiExecutionService } from './ai-execution.service';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
 
 @Module({
-  imports: [ConfigModule, forwardRef(() => AdminSettingsModule), DatabaseModule],
-  providers: [ResumeAiParserService, ApplicationAiRatingService, AiExecutionService],
-  exports: [ResumeAiParserService, ApplicationAiRatingService, AiExecutionService],
+  imports: [
+    ConfigModule,
+    forwardRef(() => AdminSettingsModule),
+    DatabaseModule,
+  ],
+  providers: [
+    ResumeAiParserService,
+    ApplicationAiRatingService,
+    AiExecutionService,
+  ],
+  exports: [
+    ResumeAiParserService,
+    ApplicationAiRatingService,
+    AiExecutionService,
+  ],
 })
 export class AiModule {}

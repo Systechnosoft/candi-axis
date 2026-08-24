@@ -120,22 +120,31 @@ export class RolesController {
 
   @Patch(':id')
   @RequireModule('roles', 'editor')
-  async updateRole(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateRole(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     const roleRes = await this.pool.query(
       `SELECT code, org_id FROM public.ca_roles WHERE id = $1 AND deleted_at IS NULL`,
-      [id]
+      [id],
     );
-    if (roleRes.rows.length === 0) throw new NotFoundException('Role not found');
+    if (roleRes.rows.length === 0)
+      throw new NotFoundException('Role not found');
     const role = roleRes.rows[0];
 
     if (role.code === 'super_admin') {
-      throw new ForbiddenException('Super Admin permissions are immutable and cannot be modified.');
+      throw new ForbiddenException(
+        'Super Admin permissions are immutable and cannot be modified.',
+      );
     }
 
     const isSuperAdmin = req.user?.roles?.includes('super_admin');
     if (!isSuperAdmin) {
       if (!role.org_id || role.org_id !== req.user?.orgId) {
-        throw new ForbiddenException('You do not have permission to edit roles outside your organisation.');
+        throw new ForbiddenException(
+          'You do not have permission to edit roles outside your organisation.',
+        );
       }
     }
 
@@ -199,9 +208,10 @@ export class RolesController {
   async deleteRole(@Request() req: any, @Param('id') id: string) {
     const roleRes = await this.pool.query(
       `SELECT code, org_id FROM public.ca_roles WHERE id = $1 AND deleted_at IS NULL`,
-      [id]
+      [id],
     );
-    if (roleRes.rows.length === 0) throw new NotFoundException('Role not found');
+    if (roleRes.rows.length === 0)
+      throw new NotFoundException('Role not found');
     const role = roleRes.rows[0];
 
     if (role.code === 'super_admin') {
@@ -211,7 +221,9 @@ export class RolesController {
     const isSuperAdmin = req.user?.roles?.includes('super_admin');
     if (!isSuperAdmin) {
       if (!role.org_id || role.org_id !== req.user?.orgId) {
-        throw new ForbiddenException('You do not have permission to delete roles outside your organisation.');
+        throw new ForbiddenException(
+          'You do not have permission to delete roles outside your organisation.',
+        );
       }
     }
 

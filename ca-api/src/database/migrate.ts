@@ -47,7 +47,7 @@ async function runMigrations() {
       appliedResult.rows.map((r: { filename: string }) => {
         const match = r.filename.match(/\d{5}_.*\.sql$/);
         return match ? match[0] : r.filename;
-      })
+      }),
     );
 
     const files = fs
@@ -65,9 +65,17 @@ async function runMigrations() {
       }
 
       // Fast-forward consolidated MVP migrations on existing databases
-      if (dbAlreadyHasSchema && file.startsWith('28072026_') && file < '28072026_00050') {
-        console.log(`  -> Legacy DB detected, automatically marking MVP migration as applied: ${file}`);
-        await client.query(`INSERT INTO _migrations (filename) VALUES ($1)`, [file]);
+      if (
+        dbAlreadyHasSchema &&
+        file.startsWith('28072026_') &&
+        file < '28072026_00050'
+      ) {
+        console.log(
+          `  -> Legacy DB detected, automatically marking MVP migration as applied: ${file}`,
+        );
+        await client.query(`INSERT INTO _migrations (filename) VALUES ($1)`, [
+          file,
+        ]);
         continue;
       }
 

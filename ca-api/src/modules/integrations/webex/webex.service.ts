@@ -1,4 +1,9 @@
-import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../../../infrastructure/database/database.module';
 
@@ -8,7 +13,10 @@ export class WebexService {
 
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
-  private async getConfig(): Promise<{ clientId: string; clientSecret: string }> {
+  private async getConfig(): Promise<{
+    clientId: string;
+    clientSecret: string;
+  }> {
     try {
       const dbRes = await this.pool.query(
         `SELECT config_json, encrypted_credentials_json 
@@ -24,13 +32,20 @@ export class WebexService {
         };
       }
     } catch (dbErr) {
-      this.logger.error(`Failed to fetch CISCO_WEBEX config from DB: ${dbErr.message}`);
+      this.logger.error(
+        `Failed to fetch CISCO_WEBEX config from DB: ${dbErr.message}`,
+      );
     }
 
-    throw new BadRequestException('Cisco Webex integration is not configured or activated.');
+    throw new BadRequestException(
+      'Cisco Webex integration is not configured or activated.',
+    );
   }
 
-  private async getAccessToken(clientId: string, clientSecret: string): Promise<string> {
+  private async getAccessToken(
+    clientId: string,
+    clientSecret: string,
+  ): Promise<string> {
     const url = 'https://webexapis.com/v1/access_token';
     const params = new URLSearchParams();
     params.append('client_id', clientId);
@@ -46,17 +61,24 @@ export class WebexService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Webex token error: ${errorText}`);
-      throw new BadRequestException('Failed to authenticate with Cisco Webex. Please check your Service App credentials.');
+      throw new BadRequestException(
+        'Failed to authenticate with Cisco Webex. Please check your Service App credentials.',
+      );
     }
 
     const data = await res.json();
     return data.access_token;
   }
 
-  async generateMeetingLink(): Promise<{ meetingLink: string; externalEventId: string }> {
+  async generateMeetingLink(): Promise<{
+    meetingLink: string;
+    externalEventId: string;
+  }> {
     const { clientId, clientSecret } = await this.getConfig();
     if (!clientId || !clientSecret) {
-      throw new BadRequestException('Cisco Webex is missing configuration fields.');
+      throw new BadRequestException(
+        'Cisco Webex is missing configuration fields.',
+      );
     }
 
     const token = await this.getAccessToken(clientId, clientSecret);
@@ -84,7 +106,9 @@ export class WebexService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Webex meeting error: ${errorText}`);
-      throw new BadRequestException(`Failed to create Webex meeting. Ensure your Service App has meeting scopes.`);
+      throw new BadRequestException(
+        `Failed to create Webex meeting. Ensure your Service App has meeting scopes.`,
+      );
     }
 
     const meeting = await res.json();

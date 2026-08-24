@@ -63,14 +63,15 @@ export class ApplicationsService {
 
       // Verify or create Job Posting
       let jobPostingId: string | undefined = dto.job_posting_id;
-      
+
       if (!jobPostingId) {
         const jpCheck = await client.query<{ id: string }>(
           'SELECT id FROM public.ca_job_postings WHERE jd_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1',
           [dto.jd_id],
         );
-        jobPostingId = jpCheck.rows.length > 0 ? String(jpCheck.rows[0].id) : undefined;
-        
+        jobPostingId =
+          jpCheck.rows.length > 0 ? String(jpCheck.rows[0].id) : undefined;
+
         if (!jobPostingId) {
           const jpInsert = await client.query<{ id: string }>(
             `INSERT INTO public.ca_job_postings (org_id, jd_id, name, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
@@ -253,9 +254,11 @@ export class ApplicationsService {
         queryParams,
       );
     } catch (e: any) {
-      throw new InternalServerErrorException(`Count query failed: ${e.message}`);
+      throw new InternalServerErrorException(
+        `Count query failed: ${e.message}`,
+      );
     }
-    
+
     const total = parseInt(countRes.rows[0].total, 10);
 
     const dataQuery = `
@@ -278,12 +281,14 @@ export class ApplicationsService {
       LIMIT $${paramIdx++} OFFSET $${paramIdx}
     `;
     queryParams.push(limit, offset);
-    
+
     let dataRes;
     try {
       dataRes = await this.pool.query(dataQuery, queryParams);
     } catch (e: any) {
-      this.logger.error(`Data query failed: ${e.message}. Query: ${dataQuery} | Params: ${JSON.stringify(queryParams)}`);
+      this.logger.error(
+        `Data query failed: ${e.message}. Query: ${dataQuery} | Params: ${JSON.stringify(queryParams)}`,
+      );
       throw new InternalServerErrorException(`Data query failed: ${e.message}`);
     }
 
@@ -302,4 +307,3 @@ export class ApplicationsService {
     return { message: 'AI Rating is completed' };
   }
 }
-

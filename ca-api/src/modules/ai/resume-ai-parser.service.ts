@@ -77,16 +77,22 @@ export class ResumeAiParserService {
     );
 
     if (provider !== 'gemini' && !baseUrl) {
-      throw new Error(`Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`);
+      throw new Error(
+        `Provider "${provider}" requires a base URL. Please configure it in Site Configuration.`,
+      );
     }
 
-    return this.aiExecutionService.executeWithFailover(email, provider, async (apiKey) => {
-      if (provider === 'gemini') {
-        return this.callGemini(text, apiKey, model!);
-      } else {
-        return this.callOpenAiCompat(text, apiKey, baseUrl!, model!);
-      }
-    });
+    return this.aiExecutionService.executeWithFailover(
+      email,
+      provider,
+      async (apiKey) => {
+        if (provider === 'gemini') {
+          return this.callGemini(text, apiKey, model);
+        } else {
+          return this.callOpenAiCompat(text, apiKey, baseUrl, model);
+        }
+      },
+    );
   }
 
   private async callGemini(
@@ -172,7 +178,7 @@ export class ResumeAiParserService {
     // 2. Extract everything between the first { and the last }
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
-    
+
     if (start !== -1 && end !== -1 && end >= start) {
       cleaned = cleaned.substring(start, end + 1);
     } else {
@@ -190,7 +196,9 @@ export class ResumeAiParserService {
       cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
       return JSON.parse(cleaned) as ParsedResume;
     } catch (e: any) {
-      this.logger.error(`JSON Parse Error: ${e.message}. Full string length: ${cleaned.length}`);
+      this.logger.error(
+        `JSON Parse Error: ${e.message}. Full string length: ${cleaned.length}`,
+      );
       this.logger.error(`Full extracted string: \n${cleaned}\n`);
       throw new Error(
         `Failed to parse JSON from AI provider response: ${e.message}. Raw snippet: ${cleaned.slice(0, 200)}`,

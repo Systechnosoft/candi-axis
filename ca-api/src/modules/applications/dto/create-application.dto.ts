@@ -12,7 +12,9 @@ export class CreateApplicationDto {
   @IsUUID()
   jd_id: string;
 
-  @ApiPropertyOptional({ description: 'UUID of the job posting (optional, preferred)' })
+  @ApiPropertyOptional({
+    description: 'UUID of the job posting (optional, preferred)',
+  })
   @IsOptional()
   @IsUUID()
   job_posting_id?: string;

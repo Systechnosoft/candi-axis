@@ -1,4 +1,9 @@
-import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../../../infrastructure/database/database.module';
 
@@ -8,7 +13,11 @@ export class TeamsService {
 
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
-  private async getConfig(): Promise<{ clientId: string; clientSecret: string; tenantId: string }> {
+  private async getConfig(): Promise<{
+    clientId: string;
+    clientSecret: string;
+    tenantId: string;
+  }> {
     try {
       const dbRes = await this.pool.query(
         `SELECT config_json, encrypted_credentials_json 
@@ -25,13 +34,21 @@ export class TeamsService {
         };
       }
     } catch (dbErr) {
-      this.logger.error(`Failed to fetch MICROSOFT_TEAMS config from DB: ${dbErr.message}`);
+      this.logger.error(
+        `Failed to fetch MICROSOFT_TEAMS config from DB: ${dbErr.message}`,
+      );
     }
 
-    throw new BadRequestException('Microsoft Teams integration is not configured or activated.');
+    throw new BadRequestException(
+      'Microsoft Teams integration is not configured or activated.',
+    );
   }
 
-  private async getAccessToken(tenantId: string, clientId: string, clientSecret: string): Promise<string> {
+  private async getAccessToken(
+    tenantId: string,
+    clientId: string,
+    clientSecret: string,
+  ): Promise<string> {
     const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     const params = new URLSearchParams();
     params.append('client_id', clientId);
@@ -48,21 +65,30 @@ export class TeamsService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`MS Teams token error: ${errorText}`);
-      throw new BadRequestException('Failed to authenticate with Microsoft Graph. Please check your App credentials and Tenant ID.');
+      throw new BadRequestException(
+        'Failed to authenticate with Microsoft Graph. Please check your App credentials and Tenant ID.',
+      );
     }
 
     const data = await res.json();
     return data.access_token;
   }
 
-  async generateMeetingLink(atsUserId: string): Promise<{ meetingLink: string; externalEventId: string }> {
+  async generateMeetingLink(
+    atsUserId: string,
+  ): Promise<{ meetingLink: string; externalEventId: string }> {
     const { clientId, clientSecret, tenantId } = await this.getConfig();
     if (!clientId || !clientSecret || !tenantId) {
-      throw new BadRequestException('Microsoft Teams is missing configuration fields.');
+      throw new BadRequestException(
+        'Microsoft Teams is missing configuration fields.',
+      );
     }
 
     // Get user email to act as UPN (Organizer)
-    const userRes = await this.pool.query(`SELECT email FROM ca_users WHERE id = $1`, [atsUserId]);
+    const userRes = await this.pool.query(
+      `SELECT email FROM ca_users WHERE id = $1`,
+      [atsUserId],
+    );
     if (userRes.rows.length === 0) {
       throw new BadRequestException('User not found.');
     }
@@ -94,9 +120,13 @@ export class TeamsService {
       const errorText = await res.text();
       this.logger.error(`Graph API meeting error: ${errorText}`);
       if (res.status === 403 || res.status === 401) {
-        throw new BadRequestException('Microsoft Teams permission denied. Ensure OnlineMeetings.ReadWrite.All Application permission is granted with admin consent, and Application Access Policy is configured.');
+        throw new BadRequestException(
+          'Microsoft Teams permission denied. Ensure OnlineMeetings.ReadWrite.All Application permission is granted with admin consent, and Application Access Policy is configured.',
+        );
       }
-      throw new BadRequestException(`Failed to create Microsoft Teams meeting. Ensure user ${upn} exists in your Microsoft 365 tenant.`);
+      throw new BadRequestException(
+        `Failed to create Microsoft Teams meeting. Ensure user ${upn} exists in your Microsoft 365 tenant.`,
+      );
     }
 
     const meeting = await res.json();
