@@ -620,7 +620,7 @@ export class CalendarInviteProcessor extends WorkerHost {
       if (ccEmails.length > 0) {
         await this.emailService.sendEmail({
           to: ccEmails,
-          subject: `[Copy] ${emailSubject}`,
+          subject: emailSubject,
           html: `
             <p style="font-family: Arial, sans-serif; font-size: 14px; color: #555; background-color: #f3f4f6; padding: 10px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
               <strong>Note:</strong> You have been copied on this interview schedule notification. It has NOT been added to your calendar.

@@ -43,6 +43,7 @@ export default function OrganisationsPage() {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSummaryOrg, setSelectedSummaryOrg] = useState<Organisation | null>(null);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -71,7 +72,7 @@ export default function OrganisationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, isSuperAdmin]);
+  }, [page, search, isSuperAdmin, limit]);
 
   useEffect(() => {
     const timer = setTimeout(fetchOrganisations, 300);
@@ -316,7 +317,14 @@ export default function OrganisationsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="font-semibold text-text-primary">{org.org_code}</TableCell>
-                  <TableCell className="font-semibold text-brand">{org.name}</TableCell>
+                  <TableCell className="font-semibold text-brand">
+                    <button 
+                      onClick={() => setSelectedSummaryOrg(org)}
+                      className="hover:underline text-left focus:outline-none"
+                    >
+                      {org.name}
+                    </button>
+                  </TableCell>
                   <TableCell>{org.legal_name || '-'}</TableCell>
                   <TableCell>{org.primary_contact_name || '-'}</TableCell>
                   <TableCell>
@@ -601,6 +609,117 @@ export default function OrganisationsPage() {
               </div>
             </div>
           </form>
+        </DrawerShell80>
+      )}
+
+      {/* Summary Drawer */}
+      {selectedSummaryOrg && (
+        <DrawerShell80
+          title="Organisation Details"
+          onClose={() => setSelectedSummaryOrg(null)}
+        >
+          <div className="flex flex-col gap-6 p-2">
+            {/* General Details Card */}
+            <div className="border border-brand/20 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-brand/5 px-5 py-3 border-b border-brand/10">
+                <h3 className="text-sm font-semibold text-brand">Organisation Details</h3>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-y-6 gap-x-8 bg-surface">
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Organisation Code</h4>
+                  <p className="text-sm text-text-primary font-medium">{selectedSummaryOrg.org_code}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Name</h4>
+                  <p className="text-sm text-text-primary font-medium">{selectedSummaryOrg.name}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Legal Name</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.legal_name || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Industry</h4>
+                  <p className="text-sm text-text-primary">{toTitleCase(selectedSummaryOrg.industry) || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Company Size</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.company_size || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Website</h4>
+                  <p className="text-sm text-text-primary">
+                    {selectedSummaryOrg.website_url ? (
+                      <a href={selectedSummaryOrg.website_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                        {selectedSummaryOrg.website_url}
+                      </a>
+                    ) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Status</h4>
+                  <div className="mt-1">{getStatusBadge(selectedSummaryOrg.status)}</div>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Allowed Domains</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.allowed_email_domains?.join(', ') || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Card */}
+            <div className="border border-brand/20 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-brand/5 px-5 py-3 border-b border-brand/10">
+                <h3 className="text-sm font-semibold text-brand">Primary Contact</h3>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-y-6 gap-x-8 bg-surface">
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Contact Name</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.primary_contact_name || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Email</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.primary_contact_email || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Phone</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.primary_contact_phone || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Address Card */}
+            <div className="border border-brand/20 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-brand/5 px-5 py-3 border-b border-brand/10">
+                <h3 className="text-sm font-semibold text-brand">Address</h3>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-y-6 gap-x-8 bg-surface">
+                <div className="col-span-2">
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Address Line 1</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.address_line1 || '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Address Line 2</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.address_line2 || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">City</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.city || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">State</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.state || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Country</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.country || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Postal Code</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryOrg.postal_code || '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </DrawerShell80>
       )}
     </ListPage>

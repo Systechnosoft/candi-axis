@@ -147,7 +147,7 @@ export default function TagsManagementPage() {
 
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
+    <div className="flex flex-col h-full w-full gap-6 pb-10">
       <PageHeader 
         title="Tags" 
         actions={

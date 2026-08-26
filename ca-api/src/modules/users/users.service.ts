@@ -100,7 +100,7 @@ export class UsersService {
 
   async findAll() {
     const result = await this.pool.query(
-      `SELECT u.id, u.email, u.full_name, u.employee_code, u.department, u.status, u.is_active, u.created_at, u.updated_at,
+      `SELECT u.id, u.email, u.full_name, u.employee_code, u.department, u.status, u.is_active, u.created_at, u.updated_at, u.org_id,
               (SELECT r.code FROM ca_user_roles ur JOIN ca_roles r ON r.id = ur.role_id WHERE ur.user_id = u.id LIMIT 1) as role_code,
               updater.full_name as updated_by_name
        FROM ca_users u
@@ -113,7 +113,7 @@ export class UsersService {
 
   async findById(id: string) {
     const result = await this.pool.query(
-      `SELECT u.id, u.email, u.full_name, u.employee_code, u.department, u.status, u.is_active, u.created_at, u.updated_at, u.supabase_auth_user_id,
+      `SELECT u.id, u.email, u.full_name, u.employee_code, u.department, u.status, u.is_active, u.created_at, u.updated_at, u.supabase_auth_user_id, u.org_id,
               (SELECT r.code FROM ca_user_roles ur JOIN ca_roles r ON r.id = ur.role_id WHERE ur.user_id = u.id LIMIT 1) as role_code
        FROM ca_users u
        WHERE u.id = $1 AND u.is_deleted = false`,

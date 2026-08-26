@@ -35,7 +35,9 @@ export class TeamsService {
         const creds = dbRes.rows[0].encrypted_credentials_json || {};
         let secret = '';
         if (creds.client_secret) {
-          secret = this.adminSettingsService.decrypt(creds.client_secret as string);
+          secret = this.adminSettingsService.decrypt(
+            creds.client_secret as string,
+          );
         } else if (
           config.client_secret &&
           config.client_secret !== '********'
@@ -94,7 +96,8 @@ export class TeamsService {
   async generateMeetingLink(
     atsUserId: string,
   ): Promise<{ meetingLink: string; externalEventId: string }> {
-    const { clientId, clientSecret, tenantId, schedulerUpn } = await this.getConfig();
+    const { clientId, clientSecret, tenantId, schedulerUpn } =
+      await this.getConfig();
     if (!clientId || !clientSecret || !tenantId) {
       throw new BadRequestException(
         'Microsoft Teams is missing configuration fields.',
@@ -134,23 +137,23 @@ export class TeamsService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Graph API meeting error: ${errorText}`);
-      
+
       let errorMsg = errorText;
       try {
         const parsed = JSON.parse(errorText);
         if (parsed.error && parsed.error.message) {
           errorMsg = parsed.error.message;
         }
-      } catch (e) {}
+      } catch (e) {
+        // ignore parse error
+      }
 
       if (res.status === 403 || res.status === 401) {
         throw new BadRequestException(
           `MS Teams Permission Denied: ${errorMsg}. (Did you run the PowerShell Application Access Policy script?)`,
         );
       }
-      throw new BadRequestException(
-        `Microsoft Graph Error: ${errorMsg}`,
-      );
+      throw new BadRequestException(`Microsoft Graph Error: ${errorMsg}`);
     }
 
     const meeting = await res.json();

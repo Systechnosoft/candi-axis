@@ -901,11 +901,12 @@ export default function ViewCandidatePage() {
                     {candidate.projects!.map((proj, index) => (
                       <div key={index} className="p-4 border border-border rounded-xl bg-subtle/30 space-y-3 flex flex-col justify-between shadow-sm hover:shadow transition-shadow">
                         <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="text-sm font-bold text-text-primary flex items-center gap-2 truncate">
-                              <Folder className="w-4.5 h-4.5 text-brand shrink-0" /> {proj.title}
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className="text-sm font-bold text-text-primary flex items-start gap-2">
+                              <Folder className="w-4.5 h-4.5 text-brand shrink-0 mt-[1px]" /> 
+                              <span className="leading-snug">{proj.title}</span>
                             </h4>
-                            {proj.duration && <span className="text-[11px] font-semibold text-text-muted shrink-0">{proj.duration}</span>}
+                            {proj.duration && <span className="text-[11px] font-semibold text-text-muted shrink-0 text-right mt-[2px]">{proj.duration}</span>}
                           </div>
                           {proj.role && <p className="text-xs font-semibold text-text-secondary">{proj.role}</p>}
                           {proj.description && <p className="text-xs text-text-muted leading-relaxed">{proj.description}</p>}

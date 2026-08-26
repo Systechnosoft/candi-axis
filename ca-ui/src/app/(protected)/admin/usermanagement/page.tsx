@@ -7,6 +7,7 @@ import { DataTableShell, TableHead, TableRow, TableHeader, TableCell } from '@/c
 import { Badge } from '@/components/primitives/Badge';
 import { Button } from '@/components/primitives/Button';
 import { Plus, Edit2, Loader2, Download, FilterX, RefreshCw } from 'lucide-react';
+import { DrawerShell80 } from '@/components/primitives/ModalShell';
 import { FilterBar } from '@/components/primitives/FilterBar';
 import { UserModal } from '../components/UserModal';
 import { usersApi } from '@/lib/api/users';
@@ -14,9 +15,11 @@ import { User } from '@/types/users';
 import { TablePagination } from '@/components/primitives/TablePagination';
 import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { formatDate, exportToCSV } from '@/lib/utils';
+import { OrganisationsService, Organisation } from '@/lib/api/organisations';
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +29,7 @@ export default function UsersManagementPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedSummaryUser, setSelectedSummaryUser] = useState<User | null>(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -52,6 +56,9 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     fetchUsers();
+    OrganisationsService.getOrganisations({ limit: 200 })
+      .then(res => setOrganisations(res.data))
+      .catch(err => console.error('Failed to load organisations', err));
   }, [fetchUsers]);
 
   const filteredUsers = useMemo(() => {
@@ -207,7 +214,12 @@ export default function UsersManagementPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-text-primary">{user.full_name}</div>
+                    <button 
+                      onClick={() => setSelectedSummaryUser(user)}
+                      className="font-medium text-brand hover:underline text-left focus:outline-none"
+                    >
+                      {user.full_name}
+                    </button>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-text-secondary">{user.email}</div>
@@ -250,6 +262,87 @@ export default function UsersManagementPage() {
         user={selectedUser}
         onSaved={fetchUsers}
       />
+
+      {/* Summary Drawer */}
+      {selectedSummaryUser && (
+        <DrawerShell80
+          title="User Details"
+          onClose={() => setSelectedSummaryUser(null)}
+        >
+          <div className="flex flex-col gap-6 p-2">
+            {/* General Info Card */}
+            <div className="border border-brand/20 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-brand/5 px-5 py-3 border-b border-brand/10">
+                <h3 className="text-sm font-semibold text-brand">User Profile</h3>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-y-6 gap-x-8 bg-surface">
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Name</h4>
+                  <p className="text-sm text-text-primary font-medium">{selectedSummaryUser.full_name}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Email</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryUser.email}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Employee Code</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryUser.employee_code || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Status</h4>
+                  <div className="mt-1">{getStatusBadge(selectedSummaryUser.status)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Role & Access Card */}
+            <div className="border border-brand/20 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-brand/5 px-5 py-3 border-b border-brand/10">
+                <h3 className="text-sm font-semibold text-brand">Role & Access</h3>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-y-6 gap-x-8 bg-surface">
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">System Role</h4>
+                  <p className="text-sm text-text-primary capitalize">{selectedSummaryUser.role_code.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Department</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryUser.department || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Organisation Name</h4>
+                  <p className="text-sm text-text-primary">
+                    {selectedSummaryUser.org_id ? 
+                      (organisations.find(o => o.id === selectedSummaryUser.org_id)?.name || selectedSummaryUser.org_id) 
+                      : 'Platform Wide'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Audit Card */}
+            <div className="border border-brand/20 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-brand/5 px-5 py-3 border-b border-brand/10">
+                <h3 className="text-sm font-semibold text-brand">Audit Information</h3>
+              </div>
+              <div className="p-5 grid grid-cols-2 gap-y-6 gap-x-8 bg-surface">
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Created On</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryUser.created_at ? formatDate(selectedSummaryUser.created_at) : '-'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Last Updated</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryUser.updated_at ? formatDate(selectedSummaryUser.updated_at) : '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <h4 className="text-[12px] font-semibold text-text-muted mb-1">Updated By</h4>
+                  <p className="text-sm text-text-primary">{selectedSummaryUser.updated_by_name || '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DrawerShell80>
+      )}
     </div>
   );
 }

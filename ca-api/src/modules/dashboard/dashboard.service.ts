@@ -45,26 +45,26 @@ export class DashboardService {
     
     let query = `
       SELECT 
-        sh.id,
-        sh.entity_type,
-        sh.entity_id,
-        sh.from_status,
-        sh.to_status,
-        sh.changed_at,
-        sh.reason,
+        al.id::text as id,
+        al.entity_type,
+        al.entity_id::text as entity_id,
+        (al.before_json->>'status')::text as from_status,
+        COALESCE((al.after_json->>'status')::text, al.action) as to_status,
+        al.changed_at as changed_at,
+        al.reason_context as reason,
         u.full_name as user_name
-      FROM ca_status_history sh
-      LEFT JOIN ca_users u ON sh.changed_by = u.id
+      FROM ca_audit_logs al
+      LEFT JOIN ca_users u ON al.changed_by = u.id
     `;
     const params: any[] = [];
     
     if (!isSuperAdmin) {
-      query += ` WHERE sh.changed_by = $1`;
+      query += ` WHERE al.changed_by = $1`;
       params.push(userId);
     }
     
     query += `
-      ORDER BY sh.changed_at DESC
+      ORDER BY al.changed_at DESC
       LIMIT 10
     `;
     

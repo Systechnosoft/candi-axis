@@ -1166,7 +1166,7 @@ export default function JobPostingDetailPage() {
               </div>
               <button 
                 onClick={handleCloseDrawer}
-                className="p-1.5 hover:bg-subtle rounded-lg text-text-muted hover:text-text-primary transition-colors"
+                className="p-1 rounded-md border border-brand text-brand hover:bg-brand/10 transition-colors focus:outline-none focus:ring-1 focus:ring-brand focus:ring-offset-1"
                 title="Close panel"
               >
                 <X className="w-4 h-4" />
