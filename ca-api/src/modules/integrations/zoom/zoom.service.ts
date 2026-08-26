@@ -6,12 +6,16 @@ import {
 } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_POOL } from '../../../infrastructure/database/database.module';
+import { AdminSettingsService } from '../../admin/admin-settings.service';
 
 @Injectable()
 export class ZoomService {
   private readonly logger = new Logger(ZoomService.name);
 
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly adminSettingsService: AdminSettingsService,
+  ) {}
 
   private async getConfig(): Promise<{
     clientId: string;
@@ -28,9 +32,17 @@ export class ZoomService {
       if (dbRes.rows.length > 0) {
         const config = dbRes.rows[0].config_json || {};
         const creds = dbRes.rows[0].encrypted_credentials_json || {};
+        
+        let secret = '';
+        if (creds.client_secret) {
+          secret = this.adminSettingsService.decrypt(creds.client_secret as string);
+        } else if (config.client_secret && config.client_secret !== '********') {
+          secret = config.client_secret;
+        }
+
         return {
           clientId: config.client_id || creds.client_id,
-          clientSecret: config.client_secret || creds.client_secret,
+          clientSecret: secret,
           accountId: config.account_id || creds.account_id,
           hostEmail: config.host_email || creds.host_email,
         };
@@ -110,8 +122,17 @@ export class ZoomService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Zoom meeting error: ${errorText}`);
+      
+      let errorMsg = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.message) {
+          errorMsg = parsed.message;
+        }
+      } catch (e) {}
+
       throw new BadRequestException(
-        `Failed to create Zoom meeting. Ensure host ${hostEmail} exists in your Zoom account.`,
+        `Zoom API Error: ${errorMsg}`,
       );
     }
 

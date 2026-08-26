@@ -21,6 +21,7 @@ export class EmailService implements OnModuleInit {
         `Initializing Gmail SMTP Transporter for email: "${trimmedEmail}" (password length: ${trimmedPassword.length})`,
       );
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -49,6 +50,7 @@ export class EmailService implements OnModuleInit {
         `Initializing Outlook SMTP Transporter for email: "${trimmedEmail}" (password length: ${trimmedPassword.length})`,
       );
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.transporter = nodemailer.createTransport({
         host: 'smtp.office365.com',
         port: 587,
@@ -87,7 +89,7 @@ export class EmailService implements OnModuleInit {
     if (this.transporter) {
       // Execute transporter verification in the background without awaiting it.
       // This ensures SMTP connection/credential checks do not block the NestJS application bootstrap process.
-      this.verifyTransporter();
+      void this.verifyTransporter();
     }
   }
 

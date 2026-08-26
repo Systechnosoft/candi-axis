@@ -7,16 +7,22 @@ import {
 import { Pool } from 'pg';
 import { PG_POOL } from '../../../infrastructure/database/database.module';
 
+import { AdminSettingsService } from '../../admin/admin-settings.service';
+
 @Injectable()
 export class TeamsService {
   private readonly logger = new Logger(TeamsService.name);
 
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly adminSettingsService: AdminSettingsService,
+  ) {}
 
   private async getConfig(): Promise<{
     clientId: string;
     clientSecret: string;
     tenantId: string;
+    schedulerUpn: string;
   }> {
     try {
       const dbRes = await this.pool.query(
@@ -27,10 +33,21 @@ export class TeamsService {
       if (dbRes.rows.length > 0) {
         const config = dbRes.rows[0].config_json || {};
         const creds = dbRes.rows[0].encrypted_credentials_json || {};
+        let secret = '';
+        if (creds.client_secret) {
+          secret = this.adminSettingsService.decrypt(creds.client_secret as string);
+        } else if (
+          config.client_secret &&
+          config.client_secret !== '********'
+        ) {
+          secret = config.client_secret;
+        }
+
         return {
           clientId: config.client_id || creds.client_id,
-          clientSecret: config.client_secret || creds.client_secret,
+          clientSecret: secret,
           tenantId: config.tenant_id || creds.tenant_id,
+          schedulerUpn: config.scheduler_upn || creds.scheduler_upn || '',
         };
       }
     } catch (dbErr) {
@@ -77,22 +94,20 @@ export class TeamsService {
   async generateMeetingLink(
     atsUserId: string,
   ): Promise<{ meetingLink: string; externalEventId: string }> {
-    const { clientId, clientSecret, tenantId } = await this.getConfig();
+    const { clientId, clientSecret, tenantId, schedulerUpn } = await this.getConfig();
     if (!clientId || !clientSecret || !tenantId) {
       throw new BadRequestException(
         'Microsoft Teams is missing configuration fields.',
       );
     }
 
-    // Get user email to act as UPN (Organizer)
-    const userRes = await this.pool.query(
-      `SELECT email FROM ca_users WHERE id = $1`,
-      [atsUserId],
-    );
-    if (userRes.rows.length === 0) {
-      throw new BadRequestException('User not found.');
+    if (!schedulerUpn) {
+      throw new BadRequestException(
+        'Microsoft Teams Scheduler Email (UPN) is not configured. Please add it in Admin Settings.',
+      );
     }
-    const upn = userRes.rows[0].email;
+
+    const upn = schedulerUpn;
 
     const token = await this.getAccessToken(tenantId, clientId, clientSecret);
 
@@ -119,13 +134,22 @@ export class TeamsService {
     if (!res.ok) {
       const errorText = await res.text();
       this.logger.error(`Graph API meeting error: ${errorText}`);
+      
+      let errorMsg = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.error && parsed.error.message) {
+          errorMsg = parsed.error.message;
+        }
+      } catch (e) {}
+
       if (res.status === 403 || res.status === 401) {
         throw new BadRequestException(
-          'Microsoft Teams permission denied. Ensure OnlineMeetings.ReadWrite.All Application permission is granted with admin consent, and Application Access Policy is configured.',
+          `MS Teams Permission Denied: ${errorMsg}. (Did you run the PowerShell Application Access Policy script?)`,
         );
       }
       throw new BadRequestException(
-        `Failed to create Microsoft Teams meeting. Ensure user ${upn} exists in your Microsoft 365 tenant.`,
+        `Microsoft Graph Error: ${errorMsg}`,
       );
     }
 

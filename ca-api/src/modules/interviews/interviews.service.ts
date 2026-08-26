@@ -145,7 +145,7 @@ export class InterviewsService {
           try {
             const meetData =
               await this.googleCalendarService.createGoogleMeetInterviewInvite(
-                interview.id,
+                interview.id as string,
                 actorUserId,
                 dto.externalCalendarEventId,
               );

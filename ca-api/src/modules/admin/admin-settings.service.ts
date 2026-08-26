@@ -65,7 +65,7 @@ export class AdminSettingsService {
     return crypto.createHash('sha256').update(secret).digest();
   }
 
-  private encrypt(text: string): string {
+  public encrypt(text: string): string {
     if (!text) return '';
     const iv = crypto.randomBytes(16);
     const key = this.getEncryptionKey();
@@ -75,7 +75,7 @@ export class AdminSettingsService {
     return iv.toString('hex') + ':' + encrypted;
   }
 
-  private decrypt(encryptedText: string): string {
+  public decrypt(encryptedText: string): string {
     if (!encryptedText) return '';
     const parts = encryptedText.split(':');
     if (parts.length !== 2) return encryptedText; // Fallback for legacy plain keys
@@ -1040,12 +1040,25 @@ export class AdminSettingsService {
     // Platform-wide settings — no org_id filter.
     // Super admins (who have no org_id) can still manage all configurations.
     const res = await this.pool.query<Record<string, any>>(
-      `SELECT id, provider, display_name, auth_mode, config_json, is_active, is_default, 
+      `SELECT id, provider, display_name, auth_mode, config_json, encrypted_credentials_json, is_active, is_default, 
               last_test_status, last_test_message, last_tested_at 
        FROM public.ca_interview_provider_configurations
        ORDER BY created_at ASC`,
     );
-    return res.rows;
+    
+    return res.rows.map(row => {
+      const config = row.config_json || {};
+      const creds = row.encrypted_credentials_json || {};
+      
+      // Provide a masked representation to the frontend if secret exists
+      if (creds.client_secret) {
+        config.client_secret = '********';
+      }
+      
+      delete row.encrypted_credentials_json;
+      row.config_json = config;
+      return row;
+    });
   }
 
   /* eslint-disable-next-line @typescript-eslint/require-await */
@@ -1101,6 +1114,13 @@ export class AdminSettingsService {
           {
             key: 'tenant_id',
             label: 'Directory (tenant) ID',
+            type: 'string',
+            required: true,
+            isSecret: false,
+          },
+          {
+            key: 'scheduler_upn',
+            label: 'Scheduler Email (UPN)',
             type: 'string',
             required: true,
             isSecret: false,
@@ -1161,6 +1181,13 @@ export class AdminSettingsService {
             required: true,
             isSecret: true,
           },
+          {
+            key: 'refresh_token',
+            label: 'Refresh Token',
+            type: 'string',
+            required: true,
+            isSecret: true,
+          },
         ],
       },
     ];
@@ -1177,6 +1204,22 @@ export class AdminSettingsService {
       data.config_json || data.config || {};
     const credentials_json: Record<string, any> =
       data.credentials_json || data.credentials || {};
+
+    // Move client_secret to credentials_json to prevent plain-text storage
+    if (config_json.client_secret !== undefined) {
+      if (config_json.client_secret && config_json.client_secret !== '********') {
+        credentials_json.client_secret = this.encrypt(config_json.client_secret);
+      }
+      delete config_json.client_secret;
+    }
+
+    // Move refresh_token to credentials_json
+    if (config_json.refresh_token !== undefined) {
+      if (config_json.refresh_token && config_json.refresh_token !== '********') {
+        credentials_json.refresh_token = this.encrypt(config_json.refresh_token);
+      }
+      delete config_json.refresh_token;
+    }
 
     // Derive a human-readable display name from the provider code if not sent
     const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -1248,6 +1291,50 @@ export class AdminSettingsService {
   }
 
   async testProviderConfig(userId: string, id: string) {
+    const configRes = await this.pool.query(
+      `SELECT provider, config_json, encrypted_credentials_json FROM public.ca_interview_provider_configurations WHERE id = $1`,
+      [id],
+    );
+    if (configRes.rows.length === 0) {
+      throw new BadRequestException('Configuration not found.');
+    }
+    const { provider, config_json, encrypted_credentials_json } = configRes.rows[0];
+
+    // Real validation for MS Teams instead of hardcoded success
+    if (provider === 'MICROSOFT_TEAMS' || provider === 'MS_TEAMS') {
+      const config = config_json || {};
+      const creds = encrypted_credentials_json || {};
+      const clientId = config.client_id || creds.client_id;
+      let clientSecret = '';
+      if (creds.client_secret) {
+        clientSecret = this.decrypt(creds.client_secret);
+      } else if (config.client_secret && config.client_secret !== '********') {
+        clientSecret = config.client_secret;
+      }
+      const tenantId = config.tenant_id || creds.tenant_id;
+
+      if (!clientId || !clientSecret || !tenantId) {
+        throw new BadRequestException('Microsoft Teams is missing configuration fields.');
+      }
+
+      const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+      const params = new URLSearchParams();
+      params.append('client_id', clientId);
+      params.append('scope', 'https://graph.microsoft.com/.default');
+      params.append('client_secret', clientSecret);
+      params.append('grant_type', 'client_credentials');
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+
+      if (!res.ok) {
+        throw new BadRequestException('Failed to authenticate with Microsoft Graph. Please check your App credentials and Tenant ID.');
+      }
+    }
+
     await this.pool.query(
       `UPDATE public.ca_interview_provider_configurations 
        SET last_test_status = 'success', 

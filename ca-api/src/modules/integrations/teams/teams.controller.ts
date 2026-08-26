@@ -18,6 +18,6 @@ export class TeamsController {
     summary: 'Pre-generate a Microsoft Teams meeting link',
   })
   async generateMeetLink(@Request() req: any) {
-    return this.teamsService.generateMeetingLink(req.user.atsUserId);
+    return this.teamsService.generateMeetingLink(req.user.atsUserId as string);
   }
 }

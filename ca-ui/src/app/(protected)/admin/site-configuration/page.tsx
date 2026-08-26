@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { ModalShell } from '@/components/primitives/ModalShell';
+import { SingleSelect } from '@/components/primitives/SingleSelect';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminService } from '@/lib/api/admin';
 import { 

@@ -44,7 +44,10 @@ export class InterviewsController {
     @Request() req: any,
     @Body() dto: ScheduleInterviewDto,
   ) {
-    return this.interviewsService.scheduleInterview(req.user.atsUserId, dto);
+    return this.interviewsService.scheduleInterview(
+      req.user.atsUserId as string,
+      dto,
+    );
   }
 
   @Post(':id/create-google-meet-invite')
@@ -55,7 +58,7 @@ export class InterviewsController {
   async createGoogleMeetInvite(@Request() req: any, @Param('id') id: string) {
     return this.interviewsService.createGoogleMeetInvite(
       id,
-      req.user.atsUserId,
+      req.user.atsUserId as string,
     );
   }
 }
